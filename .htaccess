@@ -1,0 +1,9 @@
+RewriteEngine On
+RewriteCond %{HTTP:X-Forwarded-Proto} !http
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+RewriteEngine On
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d
+RewriteRule ^ - [L]
+RewriteRule ^ /index.html [L]
