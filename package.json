@@ -2,18 +2,6 @@
   "name": "dream-house-simulator",
   "version": "1.0.0",
   "description": "3D low poly model of a fictional house, a personal design",
-  "main": "index.js",
-  "devDependencies": {},
-  "dependencies": {
-    "three": "^0.103.0"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Abundle/dream-house-simulator.git"
-  },
   "keywords": [
     "3d",
     "low",
@@ -22,6 +10,38 @@
   ],
   "author": "Abundle",
   "license": "ISC",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack-dev-server --mode development",
+    "build": "webpack --mode production"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.4.0",
+    "@babel/preset-env": "^7.4.2",
+    "babel-loader": "^8.0.5",
+    "clean-webpack-plugin": "^2.0.1",
+    "css-loader": "^2.1.1",
+    "eslint": "^5.15.3",
+    "file-loader": "^3.0.1",
+    "html-loader": "^0.5.5",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.5.0",
+    "style-loader": "^0.23.1",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0",
+    "webpack-dev-server": "^3.2.1"
+  },
+  "dependencies": {
+    "gsap": "^2.1.2",
+    "material-components-web": "^1.1.0",
+    "three": "^0.103.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abundle/dream-house-simulator.git"
+  },
   "bugs": {
     "url": "https://github.com/Abundle/dream-house-simulator/issues"
   },
