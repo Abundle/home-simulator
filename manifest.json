@@ -1,11 +1,11 @@
 {
     "name": "Dream House Simulator",
     "short_name": "House Simulator",
+    "description": "3D low poly model of a fictional house, a personal design.",
     "start_url": "./index.html",
     "display": "browser",
     "theme_color": "#ffffff",
     "background_color": "#000000",
-    "description": "Lorem ipsum.",
     "icons": [
         {
             "src": "favicon.ico",

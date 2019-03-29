@@ -1,7 +1,7 @@
 {
     "name": "dream-house-simulator",
     "version": "1.0.0",
-    "description": "3D low poly model of a fictional house, a personal design",
+    "description": "3D low poly model of a fictional house, a personal design.",
     "keywords": [
         "3d",
         "low-poly",
@@ -19,6 +19,9 @@
         "@babel/cli": "^7.2.3",
         "@babel/core": "^7.4.0",
         "@babel/preset-env": "^7.4.2",
+        "@material/button": "^1.1.0",
+        "@material/ripple": "^1.1.0",
+        "autoprefixer": "^9.5.0",
         "babel-loader": "^8.0.5",
         "clean-webpack-plugin": "^2.0.1",
         "css-loader": "^2.1.1",
@@ -27,6 +30,9 @@
         "html-loader": "^0.5.5",
         "html-webpack-plugin": "^3.2.0",
         "mini-css-extract-plugin": "^0.5.0",
+        "node-sass": "^4.11.0",
+        "postcss-loader": "^3.0.0",
+        "sass-loader": "^7.1.0",
         "style-loader": "^0.23.1",
         "webpack": "^4.29.6",
         "webpack-cli": "^3.3.0",
@@ -35,7 +41,6 @@
     "dependencies": {
         "@babel/polyfill": "^7.4.0",
         "gsap": "^2.1.2",
-        "material-components-web": "^1.1.0",
         "three": "^0.103.0"
     },
     "repository": {

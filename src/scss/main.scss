@@ -1,3 +1,23 @@
-body {
-    background-color: lightblue;
+@import '~@material/typography/mdc-typography';
+@import '~@material/button/mdc-button';
+
+html, body {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    margin-top: 48px;
+}
+
+.demo-headline {
+    margin-bottom: 32px;
+}
+
+.mdc-text-field {
+    margin-bottom: 24px;
+    flex-shrink: 0;
+}
+
+.greet-message {
+    margin-top: 48px;
 }

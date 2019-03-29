@@ -1,11 +1,5 @@
-import './css/main.css';
+import './scss/main.scss';
 
-import Scene from './Scene.js';
+import { MDCRipple } from '@material/ripple/index';
 
-let helloWorld = () => {
-    Scene();
-
-    console.log('Hello World!');
-};
-
-helloWorld();
+const ripple = new MDCRipple(document.querySelector('.mdc-button'));
