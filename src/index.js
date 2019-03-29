@@ -1,5 +1,11 @@
 import './css/main.css';
 
-let helloWorld = () => console.log('Hello World!');
+import Scene from './Scene.js';
+
+let helloWorld = () => {
+    Scene();
+
+    console.log('Hello World!');
+};
 
 helloWorld();

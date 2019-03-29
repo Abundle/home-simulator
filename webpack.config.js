@@ -3,6 +3,8 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
+const devMode = process.env.NODE_ENV !== 'production';
+
 module.exports = {
     entry: './src/index.js',
     output: {
@@ -12,7 +14,7 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.m?js$/,
+                test: /\.js$/,
                 exclude: /(node_modules)/,
                 use: {
                     loader: 'babel-loader',
@@ -29,8 +31,12 @@ module.exports = {
             {
                 test: /\.css$/,
                 use: [MiniCssExtractPlugin.loader, 'css-loader']
+                /*use: [
+                    devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
+                    'css-loader',
+                ]*/
             },
-            /*{
+            {
                 test: /\.(jpe?g|png|gif|svg|ico)$/i,
                 use: {
                     loader: 'file-loader',
@@ -38,7 +44,7 @@ module.exports = {
                         name: 'assets/[hash]-[name].[ext]',
                     }
                 }
-            },*/
+            },
         ]
     },
     devServer: {
@@ -46,14 +52,18 @@ module.exports = {
         overlay: true,
     },
     plugins: [
-        // new CleanWebpackPlugin(),
+        new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
             template: './src/index.html',
-            filename: './index.html'
+            filename: './index.html',
+            minify: {
+                removeComments: true,
+                collapseWhitespace: false
+            }
         }),
         new MiniCssExtractPlugin({
-            filename: '[name].css',
-            chunkFilename: '[id].css'
+            filename: devMode ? '[name].css' : '[name].[hash].css',
+            chunkFilename: devMode ? '[id].css' : '[id].[hash].css',
         })
     ]
 };
