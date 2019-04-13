@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-// import 'three';
-// import 'three/examples/js/WebGL';
+import { TweenMax, Expo } from 'gsap/all';
+
 import 'three/examples/js/controls/OrbitControls';
 import 'three/examples/js/loaders/GLTFLoader';
 import 'three/examples/js/loaders/DRACOLoader';
@@ -28,9 +28,7 @@ export let init = () => {
     //let canvasElement = document.getElementById('canvas');
     let container = document.getElementById('container');
     window.addEventListener('resize', resizeCanvas);
-    container.addEventListener('click', () => {
-        console.log('click');
-    });
+    container.addEventListener('click', onClick);
 
     stats = new Stats();
     container.appendChild(stats.dom);
@@ -41,13 +39,13 @@ export let init = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.gammaOutput = true;
     // renderer.gammaFactor = 2.2;
-    container.appendChild( renderer.domElement );
+    container.appendChild(renderer.domElement);
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xbfe3dd);
 
     camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
-    camera.position.set(5, 2, 8);
+    camera.position.set(50, 20, 8);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0.5, 0);
@@ -74,11 +72,11 @@ export let init = () => {
         model.position.set(1, 1, 0);
         model.scale.set(0.01, 0.01, 0.01);
 
-        model.traverse(node => {
+        /*model.traverse(node => {
             if (node instanceof THREE.Mesh) {
                 console.log(node.name);
             }
-        });
+        });*/
 
         scene.add(model);
         mixer = new THREE.AnimationMixer(model);
@@ -105,6 +103,8 @@ let animate = () => {
     controls.update(delta);
     stats.update();
 
+    TweenMax.to(camera.position, 1, { x: 5, y: 2 });
+
     renderer.render(scene, camera);
 };
 
@@ -116,10 +116,37 @@ let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/e
     renderer.setSize( window.innerWidth, window.innerHeight );
 };
 
+let onClick = event => {
+    console.log(event);
+
+    animateCamera(camera);
+};
+
 let removeLoadingScreen = () => {
     if (loadingScreen.classList) {
         loadingScreen.classList.add('hidden');
     } else {
         loadingScreen.className += ' hidden';
     }
+};
+
+let animateCamera = camera => {
+    TweenMax.to(camera.position, 2, {
+        x: 25,
+        y: 25,
+        z: 25,
+        ease: Expo.easeInOut,
+    });
+    /*TweenMax(camera.position)
+        .to({
+            x: 25,
+            y: 25,
+            z: 25,
+        }, 1000)
+        .easing(Expo.easeInOut)
+        .on('update', ({ x, y, z }) => {
+            console.log(x, y, z);
+            camera.lookAt(1, 1, 0);
+        })
+        .start();*/
 };
