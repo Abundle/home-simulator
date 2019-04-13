@@ -62,8 +62,17 @@ module.exports = (env, options) => {
                 },
                 {
                     test: /\.(obj|gltf|glb|drc)$/,
-                    loader: 'url-loader',
+                    use: {
+                        loader: 'file-loader',
+                        options: {
+                            name: devMode ? 'assets/[hash]-[name].[ext]' : 'assets/[hash].[ext]',
+                        }
+                    }
                 },
+                /*{
+                    test: /\.(obj|gltf|glb|drc)$/,
+                    loader: 'url-loader',
+                },*/
             ]
         },
         resolve: { // Setup from https://gist.github.com/cecilemuller/0be98dcbb0c7efff64762919ca486a59
@@ -99,7 +108,7 @@ module.exports = (env, options) => {
                 chunkFilename: devMode ? '[id].css' : '[id].[hash].css'
             }),
             new CopyWebpackPlugin([
-                { from:'./node_modules/three/examples/js/libs/draco/gltf/', to:'assets/draco/gltf' }
+                { from: './node_modules/three/examples/js/libs/draco/gltf/', to:'assets/draco/gltf' }
             ]),
         ]
     };

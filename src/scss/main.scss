@@ -11,6 +11,7 @@ html, body {
     justify-content: flex-start;
     align-items: center;
     margin-top: 48px;
+    font-family: 'Arial', sans-serif;
     overflow-x: hidden;
 }
 
@@ -18,6 +19,24 @@ html, body {
     position: absolute;
     top: 0;
     //touch-action: none;
+}
+.loading-screen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    background-color: purple;
+    color: white;
+    font-size: 2em;
+    transition: opacity 500ms ease;
+    pointer-events: none;
+
+    &.hidden {
+        opacity: 0;
+    }
 }
 
 .canvas-button {

@@ -19,6 +19,9 @@ let camera, scene, renderer, pointLight;
 let mixer, controls, stats;
 let clock = new THREE.Clock();
 
+let loadingScreen = document.getElementById('loading-screen');
+let progress = document.getElementById('progress');
+
 // Inspiration: https://threejs.org/examples/#webgl_animation_keyframes
 
 export let init = () => {
@@ -55,15 +58,6 @@ export let init = () => {
     pointLight.position.copy(camera.position);
     scene.add(pointLight);
 
-    // envmap
-    /*let path = 'textures/cube/Park2/';
-    let format = '.jpg';
-    let envMap = new THREE.CubeTextureLoader().load( [
-        path + 'posx' + format, path + 'negx' + format,
-        path + 'posy' + format, path + 'negy' + format,
-        path + 'posz' + format, path + 'negz' + format
-    ] );*/
-
     let loader = new THREE.GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
     THREE.DRACOLoader.setDecoderPath(WEBPACK_MODE === 'development' ?
@@ -73,10 +67,18 @@ export let init = () => {
     // Optional: Pre-fetch Draco WASM/JS module, to save time while parsing.
     THREE.DRACOLoader.getDecoderModule();
 
-    loader.load(model, gltf => { //'./assets/Duck.glb'
+    loader.load(model, gltf => {
+        removeLoadingScreen();
+
         let model = gltf.scene;
         model.position.set(1, 1, 0);
         model.scale.set(0.01, 0.01, 0.01);
+
+        model.traverse(node => {
+            if (node instanceof THREE.Mesh) {
+                console.log(node.name);
+            }
+        });
 
         scene.add(model);
         mixer = new THREE.AnimationMixer(model);
@@ -85,14 +87,17 @@ export let init = () => {
         animate();
     },
     xhr => {
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        let percentage = Math.round(xhr.loaded / xhr.total * 100);
+        progress.textContent = percentage.toString();
+
+        console.log('model ' + percentage + '% loaded');
     },
     error => {
         console.log('Error', error);
     });
 };
 
-export let animate = () => {
+let animate = () => {
     requestAnimationFrame(animate);
 
     let delta = clock.getDelta();
@@ -109,4 +114,12 @@ let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/e
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize( window.innerWidth, window.innerHeight );
+};
+
+let removeLoadingScreen = () => {
+    if (loadingScreen.classList) {
+        loadingScreen.classList.add('hidden');
+    } else {
+        loadingScreen.className += ' hidden';
+    }
 };
