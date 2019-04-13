@@ -1,15 +1,19 @@
 const path = require('path');
+const webpack = require('webpack');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const autoprefixer = require('autoprefixer');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = (env, options) => {
     const devMode = options.mode !== 'production';
 
-    return { entry: './src/index.js',
+    return {
+        entry: './src/js/index.js',
         output: {
             filename: 'bundle.[chunkhash].js',
+            publicPath: '/',
             path: path.resolve(__dirname, 'build')
         },
         module: {
@@ -52,17 +56,35 @@ module.exports = (env, options) => {
                     use: {
                         loader: 'file-loader',
                         options: {
-                            name: 'assets/[hash]-[name].[ext]',
+                            name: devMode ? 'assets/[hash]-[name].[ext]' : 'assets/[hash].[ext]',
                         }
                     }
                 },
+                {
+                    test: /\.(obj|gltf|glb|drc)$/,
+                    loader: 'url-loader',
+                },
             ]
+        },
+        resolve: { // Setup from https://gist.github.com/cecilemuller/0be98dcbb0c7efff64762919ca486a59
+            alias: {
+                three$: 'three/build/three.min.js',
+                'three/.*$': 'three',
+                /*'three/vendor': path.join(__dirname, 'node_modules/three/examples/js/vendor/stats.min.js'),
+                'three/OrbitControls': path.join(__dirname, 'node_modules/three/examples/js/controls/OrbitControls.js'),
+                'three/DRACOLoader': path.join(__dirname, 'node_modules/three/examples/js/loaders/DRACOLoader.js'),
+                'three/DRACOLoader/DecoderPath': path.join(__dirname, 'node_modules/three/examples/js/vendor/draco/gltf/'),
+                'three/GLTFLoader': path.join(__dirname, 'node_modules/three/examples/js/loaders/GLTFLoader.js')*/
+            }
         },
         devServer: {
             open: true,
             overlay: true,
         },
         plugins: [
+            new webpack.ProvidePlugin({
+                THREE: 'three'
+            }),
             new CleanWebpackPlugin(),
             new HtmlWebpackPlugin({
                 template: './src/index.html',
@@ -75,7 +97,10 @@ module.exports = (env, options) => {
             new MiniCssExtractPlugin({
                 filename: devMode ? '[name].css' : '[name].[hash].css',
                 chunkFilename: devMode ? '[id].css' : '[id].[hash].css'
-            })
+            }),
+            new CopyWebpackPlugin([
+                { from:'./node_modules/three/examples/js/libs/draco/gltf/', to:'assets/draco/gltf' }
+            ]),
         ]
     };
 };

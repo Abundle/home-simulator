@@ -1,3 +1,7 @@
+// Local import
+@import 'material-design-theming';
+
+// Node modules import
 @import '~@material/typography/mdc-typography';
 @import '~@material/button/mdc-button';
 
@@ -7,17 +11,17 @@ html, body {
     justify-content: flex-start;
     align-items: center;
     margin-top: 48px;
+    overflow-x: hidden;
 }
 
-.demo-headline {
-    margin-bottom: 32px;
+.container {
+    position: absolute;
+    top: 0;
+    //touch-action: none;
 }
 
-.mdc-text-field {
-    margin-bottom: 24px;
-    flex-shrink: 0;
-}
-
-.greet-message {
-    margin-top: 48px;
+.canvas-button {
+    @include mdc-button-filled-accessible(purple);
+    position: absolute;
+    top: 50px;
 }
