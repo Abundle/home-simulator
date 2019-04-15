@@ -61,7 +61,7 @@ module.exports = (env, options) => {
                     }
                 },
                 {
-                    test: /\.(obj|gltf|glb|drc)$/,
+                    test: /\.(obj|gltf|glb|drc|bin)$/,
                     use: {
                         loader: 'file-loader',
                         options: {

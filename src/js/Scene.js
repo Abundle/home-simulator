@@ -6,33 +6,45 @@ import 'three/examples/js/loaders/GLTFLoader';
 import 'three/examples/js/loaders/DRACOLoader';
 import Stats from 'three/examples/js/libs/stats.min';
 
-// import model from './assets/model.gltf';
-// import model from './assets/Duck.glb';
+// import modelName from '../assets/model.gltf';
+// import '../assets/model.bin';
+// import modelName from '../assets/aircraft.glb';
+// import modelName from '../assets/Duck.glb';
 import modelName from '../assets/LittlestTokyo.glb';
 
 // TODO: Check 3D style from this French website https://voyage-electrique.rte-france.com/ and from Behance https://www.behance.net/gallery/54361197/City
 // TODO: Check Codepen portfolio https://codepen.io/Yakudoo/
 // Inspiration: https://threejs.org/examples/#webgl_animation_keyframes
 
+/* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
 
+/* Initiate global variables */
 let camera, scene, renderer, pointLight;
 let mixer, controls, stats;
-let clock = new THREE.Clock();
+let INTERSECTED;
 
+/* Camera stuff */
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
 let aspect = screenWidth / screenHeight;
 let frustumSize = 7;
+
+/* Three.js variables */
+let clock = new THREE.Clock();
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
 
 export let init = () => {
     //let canvasElement = document.getElementById('canvas');
     let container = document.getElementById('container');
     let progress = document.getElementById('progress');
 
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', resizeCanvas, false); // TODO: check options
+    // document.addEventListener('mousemove', onMouseMove);
     container.addEventListener('click', onClick);
 
+    /* For debugging */
     stats = new Stats();
     container.appendChild(stats.dom);
 
@@ -57,7 +69,6 @@ export let init = () => {
     );
     // camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
     camera.position.set(50, 20, 8);
-    // camera.position.set(50, 20, 8);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0, 0);
@@ -83,40 +94,37 @@ export let init = () => {
 
         let model = gltf.scene;
         let animations = gltf.animations;
-        model.position.set(1, 1, 0);
+        model.position.set(0, 0, 0);
         model.scale.set(0.01, 0.01, 0.01);
 
-        model.traverse(node => {
+        /*model.traverse(node => {
             if (node instanceof THREE.Mesh) {
                 console.log(node.name);
             }
-        });
+        });*/
 
         scene.add(model);
         mixer = new THREE.AnimationMixer(model);
         mixer.clipAction(animations[0]).play();
 
-        // animate();
         start();
     },
     xhr => {
         let percentage = Math.round(xhr.loaded / xhr.total * 100);
         progress.textContent = percentage.toString();
 
-        console.log('model ' + percentage + '% loaded');
+        console.log('Model ' + percentage + '% loaded');
     },
     error => {
         console.log('Error', error);
     });
 
     /* Helpers */
-    let cameraHelper = new THREE.CameraHelper(camera);
-    scene.add(cameraHelper);
+    /*let cameraHelper = new THREE.CameraHelper(camera);
+    scene.add(cameraHelper);*/
 
-    let axesHelper = new THREE.AxesHelper( 5 );
+    let axesHelper = new THREE.AxesHelper(5);
     scene.add(axesHelper);
-
-    // animate();
 };
 
 let start = () => {
@@ -130,9 +138,9 @@ let start = () => {
 };*/
 
 let animate = () => {
-    let delta = clock.getDelta();
-
     requestAnimationFrame(animate);
+
+    let delta = clock.getDelta();
     if (mixer) { // TODO: check if if-statement is necessary here
         mixer.update(delta);
     }
@@ -168,11 +176,44 @@ let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/e
     renderer.setSize( window.innerWidth, window.innerHeight );*/
 };
 
-let onClick = event => {
-    console.log(event);
+let onMouseMove = event => {
+    // calculate mouse position in normalized device coordinates
+    // (-1 to +1) for both components
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+};
 
-    let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2();
+let onClick = event => {
+    // console.log(event);
+
+    // calculate mouse position in normalized device coordinates
+    // (-1 to +1) for both components
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    // update the picking ray with the camera and mouse position
+    raycaster.setFromCamera(mouse, camera);
+
+    // calculate objects intersecting the picking ray
+    let intersects = raycaster.intersectObjects(scene.children, true);
+
+    if (intersects.length > 0) {
+        if (INTERSECTED !== intersects[0].object) {
+            if (INTERSECTED) {
+                INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+            }
+            INTERSECTED = intersects[0].object;
+            INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+            INTERSECTED.material.color.setHex(0xff0000);
+
+            console.log(intersects[0].object.name)
+        }
+    } else {
+        if (INTERSECTED) {
+            INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+        }
+        INTERSECTED = null;
+    }
 
     // animateCamera(camera);
 };
