@@ -6,12 +6,13 @@ import 'three/examples/js/loaders/GLTFLoader';
 import 'three/examples/js/loaders/DRACOLoader';
 import Stats from 'three/examples/js/libs/stats.min';
 
-// import model from './assets/Duck.glb';
 // import model from './assets/model.gltf';
-import model from '../assets/LittlestTokyo.glb';
+// import model from './assets/Duck.glb';
+import modelName from '../assets/LittlestTokyo.glb';
 
 // TODO: Check 3D style from this French website https://voyage-electrique.rte-france.com/ and from Behance https://www.behance.net/gallery/54361197/City
 // TODO: Check Codepen portfolio https://codepen.io/Yakudoo/
+// Inspiration: https://threejs.org/examples/#webgl_animation_keyframes
 
 const WEBPACK_MODE = process.env.NODE_ENV;
 
@@ -19,14 +20,16 @@ let camera, scene, renderer, pointLight;
 let mixer, controls, stats;
 let clock = new THREE.Clock();
 
-let loadingScreen = document.getElementById('loading-screen');
-let progress = document.getElementById('progress');
-
-// Inspiration: https://threejs.org/examples/#webgl_animation_keyframes
+let screenWidth = window.innerWidth;
+let screenHeight = window.innerHeight;
+let aspect = screenWidth / screenHeight;
+let frustumSize = 7;
 
 export let init = () => {
     //let canvasElement = document.getElementById('canvas');
     let container = document.getElementById('container');
+    let progress = document.getElementById('progress');
+
     window.addEventListener('resize', resizeCanvas);
     container.addEventListener('click', onClick);
 
@@ -44,11 +47,21 @@ export let init = () => {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xbfe3dd);
 
-    camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
+    camera = new THREE.OrthographicCamera(
+        frustumSize * aspect / - 2,
+        frustumSize * aspect / 2,
+        frustumSize / 2,
+        frustumSize / - 2,
+        1,
+        1000
+    );
+    // camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
     camera.position.set(50, 20, 8);
+    // camera.position.set(50, 20, 8);
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0.5, 0);
+    controls.target.set(0, 0, 0);
+    // controls.target.set(0, 0.5, 0);
 
     scene.add( new THREE.AmbientLight(0x404040));
 
@@ -65,24 +78,26 @@ export let init = () => {
     // Optional: Pre-fetch Draco WASM/JS module, to save time while parsing.
     THREE.DRACOLoader.getDecoderModule();
 
-    loader.load(model, gltf => {
+    loader.load(modelName, gltf => {
         removeLoadingScreen();
 
         let model = gltf.scene;
+        let animations = gltf.animations;
         model.position.set(1, 1, 0);
         model.scale.set(0.01, 0.01, 0.01);
 
-        /*model.traverse(node => {
+        model.traverse(node => {
             if (node instanceof THREE.Mesh) {
                 console.log(node.name);
             }
-        });*/
+        });
 
         scene.add(model);
         mixer = new THREE.AnimationMixer(model);
-        mixer.clipAction(gltf.animations[0]).play();
+        mixer.clipAction(animations[0]).play();
 
-        animate();
+        // animate();
+        start();
     },
     xhr => {
         let percentage = Math.round(xhr.loaded / xhr.total * 100);
@@ -93,17 +108,36 @@ export let init = () => {
     error => {
         console.log('Error', error);
     });
+
+    /* Helpers */
+    let cameraHelper = new THREE.CameraHelper(camera);
+    scene.add(cameraHelper);
+
+    let axesHelper = new THREE.AxesHelper( 5 );
+    scene.add(axesHelper);
+
+    // animate();
 };
 
-let animate = () => {
-    requestAnimationFrame(animate);
+let start = () => {
+    animate();
 
+    TweenMax.to(camera.position, 1.25, { ease: Expo.easeOut, x: 5, y: 2 });
+};
+
+/*let stop = () => {
+    cancelAnimationFrame(frameId);
+};*/
+
+let animate = () => {
     let delta = clock.getDelta();
-    mixer.update(delta);
+
+    requestAnimationFrame(animate);
+    if (mixer) { // TODO: check if if-statement is necessary here
+        mixer.update(delta);
+    }
     controls.update(delta);
     stats.update();
-
-    TweenMax.to(camera.position, 1, { x: 5, y: 2 });
 
     renderer.render(scene, camera);
 };
@@ -111,18 +145,41 @@ let animate = () => {
 let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
     console.log('resize');
 
-    camera.aspect = window.innerWidth / window.innerHeight;
+    screenWidth = window.innerWidth;
+    screenHeight = window.innerHeight;
+    aspect = screenWidth / screenHeight;
+
+    renderer.setSize(screenWidth, screenHeight);
+
+    camera.left = frustumSize * aspect / -2;
+    camera.right = frustumSize * aspect / 2;
+    camera.top = frustumSize / 2;
+    camera.bottom = frustumSize / -2;
     camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    /*camera.fov = Math.atan(window.innerHeight / 2 / camera.position.z) * 2 * THREE.Math.RAD2DEG;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.updateProjectionMatrix();*/
+
+    // Perspective camera
+    /*camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );*/
 };
 
 let onClick = event => {
     console.log(event);
 
-    animateCamera(camera);
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+
+    // animateCamera(camera);
 };
 
 let removeLoadingScreen = () => {
+    let loadingScreen = document.getElementById('loading-screen');
+
     if (loadingScreen.classList) {
         loadingScreen.classList.add('hidden');
     } else {
