@@ -45,8 +45,23 @@ html, body {
     height: 200px;
     background-color: rgba(32,178,170, 0.5);
 
-    .canvas-button {
-        @include mdc-button-filled-accessible(purple);
+    button {
         margin: 25px;
+    }
+
+    .reset-view-button {
+        @include mdc-button-filled-accessible(purple);
+    }
+
+    .front-view-button {
+        @include mdc-button-filled-accessible(blue);
+    }
+
+    .top-view-button {
+        @include mdc-button-filled-accessible(#00ff00);
+    }
+
+    .side-view-button {
+        @include mdc-button-filled-accessible(orange);
     }
 }

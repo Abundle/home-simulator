@@ -29,6 +29,7 @@ let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
 let aspect = screenWidth / screenHeight;
 let frustumSize = 10;
+let defaultCameraPosition = { x: 5, y: 3, z: 8 };
 
 /* Three.js variables */
 let clock = new THREE.Clock();
@@ -75,9 +76,11 @@ export let init = () => {
     assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
     assistantCamera.position.set(50, 20, 8);
 
-    controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
-    // controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0, 0);
+    // controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+    controls.dampingFactor = 0.25;
+    // controls.target.set(0, 0, 0);
     // controls.target.set(0, 0.5, 0);
 
     scene.add( new THREE.AmbientLight(0x404040));
@@ -136,7 +139,7 @@ export let init = () => {
 let start = () => {
     animate();
 
-    animateCamera({ x: 5, y: 3, z: 8 }, 1, 1.25, Expo.easeOut);
+    animateCamera(defaultCameraPosition, 1, 1.25, Expo.easeOut);
     // TweenMax.to(camera.position, 1.25, { ease: Expo.easeOut, x: 5, y: 3 });
 };
 
@@ -242,12 +245,11 @@ let onClick = event => {
             // animateCamera(intersects[0].object.position);
         }
     } else {
-        if (INTERSECTED) {
+        resetSelected();
+        /*if (INTERSECTED) {
             INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
-            // Reset camera
-            animateCamera({ x: 5, y: 3, z: 8 });
         }
-        INTERSECTED = null;
+        INTERSECTED = null;*/
     }
 };
 
@@ -261,8 +263,7 @@ let removeLoadingScreen = () => {
     }
 };
 
-let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
-
+export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
     TweenMax.to(camera.position, duration, {
         x: objectPosition.x,
         y: objectPosition.y,
@@ -293,4 +294,16 @@ let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo
             camera.lookAt(1, 1, 0);
         })
         .start();*/
+};
+
+export let resetCamera = () => {
+    // Reset camera
+    animateCamera(defaultCameraPosition);
+};
+
+export let resetSelected = () => {
+    if (INTERSECTED) {
+        INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+    }
+    INTERSECTED = null;
 };
