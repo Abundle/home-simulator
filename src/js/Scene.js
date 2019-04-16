@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TweenMax, Expo } from 'gsap/all';
+import { TweenMax, Expo, Power0 } from 'gsap/all';
 
 import 'three/examples/js/controls/OrbitControls';
 import 'three/examples/js/loaders/GLTFLoader';
@@ -69,7 +69,7 @@ export let init = () => {
         frustumSize / 2,
         frustumSize / - 2,
         1,
-        25
+        30
     );
     camera.position.set(20, 12, 8);
     assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
@@ -136,7 +136,8 @@ export let init = () => {
 let start = () => {
     animate();
 
-    TweenMax.to(camera.position, 1.25, { ease: Expo.easeOut, x: 5, y: 3 });
+    animateCamera({ x: 5, y: 3, z: 8 }, 1, 1.25, Expo.easeOut);
+    // TweenMax.to(camera.position, 1.25, { ease: Expo.easeOut, x: 5, y: 3 });
 };
 
 /*let stop = () => {
@@ -233,11 +234,18 @@ let onClick = event => {
 
             console.log(intersects[0].object.name);
 
-            animateCamera(intersects[0].object.position);
+            animateCamera({
+                x: THREE.Math.randInt(-10, 10),
+                y: 3,
+                z: THREE.Math.randInt(-10, 10),
+            }, THREE.Math.randInt(1, 5));
+            // animateCamera(intersects[0].object.position);
         }
     } else {
         if (INTERSECTED) {
             INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+            // Reset camera
+            animateCamera({ x: 5, y: 3, z: 8 });
         }
         INTERSECTED = null;
     }
@@ -253,29 +261,26 @@ let removeLoadingScreen = () => {
     }
 };
 
-let animateCamera = objectPosition => {
-    let randomNegative = THREE.Math.randInt(-10, 10);
-    let random = THREE.Math.randInt(1, 5);
+let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
 
-    console.log(random, randomNegative);
-
-    TweenMax.to(camera, 2, {
-        zoom: THREE.Math.randInt(1, 5),
-        ease: Expo.easeInOut,
-        onUpdate: () => {
-            // console.log(camera.zoom);
-
-            camera.updateProjectionMatrix();
-        }
-    });
-    TweenMax.to(camera.position, 2, {
-        x: THREE.Math.randInt(-10, 10),
-        z: THREE.Math.randInt(-10, 10),
-        // ease: Expo.easeInOut,
+    TweenMax.to(camera.position, duration, {
+        x: objectPosition.x,
+        y: objectPosition.y,
+        z: objectPosition.z,
+        ease: easing,
         /*onUpdate: () => {
             console.log(camera.position);
         }*/
     });
+    TweenMax.to(camera, duration, {
+        zoom: targetZoom,
+        ease: Expo.easeInOut,
+        onUpdate: () => {
+            // console.log(camera.zoom);
+            camera.updateProjectionMatrix();
+        }
+    });
+
     /*TweenMax(camera.position)
         .to({
             x: 25,
