@@ -28,12 +28,16 @@ let INTERSECTED;
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
 let aspect = screenWidth / screenHeight;
-let frustumSize = 7;
+let frustumSize = 10;
 
 /* Three.js variables */
 let clock = new THREE.Clock();
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
+
+/* For debugging */
+let assistantCamera;
+let cameraHelper;
 
 export let init = () => {
     //let canvasElement = document.getElementById('canvas');
@@ -65,12 +69,14 @@ export let init = () => {
         frustumSize / 2,
         frustumSize / - 2,
         1,
-        1000
+        25
     );
-    // camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
-    camera.position.set(50, 20, 8);
+    camera.position.set(20, 12, 8);
+    assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
+    assistantCamera.position.set(50, 20, 8);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
+    // controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.target.set(0, 0, 0);
     // controls.target.set(0, 0.5, 0);
 
@@ -94,7 +100,7 @@ export let init = () => {
 
         let model = gltf.scene;
         let animations = gltf.animations;
-        model.position.set(0, 0, 0);
+        model.position.set(1, 0, 0);
         model.scale.set(0.01, 0.01, 0.01);
 
         /*model.traverse(node => {
@@ -120,8 +126,8 @@ export let init = () => {
     });
 
     /* Helpers */
-    /*let cameraHelper = new THREE.CameraHelper(camera);
-    scene.add(cameraHelper);*/
+    cameraHelper = new THREE.CameraHelper(camera);
+    // scene.add(cameraHelper);
 
     let axesHelper = new THREE.AxesHelper(5);
     scene.add(axesHelper);
@@ -130,12 +136,14 @@ export let init = () => {
 let start = () => {
     animate();
 
-    TweenMax.to(camera.position, 1.25, { ease: Expo.easeOut, x: 5, y: 2 });
+    TweenMax.to(camera.position, 1.25, { ease: Expo.easeOut, x: 5, y: 3 });
 };
 
 /*let stop = () => {
     cancelAnimationFrame(frameId);
 };*/
+
+// let radius = 10, theta = 0;
 
 let animate = () => {
     requestAnimationFrame(animate);
@@ -145,8 +153,23 @@ let animate = () => {
         mixer.update(delta);
     }
     controls.update(delta);
+
     stats.update();
 
+    /*theta += 1;
+    camera.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
+    camera.position.y = radius * Math.sin(THREE.Math.degToRad(theta));
+    camera.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
+    camera.lookAt(scene.position);
+    camera.updateMatrixWorld();*/
+
+    camera.lookAt(scene.position);
+    camera.updateMatrixWorld();
+    cameraHelper.update();
+
+    // console.log(camera.position);
+
+    // renderer.render(scene, assistantCamera);
     renderer.render(scene, camera);
 };
 
@@ -164,6 +187,7 @@ let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/e
     camera.top = frustumSize / 2;
     camera.bottom = frustumSize / -2;
     camera.updateProjectionMatrix();
+    cameraHelper.update();
 
     /*camera.fov = Math.atan(window.innerHeight / 2 / camera.position.z) * 2 * THREE.Math.RAD2DEG;
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -192,6 +216,7 @@ let onClick = event => {
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     // update the picking ray with the camera and mouse position
+    // raycaster.setFromCamera(mouse, assistantCamera);
     raycaster.setFromCamera(mouse, camera);
 
     // calculate objects intersecting the picking ray
@@ -206,7 +231,9 @@ let onClick = event => {
             INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
             INTERSECTED.material.color.setHex(0xff0000);
 
-            console.log(intersects[0].object.name)
+            console.log(intersects[0].object.name);
+
+            animateCamera(intersects[0].object.position);
         }
     } else {
         if (INTERSECTED) {
@@ -214,8 +241,6 @@ let onClick = event => {
         }
         INTERSECTED = null;
     }
-
-    // animateCamera(camera);
 };
 
 let removeLoadingScreen = () => {
@@ -228,12 +253,28 @@ let removeLoadingScreen = () => {
     }
 };
 
-let animateCamera = camera => {
-    TweenMax.to(camera.position, 2, {
-        x: 25,
-        y: 25,
-        z: 25,
+let animateCamera = objectPosition => {
+    let randomNegative = THREE.Math.randInt(-10, 10);
+    let random = THREE.Math.randInt(1, 5);
+
+    console.log(random, randomNegative);
+
+    TweenMax.to(camera, 2, {
+        zoom: THREE.Math.randInt(1, 5),
         ease: Expo.easeInOut,
+        onUpdate: () => {
+            // console.log(camera.zoom);
+
+            camera.updateProjectionMatrix();
+        }
+    });
+    TweenMax.to(camera.position, 2, {
+        x: THREE.Math.randInt(-10, 10),
+        z: THREE.Math.randInt(-10, 10),
+        // ease: Expo.easeInOut,
+        /*onUpdate: () => {
+            console.log(camera.position);
+        }*/
     });
     /*TweenMax(camera.position)
         .to({
