@@ -6,11 +6,11 @@ import 'three/examples/js/loaders/GLTFLoader';
 import 'three/examples/js/loaders/DRACOLoader';
 import Stats from 'three/examples/js/libs/stats.min';
 
-// import modelName from '../assets/model.gltf';
+import modelName from '../assets/house.glb';
 // import '../assets/model.bin';
 // import modelName from '../assets/aircraft.glb';
 // import modelName from '../assets/Duck.glb';
-import modelName from '../assets/LittlestTokyo.glb';
+// import modelName from '../assets/LittlestTokyo.glb';
 
 // TODO: Check 3D style from this French website https://voyage-electrique.rte-france.com/ and from Behance https://www.behance.net/gallery/54361197/City
 // TODO: Check Codepen portfolio https://codepen.io/Yakudoo/
@@ -76,8 +76,8 @@ export let init = () => {
     assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
     assistantCamera.position.set(50, 20, 8);
 
-    // controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
+    // controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
     // controls.target.set(0, 0, 0);
@@ -103,18 +103,20 @@ export let init = () => {
 
         let model = gltf.scene;
         let animations = gltf.animations;
-        model.position.set(1, 0, 0);
-        model.scale.set(0.01, 0.01, 0.01);
+        model.position.set(1, 0, 1);
+        // model.position.set(1, 0, 0);
+        model.scale.set(0.5, 0.5, 0.5);
+        // model.scale.set(0.01, 0.01, 0.01);
 
-        /*model.traverse(node => {
+        model.traverse(node => {
             if (node instanceof THREE.Mesh) {
                 console.log(node.name);
             }
-        });*/
+        });
 
         scene.add(model);
-        mixer = new THREE.AnimationMixer(model);
-        mixer.clipAction(animations[0]).play();
+        /*mixer = new THREE.AnimationMixer(model);
+        mixer.clipAction(animations[0]).play();*/
 
         start();
     },
@@ -130,7 +132,7 @@ export let init = () => {
 
     /* Helpers */
     cameraHelper = new THREE.CameraHelper(camera);
-    // scene.add(cameraHelper);
+    scene.add(cameraHelper);
 
     let axesHelper = new THREE.AxesHelper(5);
     scene.add(axesHelper);
@@ -173,8 +175,8 @@ let animate = () => {
 
     // console.log(camera.position);
 
-    // renderer.render(scene, assistantCamera);
-    renderer.render(scene, camera);
+    renderer.render(scene, assistantCamera);
+    // renderer.render(scene, camera);
 };
 
 let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
@@ -220,8 +222,8 @@ let onClick = event => {
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     // update the picking ray with the camera and mouse position
-    // raycaster.setFromCamera(mouse, assistantCamera);
-    raycaster.setFromCamera(mouse, camera);
+    raycaster.setFromCamera(mouse, assistantCamera);
+    // raycaster.setFromCamera(mouse, camera);
 
     // calculate objects intersecting the picking ray
     let intersects = raycaster.intersectObjects(scene.children, true);
@@ -246,10 +248,6 @@ let onClick = event => {
         }
     } else {
         resetSelected();
-        /*if (INTERSECTED) {
-            INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
-        }
-        INTERSECTED = null;*/
     }
 };
 
@@ -306,4 +304,8 @@ export let resetSelected = () => {
         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
     }
     INTERSECTED = null;
+};
+
+export let selectFloor = (value) => {
+    console.log(value);
 };
