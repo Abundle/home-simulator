@@ -4,17 +4,35 @@ import { TweenMax, Expo, Power0 } from 'gsap/all';
 import 'three/examples/js/controls/OrbitControls';
 import 'three/examples/js/loaders/GLTFLoader';
 import 'three/examples/js/loaders/DRACOLoader';
+import 'three/examples/js/postprocessing/EffectComposer';
+import 'three/examples/js/postprocessing/RenderPass';
+import 'three/examples/js/postprocessing/OutlinePass';
+import 'three/examples/js/postprocessing/ShaderPass';
+import 'three/examples/js/shaders/CopyShader';
 import Stats from 'three/examples/js/libs/stats.min';
 
 import modelName from '../assets/house.glb';
+// import modelName from '../assets/test.glb';
+// import modelName from '../assets/house.gltf';
 // import '../assets/model.bin';
 // import modelName from '../assets/aircraft.glb';
 // import modelName from '../assets/Duck.glb';
 // import modelName from '../assets/LittlestTokyo.glb';
+/*import modelName from '../assets/DamagedHelmet/DamagedHelmet.gltf';
+import '../assets/DamagedHelmet/DamagedHelmet.bin';
+import '../assets/DamagedHelmet/Default_albedo.jpg';
+import '../assets/DamagedHelmet/Default_emissive.jpg';
+import '../assets/DamagedHelmet/Default_metalRoughness.jpg';
+import '../assets/DamagedHelmet/Default_normal.jpg';
+import '../assets/DamagedHelmet/Default_AO.jpg';*/
 
-// TODO: Check 3D style from this French website https://voyage-electrique.rte-france.com/ and from Behance https://www.behance.net/gallery/54361197/City
-// TODO: Check Codepen portfolio https://codepen.io/Yakudoo/
-// Inspiration: https://threejs.org/examples/#webgl_animation_keyframes
+// TODO: reduce .glb file size (refer to only one texture map), check if importing the levels as different object works
+//  with opacity changes
+// Inspiration:
+// https://threejs.org/examples/#webgl_animation_keyframes
+// French website https://voyage-electrique.rte-france.com/
+// Behance https://www.behance.net/gallery/54361197/City
+// Codepen portfolio https://codepen.io/Yakudoo/
 
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
@@ -23,6 +41,7 @@ const WEBPACK_MODE = process.env.NODE_ENV;
 let camera, scene, renderer, pointLight;
 let mixer, controls, stats;
 let INTERSECTED;
+let composer, outlinePass;
 
 /* Camera stuff */
 let screenWidth = window.innerWidth;
@@ -46,7 +65,7 @@ export let init = () => {
     let progress = document.getElementById('progress');
 
     window.addEventListener('resize', resizeCanvas, false); // TODO: check options
-    // document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mousemove', onMouseMove);
     container.addEventListener('click', onClick);
 
     /* For debugging */
@@ -81,7 +100,6 @@ export let init = () => {
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
     // controls.target.set(0, 0, 0);
-    // controls.target.set(0, 0.5, 0);
 
     scene.add( new THREE.AmbientLight(0x404040));
 
@@ -110,7 +128,9 @@ export let init = () => {
 
         model.traverse(node => {
             if (node instanceof THREE.Mesh) {
-                console.log(node.name);
+                console.log(node.material);
+                node.material.aoMapIntensity = 4;
+                // TODO: set transparancy to true (for every floor)
             }
         });
 
@@ -130,9 +150,24 @@ export let init = () => {
         console.log('Error', error);
     });
 
+    composer = new THREE.EffectComposer(renderer);
+    composer.setSize(window.innerWidth, window.innerHeight);
+
+    let renderPass = new THREE.RenderPass(scene, assistantCamera);
+    composer.addPass(renderPass);
+
+    /*let copyPass = new THREE.ShaderPass( THREE.CopyShader );
+    composer.addPass( copyPass );*/
+
+    outlinePass = new THREE.OutlinePass(new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, assistantCamera);
+    composer.addPass(outlinePass);
+
     /* Helpers */
     cameraHelper = new THREE.CameraHelper(camera);
-    scene.add(cameraHelper);
+    // scene.add(cameraHelper);
+
+    let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
+    scene.add(pointLightHelper);
 
     let axesHelper = new THREE.AxesHelper(5);
     scene.add(axesHelper);
@@ -149,8 +184,7 @@ let start = () => {
     cancelAnimationFrame(frameId);
 };*/
 
-// let radius = 10, theta = 0;
-
+let radius = 10, theta = 0;
 let animate = () => {
     requestAnimationFrame(animate);
 
@@ -160,23 +194,22 @@ let animate = () => {
     }
     controls.update(delta);
 
+    /* For debugging */
     stats.update();
-
-    /*theta += 1;
-    camera.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
-    camera.position.y = radius * Math.sin(THREE.Math.degToRad(theta));
-    camera.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
-    camera.lookAt(scene.position);
-    camera.updateMatrixWorld();*/
+    theta += 1;
+    pointLight.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
+    // pointLight.position.y = radius * Math.sin(THREE.Math.degToRad(theta));
+    pointLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
 
     camera.lookAt(scene.position);
     camera.updateMatrixWorld();
     cameraHelper.update();
 
-    // console.log(camera.position);
-
-    renderer.render(scene, assistantCamera);
+    composer.render();
+    // renderer.render(scene, assistantCamera);
     // renderer.render(scene, camera);
+
+    stats.end();
 };
 
 let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
@@ -206,16 +239,33 @@ let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/e
     renderer.setSize( window.innerWidth, window.innerHeight );*/
 };
 
+let selectedObjects = [];
+let addSelectedObject = (object) => {
+    selectedObjects = [];
+    selectedObjects.push(object);
+};
+
 let onMouseMove = event => {
     // calculate mouse position in normalized device coordinates
     // (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    // update the picking ray with the camera and mouse position
+    raycaster.setFromCamera(mouse, assistantCamera);
+    // raycaster.setFromCamera(mouse, camera);
+
+    // calculate objects intersecting the picking ray
+    let intersects = raycaster.intersectObjects(scene.children, true);
+
+    if (intersects.length > 0) { // TODO: make only selectable objects have an outline
+        let selectedObject = intersects[0].object;
+        addSelectedObject(selectedObject);
+        outlinePass.selectedObjects = selectedObjects;
+    }
 };
 
 let onClick = event => {
-    // console.log(event);
-
     // calculate mouse position in normalized device coordinates
     // (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -275,7 +325,6 @@ export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing
         zoom: targetZoom,
         ease: Expo.easeInOut,
         onUpdate: () => {
-            // console.log(camera.zoom);
             camera.updateProjectionMatrix();
         }
     });
@@ -294,6 +343,30 @@ export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing
         .start();*/
 };
 
+let setOpacity = (objects, targetOpacity) => {
+    /*TweenMax.to(object, duration, {
+        opacity: targetOpacity,
+        ease: Expo.easeInOut,
+        onUpdate: () => {
+            console.log(object.opacity)
+        }
+    });*/
+
+    /*opacityTween = new Tween(Object.assign({}, currentOpacity))
+        .to(Object.assign({}, targetOpacity), 500)
+        .delay(500)
+        .on('update', (o) => {
+            for (let i = 0; i < targetProperties.objects.length; i++) {
+                targetProperties.objects[i].material.opacity = o[i];
+            }
+        });
+    opacityTween.start();*/
+};
+
+export let selectFloor = (value) => {
+    console.log(value);
+};
+
 export let resetCamera = () => {
     // Reset camera
     animateCamera(defaultCameraPosition);
@@ -304,8 +377,4 @@ export let resetSelected = () => {
         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
     }
     INTERSECTED = null;
-};
-
-export let selectFloor = (value) => {
-    console.log(value);
 };

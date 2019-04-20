@@ -56,7 +56,7 @@ module.exports = (env, options) => {
                     use: {
                         loader: 'file-loader',
                         options: {
-                            name: devMode ? 'assets/[hash]-[name].[ext]' : 'assets/[hash].[ext]',
+                            name: devMode ? 'assets/[name].[ext]' : 'assets/[hash].[ext]',
                         }
                     }
                 },
@@ -65,7 +65,7 @@ module.exports = (env, options) => {
                     use: {
                         loader: 'file-loader',
                         options: {
-                            name: devMode ? 'assets/[hash]-[name].[ext]' : 'assets/[hash].[ext]',
+                            name: devMode ? 'assets/[name].[ext]' : 'assets/[hash].[ext]',
                         }
                     }
                 },

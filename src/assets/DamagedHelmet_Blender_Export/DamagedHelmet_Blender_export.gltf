@@ -1,0 +1,171 @@
+{
+    "asset" : {
+        "version" : "2.0",
+        "generator" : "Khronos Blender glTF 2.0 I/O"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "nodes" : [
+                0
+            ],
+            "name" : "Scene"
+        }
+    ],
+    "nodes" : [
+        {
+            "rotation" : [
+                1,
+                0,
+                0,
+                -1.3435885648505064e-07
+            ],
+            "name" : "node_damagedHelmet_-6514",
+            "mesh" : 0
+        }
+    ],
+    "materials" : [
+        {
+            "emissiveFactor" : [
+                1,
+                1,
+                1
+            ],
+            "emissiveTexture" : {
+                "index" : 0,
+                "texCoord" : 0
+            },
+            "normalTexture" : {
+                "index" : 1,
+                "texCoord" : 0
+            },
+            "name" : "Material_MR",
+            "pbrMetallicRoughness" : {
+                "metallicRoughnessTexture" : {
+                    "index" : 3,
+                    "texCoord" : 0
+                },
+                "baseColorTexture" : {
+                    "index" : 2,
+                    "texCoord" : 0
+                }
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "mesh_helmet_LP_13930damagedHelmet.001",
+            "primitives" : [
+                {
+                    "material" : 0,
+                    "indices" : 3,
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TEXCOORD_0" : 2
+                    }
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "source" : 0
+        },
+        {
+            "source" : 1
+        },
+        {
+            "source" : 2
+        },
+        {
+            "source" : 3
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "uri" : "Default_emissive.png",
+            "name" : "Default_emissive"
+        },
+        {
+            "mimeType" : "image/png",
+            "uri" : "Default_normal.png",
+            "name" : "Default_normal"
+        },
+        {
+            "mimeType" : "image/png",
+            "uri" : "Default_albedo.png",
+            "name" : "Default_albedo"
+        },
+        {
+            "mimeType" : "image/png",
+            "uri" : "Default_metalRoughness.png",
+            "name" : "Default_metalRoughness"
+        }
+    ],
+    "accessors" : [
+        {
+            "max" : [
+                0.9424954056739807,
+                0.900973916053772,
+                1.18715500831604
+            ],
+            "type" : "VEC3",
+            "count" : 15246,
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "min" : [
+                -0.9474585652351379,
+                -0.9009949564933777,
+                -0.8128451108932495
+            ]
+        },
+        {
+            "type" : "VEC3",
+            "count" : 15246,
+            "bufferView" : 1,
+            "componentType" : 5126
+        },
+        {
+            "type" : "VEC2",
+            "count" : 15246,
+            "bufferView" : 2,
+            "componentType" : 5126
+        },
+        {
+            "type" : "SCALAR",
+            "count" : 46356,
+            "bufferView" : 3,
+            "componentType" : 5123
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 182952,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 182952,
+            "byteOffset" : 182952
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 121968,
+            "byteOffset" : 365904
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 92712,
+            "byteOffset" : 487872
+        }
+    ],
+    "buffers" : [
+        {
+            "uri" : "DamagedHelmet_Blender_export.bin",
+            "byteLength" : 580584
+        }
+    ]
+}
