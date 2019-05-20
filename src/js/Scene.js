@@ -8,10 +8,22 @@ import 'three/examples/js/postprocessing/EffectComposer';
 import 'three/examples/js/postprocessing/RenderPass';
 import 'three/examples/js/postprocessing/OutlinePass';
 import 'three/examples/js/postprocessing/ShaderPass';
+import 'three/examples/js/postprocessing/SAOPass';
 import 'three/examples/js/shaders/CopyShader';
+import 'three/examples/js/shaders/FXAAShader';
+import 'three/examples/js/shaders/SAOShader';
+import 'three/examples/js/shaders/DepthLimitedBlurShader';
+import 'three/examples/js/shaders/UnpackDepthRGBAShader';
+// import 'three/examples/js/WebGL.js';
+
 import Stats from 'three/examples/js/libs/stats.min';
+import dat from 'three/examples/js/libs/dat.gui.min.js';
 
 import modelName from '../assets/house.glb';
+/*import modelName from '../assets/testORM.gltf';
+import '../assets/testORM.bin';
+import '../assets/GrayA.png';*/
+// import modelName from '../assets/Flamingo.glb';
 // import modelName from '../assets/test.glb';
 // import modelName from '../assets/house.gltf';
 // import '../assets/model.bin';
@@ -26,19 +38,24 @@ import '../assets/DamagedHelmet/Default_metalRoughness.jpg';
 import '../assets/DamagedHelmet/Default_normal.jpg';
 import '../assets/DamagedHelmet/Default_AO.jpg';*/
 
-// TODO: reduce .glb file size (refer to only one texture map), check if importing the levels as different object works
-//  with opacity changes
+// TODO: check if importing the levels as different object works with opacity changes
+// TODO: for improving light through window check:
+//  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
+//  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
 // Inspiration:
-// https://threejs.org/examples/#webgl_animation_keyframes
+// House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
+// LittlestTokyo https://threejs.org/examples/#webgl_animation_keyframes
 // French website https://voyage-electrique.rte-france.com/
 // Behance https://www.behance.net/gallery/54361197/City
 // Codepen portfolio https://codepen.io/Yakudoo/
+// Blog: https://jolicode.com/blog/making-3d-for-the-web
 
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
 
 /* Initiate global variables */
-let camera, scene, renderer, pointLight;
+let camera, scene, renderer;
+let pointLight, directionalLight;
 let mixer, controls, stats;
 let INTERSECTED;
 let composer, outlinePass;
@@ -54,6 +71,18 @@ let defaultCameraPosition = { x: 5, y: 3, z: 8 };
 let clock = new THREE.Clock();
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
+let SAOparameters = {
+    output: 0,
+    saoBias: 1,
+    saoIntensity: 0.08,
+    saoScale: 10,
+    saoKernelRadius: 100,
+    saoMinResolution: 0,
+    saoBlur: true,
+    saoBlurRadius: 8,
+    saoBlurStdDev: 4,
+    saoBlurDepthCutoff: 0.005
+};
 
 /* For debugging */
 let assistantCamera;
@@ -72,16 +101,19 @@ export let init = () => {
     stats = new Stats();
     container.appendChild(stats.dom);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer(); // { antialias: true }
     //renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.gammaInput = true;
     renderer.gammaOutput = true;
-    // renderer.gammaFactor = 2.2;
+    renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 
     scene = new THREE.Scene();
+    // scene.background = new THREE.Color().setHSL(0.6, 0, 1);
     scene.background = new THREE.Color(0xbfe3dd);
+    // scene.fog = new THREE.Fog(scene.background, 1, 5000);
 
     camera = new THREE.OrthographicCamera(
         frustumSize * aspect / - 2,
@@ -101,11 +133,44 @@ export let init = () => {
     controls.dampingFactor = 0.25;
     // controls.target.set(0, 0, 0);
 
-    scene.add( new THREE.AmbientLight(0x404040));
+    let ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+    scene.add(ambientLight);
 
-    pointLight = new THREE.PointLight(0xffffff, 1);
-    pointLight.position.copy(camera.position);
-    scene.add(pointLight);
+    directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.color.setHSL(0.1, 1, 0.5);
+    directionalLight.position.set(0, 8, 20);
+    scene.add(directionalLight);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+
+    let d = 10;
+    directionalLight.shadow.camera.left = -d;
+    directionalLight.shadow.camera.right = d;
+    directionalLight.shadow.camera.top = d;
+    directionalLight.shadow.camera.bottom = -d;
+    directionalLight.shadow.camera.far = 1000; //3500
+    directionalLight.shadow.bias = -0.0001;
+
+    /*pointLight = new THREE.PointLight(0xf15b27, 1, 100);
+    pointLight.position.set(5, 5, 5);
+    scene.add(pointLight);*/
+
+    let hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+    hemisphereLight.color.setHSL(0.6, 1, 0.6);
+    hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
+    hemisphereLight.position.set(0, 50, 0);
+    //scene.add(hemisphereLight);
+
+    // GROUND
+    /*let groundGeo = new THREE.PlaneBufferGeometry(10, 10);
+    let groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff }); // MeshLambertMaterial
+    groundMat.color.setHSL(0.095, 1, 0.75);
+    let ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.position.y = -5;
+    ground.rotation.x = - Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);*/
 
     let loader = new THREE.GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
@@ -121,16 +186,25 @@ export let init = () => {
 
         let model = gltf.scene;
         let animations = gltf.animations;
-        model.position.set(1, 0, 1);
+        // model.position.set(1, 0, 1);
         // model.position.set(1, 0, 0);
-        model.scale.set(0.5, 0.5, 0.5);
+        // model.scale.set(0.2, 0.2, 0.2);
         // model.scale.set(0.01, 0.01, 0.01);
 
         model.traverse(node => {
             if (node instanceof THREE.Mesh) {
                 console.log(node.material);
-                node.material.aoMapIntensity = 4;
+                node.receiveShadow = true;
+                node.castShadow = true;
+
+                // ground.material.aoMap = node.material.aoMap;
+
+                /*node.material.map = node.material.aoMap;
+                node.material.aoMap = null;*/
+                // node.material.aoMapIntensity = 4;
                 // TODO: set transparancy to true (for every floor)
+
+                console.log(node);
             }
         });
 
@@ -150,6 +224,7 @@ export let init = () => {
         console.log('Error', error);
     });
 
+    /* Postprocessing */
     composer = new THREE.EffectComposer(renderer);
     composer.setSize(window.innerWidth, window.innerHeight);
 
@@ -159,15 +234,50 @@ export let init = () => {
     /*let copyPass = new THREE.ShaderPass( THREE.CopyShader );
     composer.addPass( copyPass );*/
 
-    outlinePass = new THREE.OutlinePass(new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, assistantCamera);
+    outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, assistantCamera);
     composer.addPass(outlinePass);
+
+    let saoPass = new THREE.SAOPass(scene, assistantCamera, false, true);
+    saoPass.params = SAOparameters;
+    composer.addPass(saoPass);
+
+    // Init gui
+    /*var gui = new dat.GUI();
+    gui.add( saoPass.params, 'output', {
+        'Beauty': THREE.SAOPass.OUTPUT.Beauty,
+        'Beauty+SAO': THREE.SAOPass.OUTPUT.Default,
+        'SAO': THREE.SAOPass.OUTPUT.SAO,
+        'Depth': THREE.SAOPass.OUTPUT.Depth,
+        'Normal': THREE.SAOPass.OUTPUT.Normal
+    } ).onChange( function ( value ) {
+        saoPass.params.output = parseInt( value );
+    } );
+    gui.add( saoPass.params, 'saoBias', - 1, 1 );
+    gui.add( saoPass.params, 'saoIntensity', 0, 1 );
+    gui.add( saoPass.params, 'saoScale', 0, 10 );
+    gui.add( saoPass.params, 'saoKernelRadius', 1, 100 );
+    gui.add( saoPass.params, 'saoMinResolution', 0, 1 );
+    gui.add( saoPass.params, 'saoBlur' );
+    gui.add( saoPass.params, 'saoBlurRadius', 0, 200 );
+    gui.add( saoPass.params, 'saoBlurStdDev', 0.5, 150 );
+    gui.add( saoPass.params, 'saoBlurDepthCutoff', 0.0, 0.1 );*/
+
+    let effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+    effectFXAA.uniforms['resolution' ].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+    composer.addPass(effectFXAA);
 
     /* Helpers */
     cameraHelper = new THREE.CameraHelper(camera);
     // scene.add(cameraHelper);
 
-    let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
-    scene.add(pointLightHelper);
+    let dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 2);
+    scene.add(dirLightHelper);
+
+    let hemiSphereHelper = new THREE.HemisphereLightHelper(hemisphereLight, 2);
+    scene.add(hemiSphereHelper);
+
+    /*let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
+    scene.add(pointLightHelper);*/
 
     let axesHelper = new THREE.AxesHelper(5);
     scene.add(axesHelper);
@@ -196,10 +306,12 @@ let animate = () => {
 
     /* For debugging */
     stats.update();
-    theta += 1;
-    pointLight.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
-    // pointLight.position.y = radius * Math.sin(THREE.Math.degToRad(theta));
-    pointLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
+    /*theta += 1;
+    directionalLight.position.x = radius * Math.cos(THREE.Math.degToRad(theta));*/
+    // directionalLight.position.y = radius * Math.sin(THREE.Math.degToRad(theta));
+    // directionalLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
+    // pointLight.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
+    // pointLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
 
     camera.lookAt(scene.position);
     camera.updateMatrixWorld();
@@ -240,7 +352,7 @@ let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/e
 };
 
 let selectedObjects = [];
-let addSelectedObject = (object) => {
+let addSelectedObject = object => {
     selectedObjects = [];
     selectedObjects.push(object);
 };
@@ -260,8 +372,10 @@ let onMouseMove = event => {
 
     if (intersects.length > 0) { // TODO: make only selectable objects have an outline
         let selectedObject = intersects[0].object;
-        addSelectedObject(selectedObject);
-        outlinePass.selectedObjects = selectedObjects;
+        console.log(selectedObject);
+        // addSelectedObject(selectedObject);
+        outlinePass.selectedObjects = [selectedObject];
+        // outlinePass.selectedObjects = selectedObjects;
     }
 };
 
@@ -287,7 +401,7 @@ let onClick = event => {
             INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
             INTERSECTED.material.color.setHex(0xff0000);
 
-            console.log(intersects[0].object.name);
+            // console.log(intersects[0].object.material);
 
             animateCamera({
                 x: THREE.Math.randInt(-10, 10),
