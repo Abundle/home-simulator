@@ -39,6 +39,7 @@ import '../assets/DamagedHelmet/Default_normal.jpg';
 import '../assets/DamagedHelmet/Default_AO.jpg';*/
 
 // TODO: check if importing the levels as different object works with opacity changes
+// TODO: think about mobile version
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
@@ -76,13 +77,14 @@ let SAOparameters = {
     saoBias: 1,
     saoIntensity: 0.08,
     saoScale: 10,
-    saoKernelRadius: 100,
+    saoKernelRadius: 75,
     saoMinResolution: 0,
     saoBlur: true,
-    saoBlurRadius: 8,
-    saoBlurStdDev: 4,
-    saoBlurDepthCutoff: 0.005
+    saoBlurRadius: 5,
+    saoBlurStdDev: 7,
+    saoBlurDepthCutoff: 0.0008
 };
+let meshGroup = new THREE.Group();
 
 /* For debugging */
 let assistantCamera;
@@ -185,30 +187,34 @@ export let init = () => {
         removeLoadingScreen();
 
         let model = gltf.scene;
-        let animations = gltf.animations;
+        // let animations = gltf.animations;
         // model.position.set(1, 0, 1);
         // model.position.set(1, 0, 0);
         // model.scale.set(0.2, 0.2, 0.2);
         // model.scale.set(0.01, 0.01, 0.01);
+        let meshArray = [];
 
         model.traverse(node => {
             if (node instanceof THREE.Mesh) {
-                console.log(node.material);
+                // console.log(node.material);
                 node.receiveShadow = true;
                 node.castShadow = true;
+                node.material.transparent = true;
 
+                meshArray.push(node);
                 // ground.material.aoMap = node.material.aoMap;
 
                 /*node.material.map = node.material.aoMap;
                 node.material.aoMap = null;*/
                 // node.material.aoMapIntensity = 4;
-                // TODO: set transparancy to true (for every floor)
 
-                console.log(node);
+                // console.log(node);
             }
         });
 
-        scene.add(model);
+        meshGroup.children = meshArray;
+        scene.add(meshGroup);
+        // scene.add(model);
         /*mixer = new THREE.AnimationMixer(model);
         mixer.clipAction(animations[0]).play();*/
 
@@ -372,7 +378,7 @@ let onMouseMove = event => {
 
     if (intersects.length > 0) { // TODO: make only selectable objects have an outline
         let selectedObject = intersects[0].object;
-        console.log(selectedObject);
+        // console.log(selectedObject);
         // addSelectedObject(selectedObject);
         outlinePass.selectedObjects = [selectedObject];
         // outlinePass.selectedObjects = selectedObjects;
@@ -401,7 +407,7 @@ let onClick = event => {
             INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
             INTERSECTED.material.color.setHex(0xff0000);
 
-            // console.log(intersects[0].object.material);
+            console.log(intersects[0].object.material);
 
             animateCamera({
                 x: THREE.Math.randInt(-10, 10),
@@ -478,7 +484,24 @@ let setOpacity = (objects, targetOpacity) => {
 };
 
 export let selectFloor = (value) => {
-    console.log(value);
+    let meshes = meshGroup.children;
+
+    let setVisibility = (level, opacity, visibility) => {
+        for (let j = 0; j < meshes.length; j++) {
+            if (meshes[j].material.name.includes(level.toString())) {
+                // console.log('true', meshes[j].material.name);
+                meshes[j].material.opacity = opacity;
+                meshes[j].material.visible = visibility;
+            }
+        }
+    };
+
+    for (let i = 1; i <= value; i++) {
+        setVisibility(i, 1, true);
+    }
+    for (let i = 4; i > value; i--) {
+        setVisibility(i, 0, false);
+    }
 };
 
 export let resetCamera = () => {
