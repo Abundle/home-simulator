@@ -1,18 +1,18 @@
 import { items } from './items.js';
 
 export let Cards = /*language=HTML*/`
-    ${ items.slice(0).reverse().map((item) => `
+    ${ items.map((item) => `
          <div class='mdc-card demo-card demo-basic-with-text-over-media'>
-            <div class='mdc-card__primary-action demo-card__primary-action' tabindex='0'>
-                <div class='mdc-card__media mdc-card__media--16-9 demo-card__media' style='background-image: url(${ item.image });'>
+            <div class='mdc-card__primary-action demo-card__primary-action' tabindex='0'> 
+                <div class='mdc-card__media mdc-card__media--16-9 demo-card__media' style='background-image: url(${ require('../assets/img/' + item.image) });'>
                     <div class='mdc-card__media-content'>
-                        <div class='demo-card__primary'>
-                            <h2 class='demo-card__title mdc-typography mdc-typography--headline6'>${ item.title }</h2>
-                            <h3 class='demo-card__subtitle mdc-typography mdc-typography--subtitle2'>${ item.subtitle }</h3>
+                        <div class='mdc-card__primary'>
+                            <h2 class='mdc-card__title mdc-typography mdc-typography--headline6'>${ item.title }</h2>
+                            <h3 class='mdc-card__subtitle mdc-typography mdc-typography--subtitle2'>${ item.subtitle }</h3>
                         </div>
                     </div>
                 </div>
-                <div class='demo-card__secondary mdc-typography mdc-typography--body2'>Visit ten places on our planet that are undergoing the biggest changes today.</div>
+                <div class='mdc-card__secondary mdc-typography mdc-typography--body2'>Visit ten places on our planet that are undergoing the biggest changes today.</div>
             </div>
             <div class='mdc-card__actions'>
                 <div class='mdc-card__action-buttons'>

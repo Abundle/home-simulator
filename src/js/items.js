@@ -5,7 +5,7 @@ export const items = [
         title     : 'Our Changing Planet',
         subtitle  : 'by Kurt Wagner',
         content   : 'Visit ten places on our planet that are undergoing the biggest changes today.',
-        image     : '&quot;https://material-components.github.io/material-components-web-catalog/static/media/photos/3x2/2.jpg&quot;',
+        image     : 'placeholder.jpg',
     },
     {
         id        : 2,
@@ -13,7 +13,7 @@ export const items = [
         title     : 'Lorem ipsum',
         subtitle  : 'by Hello World',
         content   : 'Lorem ipsum.',
-        image     : 'https://material-components.github.io/material-components-web-catalog/static/media/photos/3x2/2.jpg'
+        image     : 'placeholder.jpg'
     },
     {
         id        : 3,
@@ -21,7 +21,7 @@ export const items = [
         title     : 'Lorem ipsum',
         subtitle  : 'by Hello World',
         content   : 'Lorem ipsum.',
-        image     : 'https://material-components.github.io/material-components-web-catalog/static/media/photos/3x2/2.jpg'
+        image     : 'placeholder.jpg'
     },
     {
         id        : 4,
@@ -29,6 +29,8 @@ export const items = [
         title     : 'Lorem ipsum',
         subtitle  : 'by Hello World',
         content   : 'Lorem ipsum.',
-        image     : 'https://material-components.github.io/material-components-web-catalog/static/media/photos/3x2/2.jpg'
+        image     : 'placeholder.jpg'
     }
 ];
+
+// https://material-components.github.io/material-components-web-catalog/static/media/photos/3x2/2.jpg

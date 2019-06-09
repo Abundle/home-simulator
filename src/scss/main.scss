@@ -154,5 +154,30 @@ html, body {
 
     .mdc-card {
         margin-top: 15px;
+
+        &__media {
+            background-image: url('../assets/img/fallback.jpg');
+        }
+        &__media-content {
+            display: flex;
+            align-items: flex-end;
+            color: white;
+        }
+        &__actions {
+            padding: 0;
+        }
+
+        &__primary {
+            padding: 1rem;
+        }
+        &__title {
+            margin: 0;
+        }
+        &__subtitle {
+            margin: 0;
+        }
+        &__secondary {
+            padding: 1rem 1rem 8px;
+        }
     }
 }

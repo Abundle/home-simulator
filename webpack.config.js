@@ -30,11 +30,14 @@ module.exports = (env, options) => {
                 },
                 {
                     test: /\.html$/,
-                    use: [
-                        {
-                            loader: 'html-loader'
+                    use: {
+                        loader: 'html-loader',
+                        options: {
+                            interpolate: true,
+                            minimize: true,
+                            removeComments: true
                         }
-                    ]
+                    }
                 },
                 {
                     test: /\.s(a|c)ss$/,
@@ -55,11 +58,11 @@ module.exports = (env, options) => {
                     ]
                 },
                 {
-                    test: /\.(jpe?g|png|gif|svg|ico)$/i,
+                    test: /\.(jpe?g|png|gif|svg|ico)$/,
                     use: {
                         loader: 'file-loader',
                         options: {
-                            name: devMode ? 'assets/[name].[ext]' : 'assets/[hash].[ext]',
+                            name: devMode ? 'assets/img/[name].[ext]' : 'assets/img/[hash].[ext]',
                         }
                     }
                 },
@@ -80,6 +83,7 @@ module.exports = (env, options) => {
         },
         resolve: { // Setup from https://gist.github.com/cecilemuller/0be98dcbb0c7efff64762919ca486a59
             alias: {
+                // 'assets': path.resolve('src/assets/img'),
                 three$: 'three/build/three.min.js',
                 'three/.*$': 'three',
                 /*'three/vendor': path.join(__dirname, 'node_modules/three/examples/js/vendor/stats.min.js'),
