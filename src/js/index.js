@@ -10,8 +10,14 @@ import { MDCIconButtonToggle } from '@material/icon-button';
 // Local import
 import '../scss/main.scss';
 import * as Scene from './Scene';
+import { Cards } from './Cards';
 
-const ripple = new MDCRipple(document.querySelector('.mdc-button'));
+const selectors = '.mdc-button, .mdc-icon-button, .mdc-card__primary-action';
+const ripples = [].map.call(document.querySelectorAll(selectors), (element) => {
+    return new MDCRipple(element);
+});
+// const ripple = new MDCRipple(document.querySelector('.mdc-button'));
+
 const radio = new MDCRadio(document.querySelector('.mdc-radio'));
 const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
 formField.input = radio;
@@ -25,7 +31,7 @@ topAppBar.listen('MDCTopAppBar:nav', () => {
 
 let categoryButton1 = new MDCIconButtonToggle(document.getElementById('category-1'));
 categoryButton1.listen('MDCIconButtonToggle:change', () => {
-    if (drawer.open && categoryButton2.on) {
+    if (drawer.open && categoryButton2.on) { // TODO: remove focus after drawer closes
         categoryButton2.on = false;
     } else {
         drawer.open = !drawer.open;
@@ -41,6 +47,9 @@ categoryButton2.listen('MDCIconButtonToggle:change', () => {
         drawer.open = !drawer.open;
     }
 });
+
+// TODO: check if purifying is necessary: https://github.com/cure53/DOMPurify
+document.getElementById('cards').innerHTML = Cards;
 
 // const list = new MDCList(document.querySelector('.mdc-list'));
 // const listItemRipples = list.listElements.map((listItemEl) => new MDCRipple(listItemEl));

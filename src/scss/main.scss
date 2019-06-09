@@ -3,9 +3,11 @@
 @import '~@material/button/mdc-button';
 @import '~@material/form-field/mdc-form-field';
 @import '~@material/radio/mdc-radio';
-@import '~@material/list/mdc-list';
 @import '~@material/drawer/mdc-drawer';
 @import '~@material/icon-button/mdc-icon-button';
+@import '~@material/card/mdc-card';
+
+@import '~@material/list/mdc-list';
 @import '~@material/animation/functions';
 
 // Normalize import
@@ -22,12 +24,25 @@ html, body {
     overflow: hidden;
 }
 
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+/*::-webkit-scrollbar-track {
+    background: #ddd;
+}*/
+
+::-webkit-scrollbar-thumb {
+    background: #babac0; // #666
+    border-radius: 20px;
+}
+
 ::selection {
     color: white;
     background: rgba(purple, 0.5);
 }
 
-.container {
+.loading-container {
     position: absolute;
     top: 0;
 }
@@ -96,13 +111,16 @@ html, body {
 }
 
 .info-panel {
+
     .mdc-drawer {
+        @include mdc-drawer-width($custom-drawer-width);
         background-color: rgba(0, 50, 25, 0.2);
         border: none;
 
         &__content {
-            display: flex;
-            align-items: center;
+            /*display: flex;
+            align-items: center;*/
+            padding: 25px;
         }
 
         .mdc-list {
@@ -111,8 +129,8 @@ html, body {
         }
 
         // Hack to overwrite the margin-right animation
-        &.mdc-drawer--open:not(.mdc-drawer--closing) + .mdc-drawer-app-content { //[dir='rtl']
-            transform: translateX(-256px);
+        &.mdc-drawer--open:not(.mdc-drawer--closing) + .mdc-drawer-app-content[dir='rtl'] { //
+            transform: translateX(-$custom-drawer-width);
             margin-right: 0;
         }
     }
@@ -127,27 +145,14 @@ html, body {
         transition: mdc-animation-exit-permanent(/* $name: */ transform, /* $duration: */ 175ms); // delay: 175ms
         transform: translateX(0);
         will-change: transform;
+
+        button {
+            @include mdc-button-filled-accessible(purple);
+            //@include mdc-button-shape-radius(50%)
+        }
     }
 
-    /*.mdc-drawer-app-content {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        position: fixed;
-        right: 0;
-        height: 100%;
-        !*flex: auto;
-        overflow: auto;
-        position: relative;*!
-        transition: mdc-animation-exit-permanent(!* $name: *! margin-right, !* $duration: *! 30s); // delay: 175ms
-        margin-right: 0;
-        //transform: translateX(0);
-        will-change: margin-right;
-        //background-color: red;
-
-        &--animating {
-            transition: mdc-animation-enter(!* $name: *! margin-right, !* $duration: *! 30s);
-            margin-right: 256px;
-        }
-    }*/
+    .mdc-card {
+        margin-top: 15px;
+    }
 }
