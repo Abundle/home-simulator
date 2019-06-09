@@ -1,20 +1,30 @@
-// Local import
-@import 'material-design-theming';
-
-// Normalize import
-@import '~normalize-scss';
-
 // Material Design modules import
 @import '~@material/typography/mdc-typography';
 @import '~@material/button/mdc-button';
 @import '~@material/form-field/mdc-form-field';
 @import '~@material/radio/mdc-radio';
+@import '~@material/list/mdc-list';
+@import '~@material/drawer/mdc-drawer';
+@import '~@material/icon-button/mdc-icon-button';
+@import '~@material/animation/functions';
+
+// Normalize import
+@import '~normalize-scss';
+
+// Local import
+@import 'material-design-theming';
+//@import 'icons';
 
 html, body {
     margin: 0;
     font-family: 'Arial', sans-serif;
     font-size: 16px;
     overflow: hidden;
+}
+
+::selection {
+    color: white;
+    background: rgba(purple, 0.5);
 }
 
 .container {
@@ -82,5 +92,62 @@ html, body {
 
     /*.mdc-radio {
         margin: 0 15px;
+    }*/
+}
+
+.info-panel {
+    .mdc-drawer {
+        background-color: rgba(0, 50, 25, 0.2);
+        border: none;
+
+        &__content {
+            display: flex;
+            align-items: center;
+        }
+
+        .mdc-list {
+            width: 100%;
+            //align-self: center;
+        }
+
+        // Hack to overwrite the margin-right animation
+        &.mdc-drawer--open:not(.mdc-drawer--closing) + .mdc-drawer-app-content { //[dir='rtl']
+            transform: translateX(-256px);
+            margin-right: 0;
+        }
+    }
+
+    .mdc-drawer-app-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: fixed;
+        right: 0;
+        height: 100%;
+        transition: mdc-animation-exit-permanent(/* $name: */ transform, /* $duration: */ 175ms); // delay: 175ms
+        transform: translateX(0);
+        will-change: transform;
+    }
+
+    /*.mdc-drawer-app-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: fixed;
+        right: 0;
+        height: 100%;
+        !*flex: auto;
+        overflow: auto;
+        position: relative;*!
+        transition: mdc-animation-exit-permanent(!* $name: *! margin-right, !* $duration: *! 30s); // delay: 175ms
+        margin-right: 0;
+        //transform: translateX(0);
+        will-change: margin-right;
+        //background-color: red;
+
+        &--animating {
+            transition: mdc-animation-enter(!* $name: *! margin-right, !* $duration: *! 30s);
+            margin-right: 256px;
+        }
     }*/
 }

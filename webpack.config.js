@@ -6,6 +6,9 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const autoprefixer = require('autoprefixer');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
+// TODO: use import here instead of require?
+// TODO: check minify/uglify plugins? (if babel doesn't do this already) e.g. https://github.com/webpack-contrib/terser-webpack-plugin
+
 module.exports = (env, options) => {
     const devMode = options.mode !== 'production';
 

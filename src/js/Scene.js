@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { TweenMax, Expo, Power0 } from 'gsap/all';
 
+// TODO: implement new Three.js modules https://threejs.org/docs/#manual/en/introduction/Import-via-modules
+
 import 'three/examples/js/controls/OrbitControls';
 import 'three/examples/js/loaders/GLTFLoader';
 import 'three/examples/js/loaders/DRACOLoader';
@@ -20,26 +22,10 @@ import Stats from 'three/examples/js/libs/stats.min';
 import dat from 'three/examples/js/libs/dat.gui.min.js';
 
 import modelName from '../assets/house.glb';
-/*import modelName from '../assets/testORM.gltf';
-import '../assets/testORM.bin';
-import '../assets/GrayA.png';*/
-// import modelName from '../assets/Flamingo.glb';
-// import modelName from '../assets/test.glb';
-// import modelName from '../assets/house.gltf';
-// import '../assets/model.bin';
-// import modelName from '../assets/aircraft.glb';
-// import modelName from '../assets/Duck.glb';
-// import modelName from '../assets/LittlestTokyo.glb';
-/*import modelName from '../assets/DamagedHelmet/DamagedHelmet.gltf';
-import '../assets/DamagedHelmet/DamagedHelmet.bin';
-import '../assets/DamagedHelmet/Default_albedo.jpg';
-import '../assets/DamagedHelmet/Default_emissive.jpg';
-import '../assets/DamagedHelmet/Default_metalRoughness.jpg';
-import '../assets/DamagedHelmet/Default_normal.jpg';
-import '../assets/DamagedHelmet/Default_AO.jpg';*/
 
 // TODO: check if importing the levels as different object works with opacity changes
-// TODO: think about mobile version
+// TODO: think about mobile version (no dynamic lighting, something similar to Google Maps?)
+// TODO: Check https://materializecss.com/floating-action-button.html & https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
@@ -66,12 +52,20 @@ let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
 let aspect = screenWidth / screenHeight;
 let frustumSize = 10;
-let defaultCameraPosition = { x: 5, y: 3, z: 8 };
+let defaultCameraPosition = { x: 30, y: 18, z: 12 }; // { x: 5, y: 3, z: 8 };
 
 /* Three.js variables */
 let clock = new THREE.Clock();
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
+let outlinePassParameters = {
+    edgeStrength: 3,
+    edgeGlow: 0.0,
+    edgeThickness: 1,
+    pulsePeriod: 0,
+    rotate: false,
+    usePatternTexture: false,
+};
 let SAOparameters = {
     output: 0,
     saoBias: 1,
@@ -125,7 +119,7 @@ export let init = () => {
         1,
         30
     );
-    camera.position.set(20, 12, 8);
+    camera.position.set(defaultCameraPosition.x, defaultCameraPosition.y, defaultCameraPosition.z);
     assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
     assistantCamera.position.set(50, 20, 8);
 
@@ -163,16 +157,6 @@ export let init = () => {
     hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
     hemisphereLight.position.set(0, 50, 0);
     //scene.add(hemisphereLight);
-
-    // GROUND
-    /*let groundGeo = new THREE.PlaneBufferGeometry(10, 10);
-    let groundMat = new THREE.MeshStandardMaterial({ color: 0xffffff }); // MeshLambertMaterial
-    groundMat.color.setHSL(0.095, 1, 0.75);
-    let ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.position.y = -5;
-    ground.rotation.x = - Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);*/
 
     let loader = new THREE.GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
@@ -231,16 +215,16 @@ export let init = () => {
     });
 
     /* Postprocessing */
-    composer = new THREE.EffectComposer(renderer);
+    composer = new THREE.EffectComposer(renderer); // TODO: check https://github.com/mrdoob/three.js/wiki/Migration-Guide#r104--r105
     composer.setSize(window.innerWidth, window.innerHeight);
 
     let renderPass = new THREE.RenderPass(scene, assistantCamera);
     composer.addPass(renderPass);
 
-    /*let copyPass = new THREE.ShaderPass( THREE.CopyShader );
-    composer.addPass( copyPass );*/
-
     outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, assistantCamera);
+    outlinePass.params = outlinePassParameters;
+    outlinePass.visibleEdgeColor.set('#ffffff');
+    outlinePass.hiddenEdgeColor.set('#190a05');
     composer.addPass(outlinePass);
 
     let saoPass = new THREE.SAOPass(scene, assistantCamera, false, true);
@@ -274,7 +258,7 @@ export let init = () => {
 
     /* Helpers */
     cameraHelper = new THREE.CameraHelper(camera);
-    // scene.add(cameraHelper);
+    scene.add(cameraHelper);
 
     let dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 2);
     scene.add(dirLightHelper);
@@ -463,7 +447,7 @@ export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing
         .start();*/
 };
 
-let setOpacity = (objects, targetOpacity) => {
+let animateOpacity = (objects, targetOpacity) => {
     /*TweenMax.to(object, duration, {
         opacity: targetOpacity,
         ease: Expo.easeInOut,
@@ -491,13 +475,14 @@ export let selectFloor = (value) => {
             if (meshes[j].material.name.includes(level.toString())) {
                 // console.log('true', meshes[j].material.name);
                 meshes[j].material.opacity = opacity;
-                meshes[j].material.visible = visibility;
+                meshes[j].visible = visibility;
+                // meshes[j].material.visible = visibility;
             }
         }
     };
 
     for (let i = 1; i <= value; i++) {
-        setVisibility(i, 1, true);
+        setVisibility(i, 1, true); // TODO: set glass opacity differently
     }
     for (let i = 4; i > value; i--) {
         setVisibility(i, 0, false);
