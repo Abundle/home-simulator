@@ -12,4 +12,8 @@
 # IDE specifications
 /.idea
 
+# htaccess file
+www/*
+!www/.htaccess
+
 npm-debug.log*
