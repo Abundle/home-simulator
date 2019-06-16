@@ -111,7 +111,6 @@ html, body {
 }
 
 .info-panel {
-
     .mdc-drawer {
         @include mdc-drawer-width($custom-drawer-width);
         background-color: rgba(0, 50, 25, 0.2);
@@ -123,6 +122,9 @@ html, body {
             /*h1 {
                 text-transform: capitalize;
             }*/
+            #cards {
+                padding-bottom: 65vh; // TODO: check for large screens
+            }
         }
 
         .mdc-list {

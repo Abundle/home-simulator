@@ -1,8 +1,8 @@
 
 export const categoryIcons = {
-    'Default': 'favorite',
-    'Kitchen': 'kitchen',
-    'Living Room': 'info',
+    Default: 'favorite',
+    Kitchen: 'kitchen',
+    Living_Room: 'info',
     // 'Bedroom': 'info'
 };
 
@@ -10,7 +10,6 @@ export const items = {
     'Default': [
         {
             id        : 1,
-            category  : 'default',
             title     : 'Our Changing Planet',
             subtitle  : 'by Kurt Wagner',
             content   : 'Visit ten places on our planet that are undergoing the biggest changes today.',
@@ -18,7 +17,6 @@ export const items = {
         },
         {
             id        : 2,
-            category  : 'default',
             title     : 'Lorem ipsum',
             subtitle  : 'by Hello World',
             content   : 'Lorem ipsum.',
@@ -28,7 +26,6 @@ export const items = {
     'Kitchen': [
         {
             id: 3,
-            category: 'default',
             title: 'Lorem ipsum',
             subtitle: 'by Hello World',
             content: 'Lorem ipsum.',
@@ -36,7 +33,15 @@ export const items = {
         },
         {
             id: 4,
-            category: 'default',
+            title: 'Lorem ipsum',
+            subtitle: 'by Hello World',
+            content: 'Lorem ipsum.',
+            image: 'placeholder.jpg'
+        }
+    ],
+    'Living_Room': [
+        {
+            id: 5,
             title: 'Lorem ipsum',
             subtitle: 'by Hello World',
             content: 'Lorem ipsum.',

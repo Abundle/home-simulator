@@ -1,37 +1,26 @@
-// import { categoryIcons } from './items.js';
+import { TweenLite, Power4 } from 'gsap/all';
 
-export let createCategoryButton = (iconName, index) => {
-    return `<button id=${ 'category-' + index }
+const container = document.querySelector('.mdc-drawer__content');
+
+export let createCategoryButton = (categoryName, iconName, index) => { // id=${ categoryName + '-' + index }
+    return `<button id=${ categoryName + '-' + index }
                     class='mdc-icon-button'
-                    aria-label=${ 'Category ' + index }
+                    aria-label=${ categoryName }
                     aria-hidden='true'
-                    aria-pressed='false'>
+                    aria-pressed='false'
+            >
                 <i class='material-icons mdc-icon-button__icon mdc-icon-button__icon--on'>favorite</i>
                 <i class='material-icons mdc-icon-button__icon'>favorite_border</i>
             </button>`;
 };
 
-/*export let createCategoryButton = (iconName, index) => {
-    return `
-        <button id=${ 'category-' + index } class='mdc-icon-button material-icons'>
-            ${ iconName }
-        </button>
-    `;
-};*/
+export let scrollToCategory = category => {
+    let id = category.split('-')[0];
+    let offset = document.getElementById(id).offsetTop;
 
-/*export const CategoryIcons = Object.keys(categoryIcons).map((icon, index) => `
-        <button id=${ 'category-' + index } class='mdc-icon-button material-icons'>
-            ${ categoryIcons[icon] }
-        </button>
-    `).join('');*/
-
-/*export const CategoryIcons = Object.keys(categoryIcons).map((icon, index) => `
-        <button id=${ 'category-' + index }
-                class='mdc-icon-button'
-                aria-label='Add to favorites'
-                aria-hidden='true'
-                aria-pressed='false'>
-            <i class='material-icons mdc-icon-button__icon mdc-icon-button__icon--on'>kitchen</i>
-            <i class='material-icons mdc-icon-button__icon'>kitchen_border</i>
-        </button>
-    `).join('');*/
+    TweenLite.to(container, 1.25, {
+        delay: 0.2,
+        ease: Power4.easeInOut,
+        scrollTo: offset - 15
+    });
+};

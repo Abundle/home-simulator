@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TweenMax, Expo, Power0 } from 'gsap/all';
+import { TweenMax, Expo } from 'gsap/all';
 
 // TODO: implement new Three.js modules https://threejs.org/docs/#manual/en/introduction/Import-via-modules
 

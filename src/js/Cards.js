@@ -1,7 +1,7 @@
 import { items } from './items.js';
 
 export const Cards = Object.keys(items).map(category => `
-        <h1 class='mdc-typography--headline5'>${ category }</h1>
+        <h1 id=${ category } class='mdc-typography--headline5'>${ category.replace('_', ' ') }</h1>
         ${ items[category].map(item => `
             <div class='mdc-card demo-card demo-basic-with-text-over-media'>
                 <div class='mdc-card__primary-action demo-card__primary-action' tabindex='0'>
@@ -13,7 +13,7 @@ export const Cards = Object.keys(items).map(category => `
                             </div>
                         </div>
                     </div>
-                    <div class='mdc-card__secondary mdc-typography mdc-typography--body2'>Visit ten places on our planet that are undergoing the biggest changes today.</div>
+                    <div class='mdc-card__secondary mdc-typography mdc-typography--body2'>${ item.content }</div>
                 </div>
                 <div class='mdc-card__actions'>
                     <div class='mdc-card__action-buttons'>
