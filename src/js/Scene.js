@@ -117,7 +117,7 @@ export let init = () => {
         frustumSize / 2,
         frustumSize / - 2,
         1,
-        30
+        50 // 30
     );
     camera.position.set(defaultCameraPosition.x, defaultCameraPosition.y, defaultCameraPosition.z);
     assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
@@ -184,6 +184,10 @@ export let init = () => {
                 node.receiveShadow = true;
                 node.castShadow = true;
                 node.material.transparent = true;
+
+                // Creating a bounding box with Box3 for tracking size of objects and camera zoom
+                // node.geometry.computeBoundingBox();
+                // let boundingBox = node.geometry.boundingBox.clone();
 
                 meshArray.push(node);
                 // ground.material.aoMap = node.material.aoMap;
@@ -284,7 +288,7 @@ let start = () => {
     cancelAnimationFrame(frameId);
 };*/
 
-let radius = 10, theta = 0;
+// let radius = 10, theta = 0;
 let animate = () => {
     requestAnimationFrame(animate);
 
@@ -391,13 +395,17 @@ let onClick = event => {
             INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
             INTERSECTED.material.color.setHex(0xff0000);
 
-            console.log(intersects[0].object.material);
+            console.log(intersects[0].object);
 
+            let zoomFactor = INTERSECTED.geometry.boundingSphere.radius;
+            let zoom = 1 / (Math.round(zoomFactor) * 0.1);
+
+            // Zoom is based on boundingSphere of geometry
             animateCamera({
-                x: THREE.Math.randInt(-10, 10),
-                y: 3,
-                z: THREE.Math.randInt(-10, 10),
-            }, THREE.Math.randInt(1, 5));
+                x: INTERSECTED.position.x + 15,
+                y: INTERSECTED.position.y + 15,
+                z: INTERSECTED.position.z + 15,
+            }, zoom);
             // animateCamera(intersects[0].object.position);
         }
     } else {

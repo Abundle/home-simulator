@@ -17,9 +17,9 @@ export const items = {
         },
         {
             id        : 2,
-            title     : 'Lorem ipsum',
+            title     : 'Roof',
             subtitle  : 'by Hello World',
-            content   : 'Lorem ipsum.',
+            content   : 'Lorem ipsum roof.',
             image     : 'placeholder.jpg'
         }
     ],
