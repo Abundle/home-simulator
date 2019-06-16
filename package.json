@@ -45,7 +45,6 @@
         "@material/drawer": "^2.3.0",
         "@material/form-field": "^1.1.0",
         "@material/icon-button": "^2.3.0",
-        "@material/list": "^2.3.0",
         "@material/radio": "^1.1.0",
         "@material/ripple": "^1.1.0",
         "@material/rtl": "^0.42.0",

@@ -118,9 +118,11 @@ html, body {
         border: none;
 
         &__content {
-            /*display: flex;
-            align-items: center;*/
             padding: 25px;
+
+            /*h1 {
+                text-transform: capitalize;
+            }*/
         }
 
         .mdc-list {
@@ -166,7 +168,6 @@ html, body {
         &__actions {
             padding: 0;
         }
-
         &__primary {
             padding: 1rem;
         }

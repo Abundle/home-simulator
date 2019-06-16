@@ -1,4 +1,11 @@
 
+export const categoryIcons = {
+    'Default': 'favorite',
+    'Kitchen': 'kitchen',
+    'Living Room': 'info',
+    // 'Bedroom': 'info'
+};
+
 export const items = {
     'Default': [
         {
@@ -34,7 +41,8 @@ export const items = {
             subtitle: 'by Hello World',
             content: 'Lorem ipsum.',
             image: 'placeholder.jpg'
-        }]
+        }
+    ]
 };
 
 // https://material-components.github.io/material-components-web-catalog/static/media/photos/3x2/2.jpg

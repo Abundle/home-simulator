@@ -13,7 +13,6 @@
 /.idea
 
 # htaccess file
-www/*
-!www/.htaccess
+.htaccess
 
 npm-debug.log*
