@@ -44,7 +44,7 @@ const WEBPACK_MODE = process.env.NODE_ENV;
 let camera, scene, renderer;
 let pointLight, directionalLight;
 let mixer, controls, stats;
-let INTERSECTED;
+let INTERSECTED, SELECTABLE;
 let composer, outlinePass;
 
 /* Camera stuff */
@@ -145,7 +145,7 @@ export let init = () => {
     directionalLight.shadow.camera.right = d;
     directionalLight.shadow.camera.top = d;
     directionalLight.shadow.camera.bottom = -d;
-    directionalLight.shadow.camera.far = 1000; //3500
+    directionalLight.shadow.camera.far = 3500; //3500
     directionalLight.shadow.bias = -0.0001;
 
     /*pointLight = new THREE.PointLight(0xf15b27, 1, 100);
@@ -174,7 +174,7 @@ export let init = () => {
         // let animations = gltf.animations;
         // model.position.set(1, 0, 1);
         // model.position.set(1, 0, 0);
-        // model.scale.set(0.2, 0.2, 0.2);
+        // model.scale.set(20, 20, 20);
         // model.scale.set(0.01, 0.01, 0.01);
         let meshArray = [];
 
@@ -199,7 +199,6 @@ export let init = () => {
                 // console.log(node);
             }
         });
-
         meshGroup.children = meshArray;
         scene.add(meshGroup);
         // scene.add(model);
@@ -346,10 +345,10 @@ let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/e
 };
 
 let selectedObjects = [];
-let addSelectedObject = object => {
+/*let addSelectedObject = object => {
     selectedObjects = [];
     selectedObjects.push(object);
-};
+};*/
 
 let onMouseMove = event => {
     // calculate mouse position in normalized device coordinates
@@ -364,12 +363,19 @@ let onMouseMove = event => {
     // calculate objects intersecting the picking ray
     let intersects = raycaster.intersectObjects(scene.children, true);
 
-    if (intersects.length > 0) { // TODO: make only selectable objects have an outline
-        let selectedObject = intersects[0].object;
-        // console.log(selectedObject);
-        // addSelectedObject(selectedObject);
-        outlinePass.selectedObjects = [selectedObject];
-        // outlinePass.selectedObjects = selectedObjects;
+    if (intersects.length > 0) {
+        // If an object can be selected, the name of the mesh will begin with an 'S', so selectable will be true
+        SELECTABLE = intersects[0].object.name.charAt(0) === 'S';
+
+        // console.log(intersects[0].object);
+        if (SELECTABLE) {
+            let selectedObject = intersects[0].object;
+            // addSelectedObject(selectedObject);
+            outlinePass.selectedObjects = [selectedObject];
+            // outlinePass.selectedObjects = selectedObjects;
+        } else {
+            outlinePass.selectedObjects = [];
+        }
     }
 };
 
@@ -387,7 +393,10 @@ let onClick = event => {
     let intersects = raycaster.intersectObjects(scene.children, true);
 
     if (intersects.length > 0) {
-        if (INTERSECTED !== intersects[0].object) {
+        // If an object can be selected, the name of the mesh will begin with an 'S', so selectable will be true
+        SELECTABLE = intersects[0].object.name.charAt(0) === 'S';
+
+        if (INTERSECTED !== intersects[0].object && SELECTABLE) {
             if (INTERSECTED) {
                 INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
             }
@@ -395,18 +404,8 @@ let onClick = event => {
             INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
             INTERSECTED.material.color.setHex(0xff0000);
 
-            console.log(intersects[0].object);
-
-            let zoomFactor = INTERSECTED.geometry.boundingSphere.radius;
-            let zoom = 1 / (Math.round(zoomFactor) * 0.1);
-
-            // Zoom is based on boundingSphere of geometry
-            animateCamera({
-                x: INTERSECTED.position.x + 15,
-                y: INTERSECTED.position.y + 15,
-                z: INTERSECTED.position.z + 15,
-            }, zoom);
-            // animateCamera(intersects[0].object.position);
+            // console.log(intersects[0].object.position);
+            selectObject(INTERSECTED);
         }
     } else {
         resetSelected();
@@ -475,7 +474,7 @@ let animateOpacity = (objects, targetOpacity) => {
     opacityTween.start();*/
 };
 
-export let selectFloor = (value) => {
+export let selectFloor = value => {
     let meshes = meshGroup.children;
 
     let setVisibility = (level, opacity, visibility) => {
@@ -495,6 +494,27 @@ export let selectFloor = (value) => {
     for (let i = 4; i > value; i--) {
         setVisibility(i, 0, false);
     }
+};
+
+export let selectObject = object => {
+    let zoomFactor = object.geometry.boundingSphere.radius;
+    let zoom = 1 / (Math.round(zoomFactor) * 0.25);
+
+    // Abstract the level of selected object from its material name and use it to select the level
+    // Check if an integer was indeed received
+    let level = object.material.name.charAt(0);
+
+    if (level) {
+        selectFloor(level);
+        document.getElementById('radio-' + level).checked = true;
+    }
+
+    // Zoom is based on boundingSphere of geometry
+    animateCamera({
+        x: object.position.x + 2,
+        y: object.position.y + 10,
+        z: object.position.z + 2,
+    }, zoom);
 };
 
 export let resetCamera = () => {

@@ -21,6 +21,6 @@ export let scrollToCategory = category => {
     TweenLite.to(container, 1.25, {
         delay: 0.2,
         ease: Power4.easeInOut,
-        scrollTo: offset - 15
+        scrollTo: offset - 12
     });
 };

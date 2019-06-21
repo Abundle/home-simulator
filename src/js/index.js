@@ -125,6 +125,6 @@ document.querySelector('.side-view-button').addEventListener('click', () => {
     Scene.resetSelected();
 });
 
-document.querySelector('.mdc-form-field').addEventListener('change', (event) => {
+document.querySelector('.mdc-form-field').addEventListener('change', event => {
     Scene.selectFloor(event.target.value);
 });
