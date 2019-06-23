@@ -128,7 +128,8 @@ export let init = () => {
     );*/
     // camera.position.set(defaultCameraPosition.x, defaultCameraPosition.y, defaultCameraPosition.z);
     assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
-    assistantCamera.position.set(50, 20, 8);
+    assistantCamera.position.set(-10, 30, 10);
+    assistantCamera.lookAt(0, 0, 0)
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     // controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
@@ -284,7 +285,7 @@ export let init = () => {
     scene.add(pointLightHelper);*/
 
     let axesHelper = new THREE.AxesHelper(5);
-    scene.add(axesHelper);
+    // scene.add(axesHelper);
 };
 
 let start = () => {
@@ -371,8 +372,8 @@ let onMouseMove = event => {
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     // update the picking ray with the camera and mouse position
-    // raycaster.setFromCamera(mouse, assistantCamera);
     raycaster.setFromCamera(mouse, camera);
+    // raycaster.setFromCamera(mouse, assistantCamera);
 
     // calculate objects intersecting the picking ray
     let intersects = raycaster.intersectObjects(scene.children, true);
@@ -551,12 +552,12 @@ export let selectObject = object => {
 
         let objectNameArray = object.userData.name.split(' ');
         let category = objectNameArray[objectNameArray.length - 1];
-        setDrawer(true);
-        scrollToCategory(category);
 
         // TODO: animate camera (or object) to the side when drawer opens + Reflect selected category in the category
         //  buttons
-        // camera.translateX(10);
+        /*setDrawer(true);
+        scrollToCategory(category);
+        // camera.translateX(10);*/
 
         /*animateCamera({
             x: 10,
@@ -567,15 +568,29 @@ export let selectObject = object => {
         document.getElementById('radio-' + level).checked = true;
     }
 
-    let zoomFactor = object.geometry.boundingSphere.radius;
+    let objectSize = object.geometry.boundingSphere.radius;
     // Zoom based on boundingSphere of geometry
-    let zoom = 1 / (Math.round(zoomFactor) * 0.25);
+    let zoom = Math.sin(objectSize);
+    // let zoom = 1 / (Math.round(objectSize) * 0.75);
+    let fov = sigmoid(objectSize) * 10 + 15;
+    // let fov = sigmoid(objectSize) * 17;
 
     animateCamera({
-        x: -object.position.x + 2,
-        y: object.position.y + 10,
-        z: object.position.z + 2,
+        x: -(object.position.x + objectSize / 2 + 1),
+        y: object.position.y + objectSize / 2 + 6, // 4
+        z: object.position.z + objectSize / 2 + 3,
     }, zoom);
+    /*animateCamera({
+        x: -object.position.x + 3,
+        y: object.position.y + 5,
+        z: object.position.z + 3,
+    }, zoom);*/
+    setLookAt(object.position);
+    // setFov(fov);
+    console.log(zoom, objectSize)
+    // console.log('fov: ' + fov, 'zoom: ' + zoom, objectSize)
+    // console.log('sigmoid: ' + sigmoid(objectSize), 'boundingSphere: ' + objectSize)
+    // setFov(Math.round(22 / objectSize));
 };
 
 export let resetCamera = () => {
@@ -591,4 +606,9 @@ export let resetSelected = () => {
         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
     }
     INTERSECTED = null;
+};
+
+export let sigmoid = x => {
+    return 1 / (1 + Math.pow(Math.E, -x));
+    // return 1 / (1 + Math.pow(Math.E, -x));
 };
