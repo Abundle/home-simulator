@@ -1,6 +1,8 @@
 import { TweenLite, Power4 } from 'gsap/all';
+import { MDCDrawer } from '@material/drawer';
 
 const container = document.querySelector('.mdc-drawer__content');
+const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
 
 export let createCategoryButton = (categoryName, iconName, index) => { // id=${ categoryName + '-' + index }
     return `<button id=${ categoryName + '-' + index }
@@ -12,6 +14,18 @@ export let createCategoryButton = (categoryName, iconName, index) => { // id=${ 
                 <i class='material-icons mdc-icon-button__icon mdc-icon-button__icon--on'>favorite</i>
                 <i class='material-icons mdc-icon-button__icon'>favorite_border</i>
             </button>`;
+};
+
+export let toggleDrawer = () => {
+    drawer.open = !drawer.open;
+};
+
+export let getDrawer = () => {
+    return drawer.open;
+};
+
+export let setDrawer = open => {
+    drawer.open = open;
 };
 
 export let scrollToCategory = category => {

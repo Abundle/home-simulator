@@ -21,6 +21,7 @@ import 'three/examples/js/shaders/UnpackDepthRGBAShader';
 import Stats from 'three/examples/js/libs/stats.min';
 import dat from 'three/examples/js/libs/dat.gui.min.js';
 
+import { setDrawer, scrollToCategory } from './Categories';
 import modelName from '../assets/house.glb';
 
 // TODO: check if importing the levels as different object works with opacity changes
@@ -51,8 +52,8 @@ let composer, outlinePass;
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
 let aspect = screenWidth / screenHeight;
-let frustumSize = 10;
-let defaultCameraPosition = { x: 30, y: 18, z: 12 }; // { x: 5, y: 3, z: 8 };
+let frustumSize = 25; // 10
+let defaultCameraPosition = { x: -30, y: 30, z: 60 }; // { x: 5, y: 3, z: 8 };
 
 /* Three.js variables */
 let clock = new THREE.Clock();
@@ -69,7 +70,7 @@ let outlinePassParameters = {
 let SAOparameters = {
     output: 0,
     saoBias: 1,
-    saoIntensity: 0.08,
+    saoIntensity: 0.06, // 0.08
     saoScale: 10,
     saoKernelRadius: 75,
     saoMinResolution: 0,
@@ -111,20 +112,26 @@ export let init = () => {
     scene.background = new THREE.Color(0xbfe3dd);
     // scene.fog = new THREE.Fog(scene.background, 1, 5000);
 
-    camera = new THREE.OrthographicCamera(
+    camera = new THREE.PerspectiveCamera(
+        20,
+        window.innerWidth / window.innerHeight,
+        1,
+        100
+    );
+    /*camera = new THREE.OrthographicCamera(
         frustumSize * aspect / - 2,
         frustumSize * aspect / 2,
         frustumSize / 2,
         frustumSize / - 2,
         1,
-        50 // 30
-    );
-    camera.position.set(defaultCameraPosition.x, defaultCameraPosition.y, defaultCameraPosition.z);
+        100 // 30
+    );*/
+    // camera.position.set(defaultCameraPosition.x, defaultCameraPosition.y, defaultCameraPosition.z);
     assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
     assistantCamera.position.set(50, 20, 8);
 
-    controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
-    // controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    // controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
     // controls.target.set(0, 0, 0);
@@ -201,6 +208,7 @@ export let init = () => {
         });
         meshGroup.children = meshArray;
         scene.add(meshGroup);
+
         // scene.add(model);
         /*mixer = new THREE.AnimationMixer(model);
         mixer.clipAction(animations[0]).play();*/
@@ -221,16 +229,19 @@ export let init = () => {
     composer = new THREE.EffectComposer(renderer); // TODO: check https://github.com/mrdoob/three.js/wiki/Migration-Guide#r104--r105
     composer.setSize(window.innerWidth, window.innerHeight);
 
-    let renderPass = new THREE.RenderPass(scene, assistantCamera);
+    let renderPass = new THREE.RenderPass(scene, camera);
+    // let renderPass = new THREE.RenderPass(scene, assistantCamera);
     composer.addPass(renderPass);
 
-    outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, assistantCamera);
+    outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+    // outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, assistantCamera);
     outlinePass.params = outlinePassParameters;
     outlinePass.visibleEdgeColor.set('#ffffff');
     outlinePass.hiddenEdgeColor.set('#190a05');
     composer.addPass(outlinePass);
 
-    let saoPass = new THREE.SAOPass(scene, assistantCamera, false, true);
+    let saoPass = new THREE.SAOPass(scene, camera, false, true);
+    // let saoPass = new THREE.SAOPass(scene, assistantCamera, false, true);
     saoPass.params = SAOparameters;
     composer.addPass(saoPass);
 
@@ -261,7 +272,7 @@ export let init = () => {
 
     /* Helpers */
     cameraHelper = new THREE.CameraHelper(camera);
-    scene.add(cameraHelper);
+    // scene.add(cameraHelper);
 
     let dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 2);
     scene.add(dirLightHelper);
@@ -279,7 +290,9 @@ export let init = () => {
 let start = () => {
     animate();
 
-    animateCamera(defaultCameraPosition, 1, 1.25, Expo.easeOut);
+    resetCamera();
+    /*animateCamera(defaultCameraPosition, 1, 1.25, Expo.easeOut);
+    setLookAt({ x: 0, y: 3, z: 0 });*/
     // TweenMax.to(camera.position, 1.25, { ease: Expo.easeOut, x: 5, y: 3 });
 };
 
@@ -306,7 +319,8 @@ let animate = () => {
     // pointLight.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
     // pointLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
 
-    camera.lookAt(scene.position);
+    // camera.lookAt(scene.position);
+    // camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
     cameraHelper.update();
 
@@ -357,8 +371,8 @@ let onMouseMove = event => {
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     // update the picking ray with the camera and mouse position
-    raycaster.setFromCamera(mouse, assistantCamera);
-    // raycaster.setFromCamera(mouse, camera);
+    // raycaster.setFromCamera(mouse, assistantCamera);
+    raycaster.setFromCamera(mouse, camera);
 
     // calculate objects intersecting the picking ray
     let intersects = raycaster.intersectObjects(scene.children, true);
@@ -386,8 +400,8 @@ let onClick = event => {
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     // update the picking ray with the camera and mouse position
-    raycaster.setFromCamera(mouse, assistantCamera);
-    // raycaster.setFromCamera(mouse, camera);
+    raycaster.setFromCamera(mouse, camera);
+    // raycaster.setFromCamera(mouse, assistantCamera);
 
     // calculate objects intersecting the picking ray
     let intersects = raycaster.intersectObjects(scene.children, true);
@@ -395,6 +409,7 @@ let onClick = event => {
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with an 'S', so selectable will be true
         SELECTABLE = intersects[0].object.name.charAt(0) === 'S';
+        // console.log(intersects[0].object)
 
         if (INTERSECTED !== intersects[0].object && SELECTABLE) {
             if (INTERSECTED) {
@@ -423,22 +438,28 @@ let removeLoadingScreen = () => {
 };
 
 export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
+// export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut, lookAt = { x: 0, y: 5, z: 0 }) => {
     TweenMax.to(camera.position, duration, {
         x: objectPosition.x,
         y: objectPosition.y,
         z: objectPosition.z,
         ease: easing,
-        /*onUpdate: () => {
-            console.log(camera.position);
-        }*/
-    });
-    TweenMax.to(camera, duration, {
-        zoom: targetZoom,
-        ease: Expo.easeInOut,
         onUpdate: () => {
             camera.updateProjectionMatrix();
         }
     });
+    TweenMax.to(camera, duration, {
+        zoom: targetZoom,
+        ease: Expo.easeInOut,
+        /*onUpdate: () => {
+            camera.updateProjectionMatrix();
+        }*/
+    });
+
+    /*let direction = new Vector3();
+    camera.getWorldDirection(direction);
+    console.log(direction);*/
+    // controls.target.set(x, y, z);
 
     /*TweenMax(camera.position)
         .to({
@@ -452,6 +473,30 @@ export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing
             camera.lookAt(1, 1, 0);
         })
         .start();*/
+};
+
+export let setLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
+    // Animate lookAt point
+    TweenMax.to(controls.target, duration, {
+        x: lookAt.x,
+        y: lookAt.y,
+        z: lookAt.z,
+        ease: easing,
+        /*onUpdate: () => {
+            camera.updateProjectionMatrix();
+        }*/
+    });
+};
+
+export let setFov = (fov, duration = 2, easing = Expo.easeInOut) => {
+    // Animate camera fov
+    TweenMax.to(camera, duration, {
+        fov: fov,
+        ease: easing,
+        /*onUpdate: () => {
+            camera.updateProjectionMatrix();
+        }*/
+    });
 };
 
 let animateOpacity = (objects, targetOpacity) => {
@@ -497,21 +542,37 @@ export let selectFloor = value => {
 };
 
 export let selectObject = object => {
-    let zoomFactor = object.geometry.boundingSphere.radius;
-    let zoom = 1 / (Math.round(zoomFactor) * 0.25);
-
     // Abstract the level of selected object from its material name and use it to select the level
     // Check if an integer was indeed received
     let level = object.material.name.charAt(0);
 
     if (level) {
         selectFloor(level);
+
+        let objectNameArray = object.userData.name.split(' ');
+        let category = objectNameArray[objectNameArray.length - 1];
+        setDrawer(true);
+        scrollToCategory(category);
+
+        // TODO: animate camera (or object) to the side when drawer opens + Reflect selected category in the category
+        //  buttons
+        // camera.translateX(10);
+
+        /*animateCamera({
+            x: 10,
+            y: object.position.y + 10,
+            z: object.position.z + 2,
+        }, zoom);*/
+
         document.getElementById('radio-' + level).checked = true;
     }
 
-    // Zoom is based on boundingSphere of geometry
+    let zoomFactor = object.geometry.boundingSphere.radius;
+    // Zoom based on boundingSphere of geometry
+    let zoom = 1 / (Math.round(zoomFactor) * 0.25);
+
     animateCamera({
-        x: object.position.x + 2,
+        x: -object.position.x + 2,
         y: object.position.y + 10,
         z: object.position.z + 2,
     }, zoom);
@@ -519,7 +580,10 @@ export let selectObject = object => {
 
 export let resetCamera = () => {
     // Reset camera
-    animateCamera(defaultCameraPosition);
+    animateCamera(defaultCameraPosition, 1, 2, Expo.easeOut);
+    // animateCamera(defaultCameraPosition);
+    setLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
+    setFov(20);
 };
 
 export let resetSelected = () => {

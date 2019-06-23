@@ -1,7 +1,6 @@
 import { MDCRipple } from '@material/ripple/index';
 import { MDCFormField } from '@material/form-field';
 import { MDCRadio } from '@material/radio';
-import { MDCDrawer } from '@material/drawer';
 import { MDCIconButtonToggle } from '@material/icon-button';
 
 // import * as WEBGL from 'three/examples/js/WebGL';
@@ -10,25 +9,23 @@ import { MDCIconButtonToggle } from '@material/icon-button';
 import '../scss/main.scss';
 import * as Scene from './Scene';
 import { Cards } from './Cards';
-import { createCategoryButton, scrollToCategory } from './CategoryIcons';
+import { createCategoryButton, toggleDrawer, getDrawer, scrollToCategory } from './Categories';
+// import * as Categories from './Categories';
 import { categoryIcons } from './items';
-
-const radio = new MDCRadio(document.querySelector('.mdc-radio'));
-const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
-formField.input = radio;
 
 // TODO: add tooltips to category buttons https://www.zeolearn.com/magazine/material-design-tooltip-with-css-html
 // TODO: remove the declaration part MDCs (MDCDrawer.attachTo(document.querySelector('.mdc-drawer')) is already enough)
-// TODO: create separat function for getting/setting drawer.open boolean
-const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
+const radio = new MDCRadio(document.querySelector('.mdc-radio'));
+const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
+formField.input = radio;
 
 const selectors = '.mdc-button, .mdc-card__primary-action';
 const ripples = [].map.call(document.querySelectorAll(selectors), element => {
     return new MDCRipple(element);
 });
 
-// let categoryButtons = [];
-Object.keys(categoryIcons).map((category, index) => { // TODO: remove focus after drawer closes
+// TODO: remove focus after drawer closes, also for the radio buttons
+Object.keys(categoryIcons).map((category, index) => {
     let button = createCategoryButton(category, categoryIcons[category], index);
     document.getElementById('category-icons').innerHTML += button;
 
@@ -46,59 +43,29 @@ document.querySelectorAll('.mdc-icon-button').forEach(element => {
     element.addEventListener('click', event => {
         let target = event.target;
 
+        // If click on the <i> element inside the button, save the <button> parent as target
         if (target.localName === 'i') {
             target = target.parentElement;
         }
 
-        if (drawer.open && target.id !== lastClickedId) {
+        if (getDrawer() && target.id !== lastClickedId) {
             // Set all buttons to false except the clicked element and update last clicked element
             categoryButtons.forEach(button => {
                 button.on = button.root_ === target;
-                /*if (button.root_ === target) {
-                    button.on = true;
-                } else {
-                    button.on = false;
-                }*/
             });
             lastClickedId = target.id;
 
             scrollToCategory(lastClickedId);
-            // Scene.drawerOpen(true);
         } else {
             // Otherwise act as normal toggle buttons and save the last clicked element id
-            drawer.open = !drawer.open;
+            toggleDrawer();
+            // drawer.open = !drawer.open;
             lastClickedId = target.id;
 
             scrollToCategory(lastClickedId);
-            // Scene.drawerOpen(drawer.open);
         }
     });
 });
-
-/*let buttons = document.getElementById('category-icons').childNodes;
-for (let i = 0; i < buttons.length; i++) {
-    let button = buttons[i];
-    let buttonElement = new MDCIconButtonToggle(button);
-}*/
-
-/*buttons.listen('MDCIconButtonToggle:change', () => {
-
-    /!*if (drawer.open && categoryButton2.on) {
-        categoryButton2.on = false;
-    } else {
-        drawer.open = !drawer.open;
-    }*!/
-});*/
-
-/*const iconButtonRipples = [].map.call(document.querySelectorAll('.mdc-icon-button'), (element) => {
-    let ripple = new MDCRipple(element);
-    ripple.unbounded = true;
-    return ripple;
-});*/
-
-/*if ( WEBGL.isWebGLAvailable() === false ) {
-    document.body.appendChild( WEBGL.getWebGLErrorMessage() );
-}*/
 
 // TODO: check if purifying is necessary: https://github.com/cure53/DOMPurify
 document.getElementById('cards').innerHTML = Cards;
@@ -111,17 +78,23 @@ document.querySelector('.reset-view-button').addEventListener('click', () => {
 });
 
 document.querySelector('.front-view-button').addEventListener('click', () => {
-    Scene.animateCamera({ x: 0, y: 0, z: 30 });
+    Scene.animateCamera({ x: 0, y: 2, z: 80 });
+    Scene.setLookAt({ x: 0, y: 3, z: 0 });
+    Scene.setFov(15);
     Scene.resetSelected();
 });
 
 document.querySelector('.top-view-button').addEventListener('click', () => {
-    Scene.animateCamera({ x: 0, y: 30, z: 0.5 });
+    Scene.animateCamera({ x: 0, y: 85, z: 2 }); // 0.5
+    Scene.setLookAt({ x: 0, y: 0, z: 0 });
+    Scene.setFov(15);
     Scene.resetSelected();
 });
 
 document.querySelector('.side-view-button').addEventListener('click', () => {
-    Scene.animateCamera({ x: 30, y: 0, z: 0 });
+    Scene.animateCamera({ x: 80, y: 2, z: 0 });
+    Scene.setLookAt({ x: 0, y: 3, z: 0 });
+    Scene.setFov(15);
     Scene.resetSelected();
 });
 

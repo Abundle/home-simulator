@@ -32,7 +32,7 @@
             "always"
         ],
         "no-unused-vars": [
-            "warn",
+            "warn"
         ],
         "no-console": "off"
     }
