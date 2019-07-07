@@ -1,9 +1,21 @@
 import * as THREE from 'three';
-import { TweenMax, Expo } from 'gsap/all';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+/* Postprocessing */
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
+import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
+/* Shaders */
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
+import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
+import { SAOShader } from 'three/examples/jsm/shaders/SAOShader';
+import { DepthLimitedBlurShader } from 'three/examples/jsm/shaders/DepthLimitedBlurShader';
+import { UnpackDepthRGBAShader } from 'three/examples/jsm/shaders/UnpackDepthRGBAShader';
 
-// TODO: implement new Three.js modules https://threejs.org/docs/#manual/en/introduction/Import-via-modules
-
-import 'three/examples/js/controls/OrbitControls';
+/*import 'three/examples/js/controls/OrbitControls';
 import 'three/examples/js/loaders/GLTFLoader';
 import 'three/examples/js/loaders/DRACOLoader';
 import 'three/examples/js/postprocessing/EffectComposer';
@@ -15,11 +27,17 @@ import 'three/examples/js/shaders/CopyShader';
 import 'three/examples/js/shaders/FXAAShader';
 import 'three/examples/js/shaders/SAOShader';
 import 'three/examples/js/shaders/DepthLimitedBlurShader';
-import 'three/examples/js/shaders/UnpackDepthRGBAShader';
+import 'three/examples/js/shaders/UnpackDepthRGBAShader';*/
 // import 'three/examples/js/WebGL.js';
 
-import Stats from 'three/examples/js/libs/stats.min';
-import dat from 'three/examples/js/libs/dat.gui.min.js';
+import { TweenMax, Expo } from 'gsap/all';
+
+// TODO: implement new Three.js modules https://threejs.org/docs/#manual/en/introduction/Import-via-modules
+
+import Stats from 'three/examples/jsm/libs/stats.module';
+// import Stats from 'three/examples/js/libs/stats.min';
+import dat from 'three/examples/jsm/libs/dat.gui.module';
+// import dat from 'three/examples/js/libs/dat.gui.min.js';
 
 import { setDrawer, scrollToCategory } from './Categories';
 import modelName from '../assets/house.glb';
@@ -30,6 +48,7 @@ import modelName from '../assets/house.glb';
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
+
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
 // LittlestTokyo https://threejs.org/examples/#webgl_animation_keyframes
@@ -41,8 +60,8 @@ import modelName from '../assets/house.glb';
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
 
-/* Initiate global variables */
-let camera, scene, renderer;
+/* Initiate global scene variables */
+let camera, scene, labelScene, renderer, labelRenderer;
 let pointLight, directionalLight;
 let mixer, controls, stats;
 let INTERSECTED, SELECTABLE;
@@ -52,14 +71,14 @@ let composer, outlinePass;
 let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
 let aspect = screenWidth / screenHeight;
-let frustumSize = 25; // 10
-let defaultCameraPosition = { x: -30, y: 30, z: 60 }; // { x: 5, y: 3, z: 8 };
+const frustumSize = 25; // 10
+const defaultCameraPosition = { x: -30, y: 30, z: 60 }; // { x: 5, y: 3, z: 8 };
 
 /* Three.js variables */
-let clock = new THREE.Clock();
-let raycaster = new THREE.Raycaster();
-let mouse = new THREE.Vector2();
-let outlinePassParameters = {
+const clock = new THREE.Clock();
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const outlinePassParameters = {
     edgeStrength: 3,
     edgeGlow: 0.0,
     edgeThickness: 1,
@@ -67,7 +86,7 @@ let outlinePassParameters = {
     rotate: false,
     usePatternTexture: false,
 };
-let SAOparameters = {
+const SAOparameters = {
     output: 0,
     saoBias: 1,
     saoIntensity: 0.06, // 0.08
@@ -79,20 +98,26 @@ let SAOparameters = {
     saoBlurStdDev: 7,
     saoBlurDepthCutoff: 0.0008
 };
-let meshGroup = new THREE.Group();
+const meshGroup = new THREE.Group();
 
 /* For debugging */
 let assistantCamera;
 let cameraHelper;
 
-export let init = () => {
+export const init = async () => {
     //let canvasElement = document.getElementById('canvas');
-    let container = document.getElementById('container');
-    let progress = document.getElementById('progress');
+    const container = document.getElementById('container');
+    const progress = document.getElementById('progress');
 
     window.addEventListener('resize', resizeCanvas, false); // TODO: check options
     document.addEventListener('mousemove', onMouseMove);
     container.addEventListener('click', onClick);
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xbfe3dd);
+    // scene.fog = new THREE.Fog(scene.background, 1, 5000);
+
+    // labelScene = new THREE.Scene();
 
     /* For debugging */
     stats = new Stats();
@@ -107,10 +132,11 @@ export let init = () => {
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 
-    scene = new THREE.Scene();
-    // scene.background = new THREE.Color().setHSL(0.6, 0, 1);
-    scene.background = new THREE.Color(0xbfe3dd);
-    // scene.fog = new THREE.Fog(scene.background, 1, 5000);
+    /*labelRenderer = new CSS3DRenderer();
+    labelRenderer.setSize( window.innerWidth, window.innerHeight );
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = 0;
+    document.body.appendChild(labelRenderer.domElement);*/
 
     camera = new THREE.PerspectiveCamera(
         20,
@@ -129,15 +155,15 @@ export let init = () => {
     // camera.position.set(defaultCameraPosition.x, defaultCameraPosition.y, defaultCameraPosition.z);
     assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
     assistantCamera.position.set(-10, 30, 10);
-    assistantCamera.lookAt(0, 0, 0)
+    assistantCamera.lookAt(0, 0, 0);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new OrbitControls(camera, renderer.domElement);
     // controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
     // controls.target.set(0, 0, 0);
 
-    let ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+    const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
     scene.add(ambientLight);
 
     directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -148,7 +174,7 @@ export let init = () => {
     directionalLight.shadow.mapSize.width = 1024;
     directionalLight.shadow.mapSize.height = 1024;
 
-    let d = 10;
+    const d = 10;
     directionalLight.shadow.camera.left = -d;
     directionalLight.shadow.camera.right = d;
     directionalLight.shadow.camera.top = d;
@@ -160,31 +186,31 @@ export let init = () => {
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);*/
 
-    let hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
     hemisphereLight.color.setHSL(0.6, 1, 0.6);
     hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
     hemisphereLight.position.set(0, 50, 0);
     //scene.add(hemisphereLight);
 
-    let loader = new THREE.GLTFLoader();
+    const loader = new GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
-    THREE.DRACOLoader.setDecoderPath(WEBPACK_MODE === 'development' ?
+    DRACOLoader.setDecoderPath(WEBPACK_MODE === 'development' ?
         './node_modules/three/examples/js/libs/draco/gltf/' : './assets/draco/gltf/'
     );
-    loader.setDRACOLoader(new THREE.DRACOLoader());
+    loader.setDRACOLoader(new DRACOLoader());
     // Optional: Pre-fetch Draco WASM/JS module, to save time while parsing.
-    THREE.DRACOLoader.getDecoderModule();
+    await DRACOLoader.getDecoderModule();
 
     loader.load(modelName, gltf => {
         removeLoadingScreen();
 
-        let model = gltf.scene;
+        const model = gltf.scene;
         // let animations = gltf.animations;
         // model.position.set(1, 0, 1);
         // model.position.set(1, 0, 0);
         // model.scale.set(20, 20, 20);
         // model.scale.set(0.01, 0.01, 0.01);
-        let meshArray = [];
+        const meshArray = [];
 
         model.traverse(node => {
             if (node instanceof THREE.Mesh) {
@@ -217,7 +243,7 @@ export let init = () => {
         start();
     },
     xhr => {
-        let percentage = Math.round(xhr.loaded / xhr.total * 100);
+        const percentage = Math.round(xhr.loaded / xhr.total * 100);
         progress.textContent = percentage.toString();
 
         console.log('Model ' + percentage + '% loaded');
@@ -227,21 +253,21 @@ export let init = () => {
     });
 
     /* Postprocessing */
-    composer = new THREE.EffectComposer(renderer); // TODO: check https://github.com/mrdoob/three.js/wiki/Migration-Guide#r104--r105
+    composer = new EffectComposer(renderer); // TODO: check https://github.com/mrdoob/three.js/wiki/Migration-Guide#r104--r105
     composer.setSize(window.innerWidth, window.innerHeight);
 
-    let renderPass = new THREE.RenderPass(scene, camera);
+    const renderPass = new RenderPass(scene, camera);
     // let renderPass = new THREE.RenderPass(scene, assistantCamera);
     composer.addPass(renderPass);
 
-    outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+    outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
     // outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, assistantCamera);
     outlinePass.params = outlinePassParameters;
     outlinePass.visibleEdgeColor.set('#ffffff');
     outlinePass.hiddenEdgeColor.set('#190a05');
     composer.addPass(outlinePass);
 
-    let saoPass = new THREE.SAOPass(scene, camera, false, true);
+    const saoPass = new SAOPass(scene, camera, false, true);
     // let saoPass = new THREE.SAOPass(scene, assistantCamera, false, true);
     saoPass.params = SAOparameters;
     composer.addPass(saoPass);
@@ -267,7 +293,7 @@ export let init = () => {
     gui.add( saoPass.params, 'saoBlurStdDev', 0.5, 150 );
     gui.add( saoPass.params, 'saoBlurDepthCutoff', 0.0, 0.1 );*/
 
-    let effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+    const effectFXAA = new ShaderPass(FXAAShader);
     effectFXAA.uniforms['resolution' ].value.set(1 / window.innerWidth, 1 / window.innerHeight);
     composer.addPass(effectFXAA);
 
@@ -275,10 +301,10 @@ export let init = () => {
     cameraHelper = new THREE.CameraHelper(camera);
     // scene.add(cameraHelper);
 
-    let dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 2);
+    const dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 2);
     scene.add(dirLightHelper);
 
-    let hemiSphereHelper = new THREE.HemisphereLightHelper(hemisphereLight, 2);
+    const hemiSphereHelper = new THREE.HemisphereLightHelper(hemisphereLight, 2);
     scene.add(hemiSphereHelper);
 
     /*let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
@@ -288,7 +314,7 @@ export let init = () => {
     // scene.add(axesHelper);
 };
 
-let start = () => {
+const start = () => {
     animate();
 
     resetCamera();
@@ -302,10 +328,10 @@ let start = () => {
 };*/
 
 // let radius = 10, theta = 0;
-let animate = () => {
+const animate = () => {
     requestAnimationFrame(animate);
 
-    let delta = clock.getDelta();
+    const delta = clock.getDelta();
     if (mixer) { // TODO: check if if-statement is necessary here
         mixer.update(delta);
     }
@@ -332,7 +358,7 @@ let animate = () => {
     stats.end();
 };
 
-let resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
+const resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
     console.log('resize');
 
     screenWidth = window.innerWidth;
@@ -365,7 +391,7 @@ let selectedObjects = [];
     selectedObjects.push(object);
 };*/
 
-let onMouseMove = event => {
+const onMouseMove = event => {
     // calculate mouse position in normalized device coordinates
     // (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -376,7 +402,7 @@ let onMouseMove = event => {
     // raycaster.setFromCamera(mouse, assistantCamera);
 
     // calculate objects intersecting the picking ray
-    let intersects = raycaster.intersectObjects(scene.children, true);
+    const intersects = raycaster.intersectObjects(scene.children, true);
 
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with an 'S', so selectable will be true
@@ -384,7 +410,7 @@ let onMouseMove = event => {
 
         // console.log(intersects[0].object);
         if (SELECTABLE) {
-            let selectedObject = intersects[0].object;
+            const selectedObject = intersects[0].object;
             // addSelectedObject(selectedObject);
             outlinePass.selectedObjects = [selectedObject];
             // outlinePass.selectedObjects = selectedObjects;
@@ -394,7 +420,7 @@ let onMouseMove = event => {
     }
 };
 
-let onClick = event => {
+const onClick = event => {
     // calculate mouse position in normalized device coordinates
     // (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -405,7 +431,7 @@ let onClick = event => {
     // raycaster.setFromCamera(mouse, assistantCamera);
 
     // calculate objects intersecting the picking ray
-    let intersects = raycaster.intersectObjects(scene.children, true);
+    const intersects = raycaster.intersectObjects(scene.children, true);
 
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with an 'S', so selectable will be true
@@ -428,8 +454,8 @@ let onClick = event => {
     }
 };
 
-let removeLoadingScreen = () => {
-    let loadingScreen = document.getElementById('loading-screen');
+const removeLoadingScreen = () => {
+    const loadingScreen = document.getElementById('loading-screen');
 
     if (loadingScreen.classList) {
         loadingScreen.classList.add('hidden');
@@ -438,7 +464,7 @@ let removeLoadingScreen = () => {
     }
 };
 
-export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
+export const animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
 // export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut, lookAt = { x: 0, y: 5, z: 0 }) => {
     TweenMax.to(camera.position, duration, {
         x: objectPosition.x,
@@ -476,7 +502,7 @@ export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing
         .start();*/
 };
 
-export let setLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
+export const setLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
     // Animate lookAt point
     TweenMax.to(controls.target, duration, {
         x: lookAt.x,
@@ -489,7 +515,7 @@ export let setLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
     });
 };
 
-export let setFov = (fov, duration = 2, easing = Expo.easeInOut) => {
+export const setFov = (fov, duration = 2, easing = Expo.easeInOut) => {
     // Animate camera fov
     TweenMax.to(camera, duration, {
         fov: fov,
@@ -520,10 +546,10 @@ let animateOpacity = (objects, targetOpacity) => {
     opacityTween.start();*/
 };
 
-export let selectFloor = value => {
-    let meshes = meshGroup.children;
+export const selectFloor = value => {
+    const meshes = meshGroup.children;
 
-    let setVisibility = (level, opacity, visibility) => {
+    const setVisibility = (level, opacity, visibility) => {
         for (let j = 0; j < meshes.length; j++) {
             if (meshes[j].material.name.includes(level.toString())) {
                 // console.log('true', meshes[j].material.name);
@@ -542,10 +568,10 @@ export let selectFloor = value => {
     }
 };
 
-export let selectObject = object => {
+export const selectObject = object => {
     // Abstract the level of selected object from its material name and use it to select the level
     // Check if an integer was indeed received
-    let level = object.material.name.charAt(0);
+    const level = object.material.name.charAt(0);
 
     if (level) {
         selectFloor(level);
@@ -568,9 +594,9 @@ export let selectObject = object => {
         document.getElementById('radio-' + level).checked = true;
     }
 
-    let objectSize = object.geometry.boundingSphere.radius;
+    const objectSize = object.geometry.boundingSphere.radius;
     // Zoom based on boundingSphere of geometry
-    let zoom = Math.sin(objectSize);
+    const zoom = Math.sin(objectSize);
     // let zoom = 1 / (Math.round(objectSize) * 0.75);
     let fov = sigmoid(objectSize) * 10 + 15;
     // let fov = sigmoid(objectSize) * 17;
@@ -585,15 +611,17 @@ export let selectObject = object => {
         y: object.position.y + 5,
         z: object.position.z + 3,
     }, zoom);*/
+
     setLookAt(object.position);
     // setFov(fov);
-    console.log(zoom, objectSize)
+
+    // console.log(zoom, objectSize)
     // console.log('fov: ' + fov, 'zoom: ' + zoom, objectSize)
     // console.log('sigmoid: ' + sigmoid(objectSize), 'boundingSphere: ' + objectSize)
     // setFov(Math.round(22 / objectSize));
 };
 
-export let resetCamera = () => {
+export const resetCamera = () => {
     // Reset camera
     animateCamera(defaultCameraPosition, 1, 2, Expo.easeOut);
     // animateCamera(defaultCameraPosition);
@@ -601,14 +629,14 @@ export let resetCamera = () => {
     setFov(20);
 };
 
-export let resetSelected = () => {
+export const resetSelected = () => {
     if (INTERSECTED) {
         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
     }
     INTERSECTED = null;
 };
 
-export let sigmoid = x => {
+export const sigmoid = x => {
     return 1 / (1 + Math.pow(Math.E, -x));
     // return 1 / (1 + Math.pow(Math.E, -x));
 };

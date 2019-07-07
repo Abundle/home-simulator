@@ -1,6 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const autoprefixer = require('autoprefixer');
@@ -84,13 +84,8 @@ module.exports = (env, options) => {
         resolve: { // Setup from https://gist.github.com/cecilemuller/0be98dcbb0c7efff64762919ca486a59
             alias: {
                 // 'assets': path.resolve('src/assets/img'),
-                three$: 'three/build/three.min.js',
-                'three/.*$': 'three',
-                /*'three/vendor': path.join(__dirname, 'node_modules/three/examples/js/vendor/stats.min.js'),
-                'three/OrbitControls': path.join(__dirname, 'node_modules/three/examples/js/controls/OrbitControls.js'),
-                'three/DRACOLoader': path.join(__dirname, 'node_modules/three/examples/js/loaders/DRACOLoader.js'),
-                'three/DRACOLoader/DecoderPath': path.join(__dirname, 'node_modules/three/examples/js/vendor/draco/gltf/'),
-                'three/GLTFLoader': path.join(__dirname, 'node_modules/three/examples/js/loaders/GLTFLoader.js')*/
+                /*three$: 'three/build/three.min.js',
+                'three/.*$': 'three',*/
             }
         },
         devServer: {
@@ -98,9 +93,9 @@ module.exports = (env, options) => {
             overlay: true,
         },
         plugins: [
-            new webpack.ProvidePlugin({
+            /*new webpack.ProvidePlugin({
                 THREE: 'three'
-            }),
+            }),*/
             new CleanWebpackPlugin(),
             new HtmlWebpackPlugin({
                 template: './src/index.html',

@@ -6,6 +6,7 @@ import { MDCIconButtonToggle } from '@material/icon-button';
 // import * as WEBGL from 'three/examples/js/WebGL';
 
 // Local import
+// TODO: structure imports 1 way, either '* as Foo' or '{ Bar } from Foo'
 import '../scss/main.scss';
 import * as Scene from './Scene';
 import { Cards } from './Cards';
@@ -26,7 +27,7 @@ const ripples = [].map.call(document.querySelectorAll(selectors), element => {
 
 // TODO: remove focus after drawer closes, also for the radio buttons
 Object.keys(categoryIcons).map((category, index) => {
-    let button = createCategoryButton(category, categoryIcons[category], index);
+    const button = createCategoryButton(category, categoryIcons[category], index);
     document.getElementById('category-icons').innerHTML += button;
 
     /*categoryButtons.push(button);
@@ -34,10 +35,10 @@ Object.keys(categoryIcons).map((category, index) => {
     categoryButtons.push(new MDCIconButtonToggle(buttonElement));*/
 });
 
-let categoryButtons = [];
+const categoryButtons = [];
 let lastClickedId;
 document.querySelectorAll('.mdc-icon-button').forEach(element => {
-    let buttonElement = new MDCIconButtonToggle(element);
+    const buttonElement = new MDCIconButtonToggle(element);
     categoryButtons.push(buttonElement);
 
     element.addEventListener('click', event => {
