@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
+import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer';
 /* Postprocessing */
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
@@ -34,9 +35,9 @@ import { TweenMax, Expo } from 'gsap/all';
 
 // TODO: implement new Three.js modules https://threejs.org/docs/#manual/en/introduction/Import-via-modules
 
-import Stats from 'three/examples/jsm/libs/stats.module';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 // import Stats from 'three/examples/js/libs/stats.min';
-import dat from 'three/examples/jsm/libs/dat.gui.module';
+import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
 // import dat from 'three/examples/js/libs/dat.gui.min.js';
 
 import { setDrawer, scrollToCategory } from './Categories';
@@ -63,7 +64,7 @@ const WEBPACK_MODE = process.env.NODE_ENV;
 /* Initiate global scene variables */
 let camera, scene, labelScene, renderer, labelRenderer;
 let pointLight, directionalLight;
-let mixer, controls, stats;
+let mixer, controls, label, stats;
 let INTERSECTED, SELECTABLE;
 let composer, outlinePass;
 
@@ -72,7 +73,7 @@ let screenWidth = window.innerWidth;
 let screenHeight = window.innerHeight;
 let aspect = screenWidth / screenHeight;
 const frustumSize = 25; // 10
-const defaultCameraPosition = { x: -30, y: 30, z: 60 }; // { x: 5, y: 3, z: 8 };
+const defaultCameraPosition = { x: -30, y: 40, z: 60 }; // { x: 5, y: 3, z: 8 };
 
 /* Three.js variables */
 const clock = new THREE.Clock();
@@ -89,7 +90,7 @@ const outlinePassParameters = {
 const SAOparameters = {
     output: 0,
     saoBias: 1,
-    saoIntensity: 0.06, // 0.08
+    saoIntensity: 0.006, // 0.08
     saoScale: 10,
     saoKernelRadius: 75,
     saoMinResolution: 0,
@@ -117,7 +118,9 @@ export const init = async () => {
     scene.background = new THREE.Color(0xbfe3dd);
     // scene.fog = new THREE.Fog(scene.background, 1, 5000);
 
-    // labelScene = new THREE.Scene();
+    labelScene = new THREE.Scene();
+    labelScene.scale.set(0.005, 0.005, 0.005);
+    label = createLabel();
 
     /* For debugging */
     stats = new Stats();
@@ -132,17 +135,17 @@ export const init = async () => {
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 
-    /*labelRenderer = new CSS3DRenderer();
-    labelRenderer.setSize( window.innerWidth, window.innerHeight );
+    labelRenderer = new CSS3DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
     labelRenderer.domElement.style.position = 'absolute';
-    labelRenderer.domElement.style.top = 0;
-    document.body.appendChild(labelRenderer.domElement);*/
+    labelRenderer.domElement.style.top = '0px';
+    container.appendChild(labelRenderer.domElement);
 
     camera = new THREE.PerspectiveCamera(
         20,
         window.innerWidth / window.innerHeight,
         1,
-        100
+        1000
     );
     /*camera = new THREE.OrthographicCamera(
         frustumSize * aspect / - 2,
@@ -157,7 +160,8 @@ export const init = async () => {
     assistantCamera.position.set(-10, 30, 10);
     assistantCamera.lookAt(0, 0, 0);
 
-    controls = new OrbitControls(camera, renderer.domElement);
+    controls = new OrbitControls(camera, labelRenderer.domElement);
+    // controls = new OrbitControls(camera, renderer.domElement);
     // controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
@@ -208,7 +212,7 @@ export const init = async () => {
         // let animations = gltf.animations;
         // model.position.set(1, 0, 1);
         // model.position.set(1, 0, 0);
-        // model.scale.set(20, 20, 20);
+        // model.scale.set(100, 100, 100);
         // model.scale.set(0.01, 0.01, 0.01);
         const meshArray = [];
 
@@ -273,13 +277,14 @@ export const init = async () => {
     composer.addPass(saoPass);
 
     // Init gui
-    /*var gui = new dat.GUI();
+    var gui = new GUI();
+    // var gui = new dat.GUI();
     gui.add( saoPass.params, 'output', {
-        'Beauty': THREE.SAOPass.OUTPUT.Beauty,
-        'Beauty+SAO': THREE.SAOPass.OUTPUT.Default,
-        'SAO': THREE.SAOPass.OUTPUT.SAO,
-        'Depth': THREE.SAOPass.OUTPUT.Depth,
-        'Normal': THREE.SAOPass.OUTPUT.Normal
+        'Beauty': SAOPass.OUTPUT.Beauty,
+        'Beauty+SAO': SAOPass.OUTPUT.Default,
+        'SAO': SAOPass.OUTPUT.SAO,
+        'Depth': SAOPass.OUTPUT.Depth,
+        'Normal': SAOPass.OUTPUT.Normal
     } ).onChange( function ( value ) {
         saoPass.params.output = parseInt( value );
     } );
@@ -291,7 +296,7 @@ export const init = async () => {
     gui.add( saoPass.params, 'saoBlur' );
     gui.add( saoPass.params, 'saoBlurRadius', 0, 200 );
     gui.add( saoPass.params, 'saoBlurStdDev', 0.5, 150 );
-    gui.add( saoPass.params, 'saoBlurDepthCutoff', 0.0, 0.1 );*/
+    gui.add( saoPass.params, 'saoBlurDepthCutoff', 0.0, 0.1 );
 
     const effectFXAA = new ShaderPass(FXAAShader);
     effectFXAA.uniforms['resolution' ].value.set(1 / window.innerWidth, 1 / window.innerHeight);
@@ -338,7 +343,8 @@ const animate = () => {
     controls.update(delta);
 
     /* For debugging */
-    stats.update();
+    stats.begin();
+    // stats.update();
     /*theta += 1;
     directionalLight.position.x = radius * Math.cos(THREE.Math.degToRad(theta));*/
     // directionalLight.position.y = radius * Math.sin(THREE.Math.degToRad(theta));
@@ -354,6 +360,7 @@ const animate = () => {
     composer.render();
     // renderer.render(scene, assistantCamera);
     // renderer.render(scene, camera);
+    labelRenderer.render(labelScene, camera);
 
     stats.end();
 };
@@ -446,6 +453,7 @@ const onClick = event => {
             INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
             INTERSECTED.material.color.setHex(0xff0000);
 
+            // console.log(INTERSECTED.position);
             // console.log(intersects[0].object.position);
             selectObject(INTERSECTED);
         }
@@ -572,15 +580,26 @@ export const selectObject = object => {
     // Abstract the level of selected object from its material name and use it to select the level
     // Check if an integer was indeed received
     const level = object.material.name.charAt(0);
+    const objectSize = object.geometry.boundingSphere.radius;
+    // Zoom based on boundingSphere of geometry
+    const zoom = Math.sin(objectSize);
+    // let zoom = 1 / (Math.round(objectSize) * 0.75);
+    let fov = sigmoid(objectSize) * 10 + 15;
+    // let fov = sigmoid(objectSize) * 17;
+
+    const box = new THREE.BoxHelper( object, 0xffff00 );
+    scene.add(box);
 
     if (level) {
         selectFloor(level);
 
-        let objectNameArray = object.userData.name.split(' ');
-        let category = objectNameArray[objectNameArray.length - 1];
+        const objectNameArray = object.userData.name.split(' ');
+        const category = objectNameArray[objectNameArray.length - 1];
 
-        // TODO: animate camera (or object) to the side when drawer opens + Reflect selected category in the category
-        //  buttons
+        setLabel(label, object.position, objectSize, category);
+        // setLabel(label, object.position, category);
+
+        // TODO: animate camera (or object) to the side when drawer opens + Reflect selected category in the category buttons
         /*setDrawer(true);
         scrollToCategory(category);
         // camera.translateX(10);*/
@@ -593,13 +612,6 @@ export const selectObject = object => {
 
         document.getElementById('radio-' + level).checked = true;
     }
-
-    const objectSize = object.geometry.boundingSphere.radius;
-    // Zoom based on boundingSphere of geometry
-    const zoom = Math.sin(objectSize);
-    // let zoom = 1 / (Math.round(objectSize) * 0.75);
-    let fov = sigmoid(objectSize) * 10 + 15;
-    // let fov = sigmoid(objectSize) * 17;
 
     animateCamera({
         x: -(object.position.x + objectSize / 2 + 1),
@@ -619,6 +631,45 @@ export const selectObject = object => {
     // console.log('fov: ' + fov, 'zoom: ' + zoom, objectSize)
     // console.log('sigmoid: ' + sigmoid(objectSize), 'boundingSphere: ' + objectSize)
     // setFov(Math.round(22 / objectSize));
+};
+
+export const createLabel = () => {
+    // HTML
+    const element = document.createElement('div');
+    // element.className = 'animated bounceInDown' ;
+    element.width = '5px';
+    element.style.background = '#ffffff';
+    element.style.fontSize = '50px'; //2em
+    element.style.color = 'black';
+    element.style.padding = '1em';
+    /*element.style = {
+       className: 'animated bounceInDown',
+       innerHTML: 'Lorem ipsum. Plain text inside a div.',
+       background: '#0094ff',
+       fontSize: '2em',
+       color: 'black',
+       padding: '1em'
+   };*/
+    document.body.appendChild(element);
+
+    return element;
+};
+
+// TODO: Check https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
+//  & https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
+export const setLabel = (element, position, radius, text) => {
+    element.innerHTML = 'Lorem ipsum: ' + text;
+
+    // CSS Object
+    const object = new CSS3DObject(element);
+    const labelWidth = element.getBoundingClientRect().width / 2;
+
+    object.position.x = 200 * (position.x + radius) + labelWidth;
+    // object.position.x = position.x * 100 + 100;
+    object.position.y = 200 * position.y;
+    // object.position.y = position.y * 100 + 350;
+    object.position.z = 200 * position.z;
+    labelScene.add(object);
 };
 
 export const resetCamera = () => {
