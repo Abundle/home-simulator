@@ -34,6 +34,7 @@ import 'three/examples/js/shaders/UnpackDepthRGBAShader';*/
 import { TweenMax, Expo } from 'gsap/all';
 
 // TODO: implement new Three.js modules https://threejs.org/docs/#manual/en/introduction/Import-via-modules
+// TODL: split file
 
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 // import Stats from 'three/examples/js/libs/stats.min';
@@ -45,10 +46,12 @@ import modelName from '../assets/house.glb';
 
 // TODO: check if importing the levels as different object works with opacity changes
 // TODO: think about mobile version (no dynamic lighting, something similar to Google Maps?)
-// TODO: Check https://materializecss.com/floating-action-button.html & https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
+// TODO: check https://materializecss.com/floating-action-button.html & https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
+// TODO: check performance drop in Firefox: https://stackoverflow.com/questions/18727396/webgl-and-three-js-running-great-on-chrome-but-horrible-on-firefox
+// TODO: check WebAssembly memory full after a couple of reloads (memory leak?)
 
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
@@ -76,6 +79,7 @@ const frustumSize = 25; // 10
 const defaultCameraPosition = { x: -30, y: 40, z: 60 }; // { x: 5, y: 3, z: 8 };
 
 /* Three.js variables */
+const cameraVector = new THREE.Vector3();
 const clock = new THREE.Clock();
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -100,6 +104,7 @@ const SAOparameters = {
     saoBlurDepthCutoff: 0.0008
 };
 const meshGroup = new THREE.Group();
+const labelPivot = new THREE.Object3D();
 
 /* For debugging */
 let assistantCamera;
@@ -147,6 +152,8 @@ export const init = async () => {
         1,
         1000
     );
+    // Making the Euler angles make more sense (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
+    camera.rotation.order = 'YXZ';
     /*camera = new THREE.OrthographicCamera(
         frustumSize * aspect / - 2,
         frustumSize * aspect / 2,
@@ -277,7 +284,7 @@ export const init = async () => {
     composer.addPass(saoPass);
 
     // Init gui
-    var gui = new GUI();
+    let gui = new GUI();
     // var gui = new dat.GUI();
     gui.add( saoPass.params, 'output', {
         'Beauty': SAOPass.OUTPUT.Beauty,
@@ -351,6 +358,14 @@ const animate = () => {
     // directionalLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
     // pointLight.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
     // pointLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
+
+    if (label.object.userData.set) {
+        labelPivot.rotation.y = camera.rotation.y;
+
+        /*camera.getWorldDirection(cameraVector);
+        labelPivot.rotation.y = -cameraVector.x * (Math.PI / 180);
+        console.log(labelPivot.rotation.y, cameraVector.x)*/
+    }
 
     // camera.lookAt(scene.position);
     // camera.updateProjectionMatrix();
@@ -585,10 +600,9 @@ export const selectObject = object => {
     const zoom = Math.sin(objectSize);
     // let zoom = 1 / (Math.round(objectSize) * 0.75);
     let fov = sigmoid(objectSize) * 10 + 15;
-    // let fov = sigmoid(objectSize) * 17;
 
-    const box = new THREE.BoxHelper( object, 0xffff00 );
-    scene.add(box);
+    /*const box = new THREE.BoxHelper( object, 0xffff00 );
+    scene.add(box);*/
 
     if (level) {
         selectFloor(level);
@@ -596,8 +610,8 @@ export const selectObject = object => {
         const objectNameArray = object.userData.name.split(' ');
         const category = objectNameArray[objectNameArray.length - 1];
 
+        // setLabel(label, object, objectSize, category);
         setLabel(label, object.position, objectSize, category);
-        // setLabel(label, object.position, category);
 
         // TODO: animate camera (or object) to the side when drawer opens + Reflect selected category in the category buttons
         /*setDrawer(true);
@@ -637,7 +651,8 @@ export const createLabel = () => {
     // HTML
     const element = document.createElement('div');
     // element.className = 'animated bounceInDown' ;
-    element.width = '5px';
+    // element.width = '5px';
+    element.style.opacity = '0.25';
     element.style.background = '#ffffff';
     element.style.fontSize = '50px'; //2em
     element.style.color = 'black';
@@ -652,24 +667,53 @@ export const createLabel = () => {
    };*/
     document.body.appendChild(element);
 
-    return element;
+    // CSS Object
+    const object = new CSS3DObject(element);
+    object.position.set(0, 0, 0);
+    labelScene.add(object);
+
+    // console.log(element);
+
+    return { // TODO: why return an object again?
+        element: element,
+        object: object
+    };
+    // return element;
 };
 
 // TODO: Check https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
 //  & https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
-export const setLabel = (element, position, radius, text) => {
-    element.innerHTML = 'Lorem ipsum: ' + text;
+export const setLabel = (label, position, radius, text) => {
+    const scale = 200;
 
-    // CSS Object
-    const object = new CSS3DObject(element);
-    const labelWidth = element.getBoundingClientRect().width / 2;
+    label.element.style.opacity = '0.9';
+    label.element.innerHTML = 'Lorem ipsum: ' + text;
 
-    object.position.x = 200 * (position.x + radius) + labelWidth;
-    // object.position.x = position.x * 100 + 100;
-    object.position.y = 200 * position.y;
-    // object.position.y = position.y * 100 + 350;
-    object.position.z = 200 * position.z;
-    labelScene.add(object);
+    const labelWidth = label.element.offsetWidth / 2;
+    // const labelWidth = label.element.getBoundingClientRect().width;
+    // console.log('label width', labelWidth);
+
+    labelScene.add(labelPivot);
+    labelPivot.add(label.object);
+    labelPivot.position.set(scale * position.x, scale * position.y, scale * position.z);
+
+    label.object.position.x = scale * radius + labelWidth;
+    /*label.object.position.x = 200 * (labelPivot.position.x + radius) + labelWidth;
+    label.object.position.y = 200 * labelPivot.position.y;
+    label.object.position.z = 200 * labelPivot.position.z;*/
+
+    label.object.userData = { set: true };
+};
+
+export const removeLabel = label => {
+    label.element.innerHTML = '';
+    label.element.style.opacity = '0.25';
+
+    labelScene.add(label.object);
+    label.object.position.set(0, 0, 0);
+    label.object.userData = { set: false };
+
+    console.log('remove label');
 };
 
 export const resetCamera = () => {
@@ -685,6 +729,8 @@ export const resetSelected = () => {
         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
     }
     INTERSECTED = null;
+
+    removeLabel(label);
 };
 
 export const sigmoid = x => {
