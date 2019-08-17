@@ -34,15 +34,16 @@ import 'three/examples/js/shaders/UnpackDepthRGBAShader';*/
 import { TweenMax, Expo } from 'gsap/all';
 
 // TODO: implement new Three.js modules https://threejs.org/docs/#manual/en/introduction/Import-via-modules
-// TODL: split file
 
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 // import Stats from 'three/examples/js/libs/stats.min';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
 // import dat from 'three/examples/js/libs/dat.gui.min.js';
 
+// Local import
 import { setDrawer, scrollToCategory } from './Categories';
 import modelName from '../assets/house.glb';
+import { items } from './items.js';
 
 // TODO: check if importing the levels as different object works with opacity changes
 // TODO: think about mobile version (no dynamic lighting, something similar to Google Maps?)
@@ -118,7 +119,6 @@ export const init = async () => {
 
     window.addEventListener('resize', resizeCanvas, false); // TODO: check options
     document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
     container.addEventListener('click', onClick);
 
     scene = new THREE.Scene();
@@ -445,14 +445,6 @@ const onMouseMove = event => {
     }
 };
 
-const onMouseUp = () => {
-    console.log('mouseup');
-
-    /*if (label.object.userData.set) {
-        animateRotation(camera.rotation.y);
-    }*/
-};
-
 const onClick = event => {
     // calculate mouse position in normalized device coordinates
     // (-1 to +1) for both components
@@ -479,7 +471,7 @@ const onClick = event => {
             INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
             INTERSECTED.material.color.setHex(0xff0000);
 
-            // console.log(INTERSECTED.position);
+            // console.log(INTERSECTED);
             // console.log(intersects[0].object.position);
             selectObject(INTERSECTED);
         }
@@ -611,7 +603,7 @@ export const selectObject = object => {
     const zoom = Math.sin(objectSize);
     // let zoom = 1 / (Math.round(objectSize) * 0.75);
 
-    const fov = sigmoid(objectSize) * 10 + 15;
+    // const fov = sigmoid(objectSize) * 10 + 15;
 
     /*const box = new THREE.BoxHelper( object, 0xffff00 );
     scene.add(box);*/
@@ -620,10 +612,12 @@ export const selectObject = object => {
         selectFloor(level);
 
         const objectNameArray = object.userData.name.split(' ');
-        const category = objectNameArray[objectNameArray.length - 1];
+        const category = objectNameArray[1];
+        // const category = objectNameArray[objectNameArray.length - 1];
+        const id = objectNameArray[2];
 
         // setLabel(label, object, objectSize, category);
-        setLabel(label, object.position, objectSize, category);
+        setLabel(label, object.position, objectSize, category, id);
 
         // TODO: animate camera (or object) to the side when drawer opens + Reflect selected category in the category buttons
         /*setDrawer(true);
@@ -668,27 +662,20 @@ const createLabel = () => {
     element.innerHTML = `
         <div class='mdc-card'>
             <div class='mdc-card__primary-action' tabindex='0'>
-                <div class='mdc-card__media mdc-card__media--square' style='background-image: url(${ require('../assets/img/placeholder.jpg') });'></div>
+                <div id='label-image' class='mdc-card__media mdc-card__media--square'></div>
                 <div class='mdc-card__primary'>
-                    <h2 id='label-title' class='mdc-card__title mdc-typography mdc-typography--headline6'>Lorem ipsum</h2>
-                    <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography mdc-typography--subtitle2'>by Kurt Wagner</h3>
+                    <h2 id='label-title' class='mdc-card__title mdc-typography mdc-typography--headline6'></h2>
+                    <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography mdc-typography--subtitle2'></h3>
                 </div>
             </div>
         </div>
     `;
+    // <div id='label-image' class='mdc-card__media mdc-card__media--square' style='background-image: url(${ require('../assets/img/placeholder.jpg') });'></div>
     /*element.width = '5px';
     element.style.background = '#ffffff';
     element.style.fontSize = '50px'; //2em
     element.style.color = 'black';
     element.style.padding = '1em';*/
-    /*element.style = {
-       className: 'animated bounceInDown',
-       innerHTML: 'Lorem ipsum. Plain text inside a div.',
-       background: '#0094ff',
-       fontSize: '2em',
-       color: 'black',
-       padding: '1em'
-   };*/
     document.body.appendChild(element);
 
     // CSS Object
@@ -704,25 +691,26 @@ const createLabel = () => {
 
 // TODO: Check https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
 //  & https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
-const setLabel = (label, position, radius, text) => {
+const setLabel = (label, position, radius, category, id) => {
     const scale = 200;
+    const objectInfo = items[category].find(object => object.id === parseInt(id));
+    // console.log(array.find(obj => obj.id === 3));
 
-    label.element.style.opacity = '0.8';
+    document.getElementById('label-title').textContent = objectInfo.title;
+    document.getElementById('label-subtitle').textContent = 'by ' + objectInfo.subtitle;
+    document.getElementById('label-image').style.backgroundImage = `url(${ require('../assets/img/' + objectInfo.image) })`;
+    // document.getElementById('label-image').style.backgroundImage = 'url(../assets/img/' + objectInfo.image + ')';
 
-    // label.element.innerHTML = 'Lorem ipsum: ' + text;
-
+    // Calculate the width of the label after inserting text
     const labelWidth = label.element.offsetWidth / 2;
-    // const labelWidth = label.element.getBoundingClientRect().width;
-    // console.log('label width', labelWidth);
 
+    // Add the CSS3DObject as child to the (invisible) Object3D
     labelScene.add(labelPivot);
     labelPivot.add(label.object);
     labelPivot.position.set(scale * position.x, scale * position.y, scale * position.z);
 
+    label.element.style.opacity = '0.8';
     label.object.position.x = scale * radius + labelWidth;
-    /*label.object.position.x = 200 * (labelPivot.position.x + radius) + labelWidth;
-    label.object.position.y = 200 * labelPivot.position.y;
-    label.object.position.z = 200 * labelPivot.position.z;*/
 
     label.object.userData = { set: true };
 };
