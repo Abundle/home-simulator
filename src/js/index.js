@@ -80,22 +80,22 @@ document.querySelector('.reset-view-button').addEventListener('click', () => {
 
 document.querySelector('.front-view-button').addEventListener('click', () => {
     Scene.animateCamera({ x: 0, y: 2, z: 80 });
-    Scene.setLookAt({ x: 0, y: 3, z: 0 });
-    Scene.setFov(15);
+    Scene.animateLookAt({ x: 0, y: 3, z: 0 });
+    Scene.animateFov(15);
     Scene.resetSelected();
 });
 
 document.querySelector('.top-view-button').addEventListener('click', () => {
     Scene.animateCamera({ x: 0, y: 85, z: 2 }); // 0.5
-    Scene.setLookAt({ x: 0, y: 0, z: 0 });
-    Scene.setFov(15);
+    Scene.animateLookAt({ x: 0, y: 0, z: 0 });
+    Scene.animateFov(15);
     Scene.resetSelected();
 });
 
 document.querySelector('.side-view-button').addEventListener('click', () => {
     Scene.animateCamera({ x: 80, y: 2, z: 0 });
-    Scene.setLookAt({ x: 0, y: 3, z: 0 });
-    Scene.setFov(15);
+    Scene.animateLookAt({ x: 0, y: 3, z: 0 });
+    Scene.animateFov(15);
     Scene.resetSelected();
 });
 

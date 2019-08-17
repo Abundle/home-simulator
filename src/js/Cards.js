@@ -3,9 +3,9 @@ import { items } from './items.js';
 export const Cards = Object.keys(items).map(category => `
         <h1 id=${ category } class='mdc-typography--headline5'>${ category.replace('_', ' ') }</h1>
         ${ items[category].map(item => `
-            <div class='mdc-card demo-card demo-basic-with-text-over-media'>
-                <div class='mdc-card__primary-action demo-card__primary-action' tabindex='0'>
-                    <div class='mdc-card__media mdc-card__media--16-9 demo-card__media' style='background-image: url(${ require('../assets/img/' + item.image) });'>
+            <div class='mdc-card'>
+                <div class='mdc-card__primary-action' tabindex='0'>
+                    <div class='mdc-card__media mdc-card__media--16-9' style='background-image: url(${ require('../assets/img/' + item.image) });'>
                         <div class='mdc-card__media-content'>
                             <div class='mdc-card__primary'>
                                 <h2 class='mdc-card__title mdc-typography mdc-typography--headline6'>${ item.title }</h2>

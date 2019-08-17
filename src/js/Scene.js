@@ -46,6 +46,7 @@ import modelName from '../assets/house.glb';
 
 // TODO: check if importing the levels as different object works with opacity changes
 // TODO: think about mobile version (no dynamic lighting, something similar to Google Maps?)
+// TODO: check three.js fundamentals https://threejsfundamentals.org/
 // TODO: check https://materializecss.com/floating-action-button.html & https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
@@ -78,8 +79,7 @@ let aspect = screenWidth / screenHeight;
 const frustumSize = 25; // 10
 const defaultCameraPosition = { x: -30, y: 40, z: 60 }; // { x: 5, y: 3, z: 8 };
 
-/* Three.js variables */
-const cameraVector = new THREE.Vector3();
+/* Other Three.js variables */
 const clock = new THREE.Clock();
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -105,6 +105,7 @@ const SAOparameters = {
 };
 const meshGroup = new THREE.Group();
 const labelPivot = new THREE.Object3D();
+const rotationQuaternion = new THREE.Quaternion();
 
 /* For debugging */
 let assistantCamera;
@@ -117,6 +118,7 @@ export const init = async () => {
 
     window.addEventListener('resize', resizeCanvas, false); // TODO: check options
     document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
     container.addEventListener('click', onClick);
 
     scene = new THREE.Scene();
@@ -284,7 +286,7 @@ export const init = async () => {
     composer.addPass(saoPass);
 
     // Init gui
-    let gui = new GUI();
+    const gui = new GUI();
     // var gui = new dat.GUI();
     gui.add( saoPass.params, 'output', {
         'Beauty': SAOPass.OUTPUT.Beauty,
@@ -349,6 +351,15 @@ const animate = () => {
     }
     controls.update(delta);
 
+    if (label.object.userData.set) {
+        labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
+
+        /*rotationQuaternion.slerp(camera.quaternion, 0.05);
+        labelPivot.quaternion.y = camera.quaternion.y;*/
+
+        // labelPivot.rotation.y = camera.rotation.y;
+    }
+
     /* For debugging */
     stats.begin();
     // stats.update();
@@ -358,14 +369,6 @@ const animate = () => {
     // directionalLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
     // pointLight.position.x = radius * Math.sin(THREE.Math.degToRad(theta));
     // pointLight.position.z = radius * Math.cos(THREE.Math.degToRad(theta));
-
-    if (label.object.userData.set) {
-        labelPivot.rotation.y = camera.rotation.y;
-
-        /*camera.getWorldDirection(cameraVector);
-        labelPivot.rotation.y = -cameraVector.x * (Math.PI / 180);
-        console.log(labelPivot.rotation.y, cameraVector.x)*/
-    }
 
     // camera.lookAt(scene.position);
     // camera.updateProjectionMatrix();
@@ -442,6 +445,14 @@ const onMouseMove = event => {
     }
 };
 
+const onMouseUp = () => {
+    console.log('mouseup');
+
+    /*if (label.object.userData.set) {
+        animateRotation(camera.rotation.y);
+    }*/
+};
+
 const onClick = event => {
     // calculate mouse position in normalized device coordinates
     // (-1 to +1) for both components
@@ -487,6 +498,28 @@ const removeLoadingScreen = () => {
     }
 };
 
+export const selectFloor = value => {
+    const meshes = meshGroup.children;
+
+    const setVisibility = (level, opacity, visibility) => {
+        for (let j = 0; j < meshes.length; j++) {
+            if (meshes[j].material.name.includes(level.toString())) {
+                // console.log('true', meshes[j].material.name);
+                meshes[j].material.opacity = opacity;
+                meshes[j].visible = visibility;
+                // meshes[j].material.visible = visibility;
+            }
+        }
+    };
+
+    for (let i = 1; i <= value; i++) {
+        setVisibility(i, 1, true); // TODO: set glass opacity differently
+    }
+    for (let i = 4; i > value; i--) {
+        setVisibility(i, 0, false);
+    }
+};
+
 export const animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
 // export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut, lookAt = { x: 0, y: 5, z: 0 }) => {
     TweenMax.to(camera.position, duration, {
@@ -525,7 +558,7 @@ export const animateCamera = (objectPosition, targetZoom = 1, duration = 2, easi
         .start();*/
 };
 
-export const setLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
+export const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
     // Animate lookAt point
     TweenMax.to(controls.target, duration, {
         x: lookAt.x,
@@ -538,7 +571,7 @@ export const setLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
     });
 };
 
-export const setFov = (fov, duration = 2, easing = Expo.easeInOut) => {
+export const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
     // Animate camera fov
     TweenMax.to(camera, duration, {
         fov: fov,
@@ -569,28 +602,6 @@ let animateOpacity = (objects, targetOpacity) => {
     opacityTween.start();*/
 };
 
-export const selectFloor = value => {
-    const meshes = meshGroup.children;
-
-    const setVisibility = (level, opacity, visibility) => {
-        for (let j = 0; j < meshes.length; j++) {
-            if (meshes[j].material.name.includes(level.toString())) {
-                // console.log('true', meshes[j].material.name);
-                meshes[j].material.opacity = opacity;
-                meshes[j].visible = visibility;
-                // meshes[j].material.visible = visibility;
-            }
-        }
-    };
-
-    for (let i = 1; i <= value; i++) {
-        setVisibility(i, 1, true); // TODO: set glass opacity differently
-    }
-    for (let i = 4; i > value; i--) {
-        setVisibility(i, 0, false);
-    }
-};
-
 export const selectObject = object => {
     // Abstract the level of selected object from its material name and use it to select the level
     // Check if an integer was indeed received
@@ -599,7 +610,8 @@ export const selectObject = object => {
     // Zoom based on boundingSphere of geometry
     const zoom = Math.sin(objectSize);
     // let zoom = 1 / (Math.round(objectSize) * 0.75);
-    let fov = sigmoid(objectSize) * 10 + 15;
+
+    const fov = sigmoid(objectSize) * 10 + 15;
 
     /*const box = new THREE.BoxHelper( object, 0xffff00 );
     scene.add(box);*/
@@ -638,7 +650,7 @@ export const selectObject = object => {
         z: object.position.z + 3,
     }, zoom);*/
 
-    setLookAt(object.position);
+    animateLookAt(object.position);
     // setFov(fov);
 
     // console.log(zoom, objectSize)
@@ -647,16 +659,28 @@ export const selectObject = object => {
     // setFov(Math.round(22 / objectSize));
 };
 
-export const createLabel = () => {
+const createLabel = () => {
     // HTML
     const element = document.createElement('div');
-    // element.className = 'animated bounceInDown' ;
-    // element.width = '5px';
+
+    element.className = 'label-card';
     element.style.opacity = '0.25';
+    element.innerHTML = `
+        <div class='mdc-card'>
+            <div class='mdc-card__primary-action' tabindex='0'>
+                <div class='mdc-card__media mdc-card__media--square' style='background-image: url(${ require('../assets/img/placeholder.jpg') });'></div>
+                <div class='mdc-card__primary'>
+                    <h2 id='label-title' class='mdc-card__title mdc-typography mdc-typography--headline6'>Lorem ipsum</h2>
+                    <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography mdc-typography--subtitle2'>by Kurt Wagner</h3>
+                </div>
+            </div>
+        </div>
+    `;
+    /*element.width = '5px';
     element.style.background = '#ffffff';
     element.style.fontSize = '50px'; //2em
     element.style.color = 'black';
-    element.style.padding = '1em';
+    element.style.padding = '1em';*/
     /*element.style = {
        className: 'animated bounceInDown',
        innerHTML: 'Lorem ipsum. Plain text inside a div.',
@@ -672,22 +696,20 @@ export const createLabel = () => {
     object.position.set(0, 0, 0);
     labelScene.add(object);
 
-    // console.log(element);
-
-    return { // TODO: why return an object again?
+    return {
         element: element,
         object: object
     };
-    // return element;
 };
 
 // TODO: Check https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
 //  & https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
-export const setLabel = (label, position, radius, text) => {
+const setLabel = (label, position, radius, text) => {
     const scale = 200;
 
-    label.element.style.opacity = '0.9';
-    label.element.innerHTML = 'Lorem ipsum: ' + text;
+    label.element.style.opacity = '0.8';
+
+    // label.element.innerHTML = 'Lorem ipsum: ' + text;
 
     const labelWidth = label.element.offsetWidth / 2;
     // const labelWidth = label.element.getBoundingClientRect().width;
@@ -705,8 +727,8 @@ export const setLabel = (label, position, radius, text) => {
     label.object.userData = { set: true };
 };
 
-export const removeLabel = label => {
-    label.element.innerHTML = '';
+const removeLabel = label => {
+    // label.element.innerHTML = '';
     label.element.style.opacity = '0.25';
 
     labelScene.add(label.object);
@@ -720,8 +742,8 @@ export const resetCamera = () => {
     // Reset camera
     animateCamera(defaultCameraPosition, 1, 2, Expo.easeOut);
     // animateCamera(defaultCameraPosition);
-    setLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
-    setFov(20);
+    animateLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
+    animateFov(20);
 };
 
 export const resetSelected = () => {
@@ -733,7 +755,7 @@ export const resetSelected = () => {
     removeLabel(label);
 };
 
-export const sigmoid = x => {
+const sigmoid = x => {
     return 1 / (1 + Math.pow(Math.E, -x));
     // return 1 / (1 + Math.pow(Math.E, -x));
 };
