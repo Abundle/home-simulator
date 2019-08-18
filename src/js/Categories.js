@@ -1,10 +1,13 @@
-import { TweenLite, Power4 } from 'gsap/all';
+import { TweenLite, Power4, ScrollToPlugin } from 'gsap/all'; // TODO: check why use TweenLite?
 import { MDCDrawer } from '@material/drawer';
+
+// Without this line, ScrollToPlugin may get dropped by your bundler because of tree shaking
+const plugins = [ ScrollToPlugin ];
 
 const container = document.querySelector('.mdc-drawer__content');
 const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
 
-export let createCategoryButton = (categoryName, iconName, index) => { // id=${ categoryName + '-' + index }
+export const createCategoryButton = (categoryName, iconName, index) => { // id=${ categoryName + '-' + index }
     return `<button id=${ categoryName + '-' + index }
                     class='mdc-icon-button'
                     aria-label=${ categoryName }
@@ -16,21 +19,31 @@ export let createCategoryButton = (categoryName, iconName, index) => { // id=${ 
             </button>`;
 };
 
-export let toggleDrawer = () => {
+export const toggleDrawer = () => {
     drawer.open = !drawer.open;
 };
 
-export let getDrawer = () => {
+export const getDrawer = () => {
     return drawer.open;
 };
 
-export let setDrawer = open => {
+export const setDrawer = open => {
     drawer.open = open;
 };
 
-export let scrollToCategory = category => {
-    let id = category.split('-')[0];
-    let offset = document.getElementById(id).offsetTop;
+export const scrollToCategory = id => { // TODO: check how this function and 'scrollToItem' can be combined
+    const categoryName = id.split('-')[0];
+    const offset = document.getElementById(categoryName).offsetTop;
+
+    TweenLite.to(container, 1.25, {
+        delay: 0.2,
+        ease: Power4.easeInOut,
+        scrollTo: offset - 12
+    });
+};
+
+export const scrollToItem = item => {
+    const offset = document.getElementById(item).offsetTop;
 
     TweenLite.to(container, 1.25, {
         delay: 0.2,

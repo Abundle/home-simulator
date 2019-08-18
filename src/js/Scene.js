@@ -41,7 +41,7 @@ import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
 // import dat from 'three/examples/js/libs/dat.gui.min.js';
 
 // Local import
-import { setDrawer, scrollToCategory } from './Categories';
+import { scrollToItem, toggleDrawer, setDrawer } from './Categories';
 import modelName from '../assets/house.glb';
 import { items } from './items.js';
 
@@ -464,12 +464,12 @@ const onClick = event => {
         // console.log(intersects[0].object)
 
         if (INTERSECTED !== intersects[0].object && SELECTABLE) {
-            if (INTERSECTED) {
+            /*if (INTERSECTED) { // TODO: blur rest of scene when object is selected?
                 INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
-            }
+            }*/
             INTERSECTED = intersects[0].object;
-            INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-            INTERSECTED.material.color.setHex(0xff0000);
+            // INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+            // INTERSECTED.material.color.setHex(0xff0000);
 
             // console.log(INTERSECTED);
             // console.log(intersects[0].object.position);
@@ -659,6 +659,7 @@ const createLabel = () => {
 
     element.className = 'label-card';
     element.style.opacity = '0.25';
+    // element.style.width = '375px';
     element.innerHTML = `
         <div class='mdc-card'>
             <div class='mdc-card__primary-action' tabindex='0'>
@@ -666,6 +667,7 @@ const createLabel = () => {
                 <div class='mdc-card__primary'>
                     <h2 id='label-title' class='mdc-card__title mdc-typography mdc-typography--headline6'></h2>
                     <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography mdc-typography--subtitle2'></h3>
+                    <div class='mdc-card__secondary mdc-typography mdc-typography--body2'>Click here for more info</div>
                 </div>
             </div>
         </div>
@@ -683,6 +685,8 @@ const createLabel = () => {
     object.position.set(0, 0, 0);
     labelScene.add(object);
 
+    console.log('label created');
+
     return {
         element: element,
         object: object
@@ -693,13 +697,22 @@ const createLabel = () => {
 //  & https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
 const setLabel = (label, position, radius, category, id) => {
     const scale = 200;
+    // Get selected item info based on the id
     const objectInfo = items[category].find(object => object.id === parseInt(id));
     // console.log(array.find(obj => obj.id === 3));
 
+    setDrawer(false);
+
+    document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
     document.getElementById('label-title').textContent = objectInfo.title;
-    document.getElementById('label-subtitle').textContent = 'by ' + objectInfo.subtitle;
+    document.getElementById('label-subtitle').textContent = objectInfo.subtitle;
     document.getElementById('label-image').style.backgroundImage = `url(${ require('../assets/img/' + objectInfo.image) })`;
     // document.getElementById('label-image').style.backgroundImage = 'url(../assets/img/' + objectInfo.image + ')';
+    document.querySelector('.label-card').addEventListener('click', getLabelTarget);
+    // scrollToItem(`${ category }-${ id }`);
+    /*document.querySelector('.label-card').addEventListener('click', () => {
+        console.log('hi', id);
+    });*/
 
     // Calculate the width of the label after inserting text
     const labelWidth = label.element.offsetWidth / 2;
@@ -715,15 +728,27 @@ const setLabel = (label, position, radius, category, id) => {
     label.object.userData = { set: true };
 };
 
+const getLabelTarget = event => {
+    toggleDrawer();
+    // setDrawer(true);
+
+    scrollToItem(event.currentTarget.dataset.item);
+    // scrollToItem(event.currentTarget.id);
+};
+
 const removeLabel = label => {
     // label.element.innerHTML = '';
     label.element.style.opacity = '0.25';
+
+    setDrawer(false);
+
+    document.querySelector('.label-card').removeEventListener('click', getLabelTarget);
 
     labelScene.add(label.object);
     label.object.position.set(0, 0, 0);
     label.object.userData = { set: false };
 
-    console.log('remove label');
+    console.log('label removed');
 };
 
 export const resetCamera = () => {
@@ -735,9 +760,9 @@ export const resetCamera = () => {
 };
 
 export const resetSelected = () => {
-    if (INTERSECTED) {
+    /*if (INTERSECTED) {
         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
-    }
+    }*/
     INTERSECTED = null;
 
     removeLabel(label);

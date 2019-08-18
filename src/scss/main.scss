@@ -194,7 +194,7 @@ html, body {
         }
 
         &__media {
-            width: 110px;
+            width: 125px;
             background-image: url('../assets/img/fallback.jpg');
         }
         &__primary-action {
@@ -202,7 +202,7 @@ html, body {
             flex-direction: row;
         }
         &__primary {
-            padding: 0.75rem;
+            padding: 0 0.75rem;
         }
     }
 }

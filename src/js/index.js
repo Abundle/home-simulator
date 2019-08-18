@@ -6,7 +6,7 @@ import { MDCIconButtonToggle } from '@material/icon-button';
 // import * as WEBGL from 'three/examples/js/WebGL';
 
 // Local import
-// TODO: structure imports 1 way, either '* as Foo' or '{ Bar } from Foo'
+// TODO: structure imports 1 way, either '* as Foo' or '{ Bar } from Foo'. Last one is probably better performance wise, except if all functions are being used
 import '../scss/main.scss';
 import * as Scene from './Scene';
 import { Cards } from './Cards';
@@ -42,7 +42,7 @@ document.querySelectorAll('.mdc-icon-button').forEach(element => {
     categoryButtons.push(buttonElement);
 
     element.addEventListener('click', event => {
-        let target = event.target;
+        let target = event.target; // TODO: use currentTarget? See https://stackoverflow.com/questions/29168719/can-you-target-an-elements-parent-element-using-event-target
 
         // If click on the <i> element inside the button, save the <button> parent as target
         if (target.localName === 'i') {
@@ -68,7 +68,7 @@ document.querySelectorAll('.mdc-icon-button').forEach(element => {
     });
 });
 
-// TODO: check if purifying is necessary: https://github.com/cure53/DOMPurify
+// TODO: check if purifying before calling innerHTML is necessary: https://github.com/cure53/DOMPurify
 document.getElementById('cards').innerHTML = Cards;
 
 Scene.init();
