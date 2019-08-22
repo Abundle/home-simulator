@@ -723,7 +723,7 @@ const setLabel = (label, position, radius, category, id) => {
     labelPivot.position.set(scale * position.x, scale * position.y, scale * position.z);
 
     label.element.style.opacity = '0.8';
-    label.object.position.x = scale * radius + labelWidth;
+    label.object.position.x = scale * radius + labelWidth; // TODO: flip label to other side because of the sidebar?
 
     label.object.userData = { set: true };
 };
