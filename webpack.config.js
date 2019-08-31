@@ -81,13 +81,13 @@ module.exports = (env, options) => {
                 },*/
             ]
         },
-        resolve: { // Setup from https://gist.github.com/cecilemuller/0be98dcbb0c7efff64762919ca486a59
+        /*resolve: { // Setup from https://gist.github.com/cecilemuller/0be98dcbb0c7efff64762919ca486a59
             alias: {
                 // 'assets': path.resolve('src/assets/img'),
-                /*three$: 'three/build/three.min.js',
-                'three/.*$': 'three',*/
+                three$: 'three/build/three.min.js',
+                'three/.*$': 'three',
             }
-        },
+        },*/
         devServer: {
             open: true,
             overlay: true,

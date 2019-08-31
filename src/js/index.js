@@ -13,6 +13,7 @@ import { Cards } from './Cards';
 import { createCategoryButton, toggleDrawer, getDrawer, scrollToCategory } from './Categories';
 // import * as Categories from './Categories';
 import { categoryIcons } from './items';
+import { isAnimating } from './Scene';
 
 // TODO: add tooltips to category buttons https://www.zeolearn.com/magazine/material-design-tooltip-with-css-html
 // TODO: remove the declaration part MDCs (MDCDrawer.attachTo(document.querySelector('.mdc-drawer')) is already enough)
@@ -35,9 +36,11 @@ Object.keys(categoryIcons).map((category, index) => {
     categoryButtons.push(new MDCIconButtonToggle(buttonElement));*/
 });
 
+// TODO: create function for preventing the outlined buttons to 'CSS fill' when the drawer is temporarily disabled
 const categoryButtons = [];
 let lastClickedId;
-document.querySelectorAll('.mdc-icon-button').forEach(element => {
+document.querySelectorAll('.category-button').forEach(element => {
+// document.querySelectorAll('.mdc-icon-button').forEach(element => {
     const buttonElement = new MDCIconButtonToggle(element);
     categoryButtons.push(buttonElement);
 
@@ -49,6 +52,7 @@ document.querySelectorAll('.mdc-icon-button').forEach(element => {
             target = target.parentElement;
         }
 
+        // If the drawer is already open and another button is clicked, don't close it
         if (getDrawer() && target.id !== lastClickedId) {
             // Set all buttons to false except the clicked element and update last clicked element
             categoryButtons.forEach(button => {
@@ -59,7 +63,7 @@ document.querySelectorAll('.mdc-icon-button').forEach(element => {
             scrollToCategory(lastClickedId);
         } else {
             // Otherwise act as normal toggle buttons and save the last clicked element id
-            toggleDrawer();
+            !isAnimating && toggleDrawer();
             // drawer.open = !drawer.open;
             lastClickedId = target.id;
 
