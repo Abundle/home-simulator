@@ -6,8 +6,8 @@ import { MDCIconButtonToggle } from '@material/icon-button';
 // import * as WEBGL from 'three/examples/js/WebGL';
 
 // Local import
-// TODO: structure imports 1 way, either '* as Foo' or '{ Bar } from Foo'. Last one is probably better performance wise, except if all functions are being used
 import '../scss/main.scss';
+// TODO: structure imports 1 way, either '* as Foo' or '{ Bar } from Foo'. Last one is probably better performance wise, except if all functions are being used
 import * as Scene from './Scene';
 import { Cards } from './Cards';
 import { createCategoryButton, toggleDrawer, getDrawer, scrollToCategory } from './Categories';
@@ -16,12 +16,11 @@ import { categoryIcons } from './items';
 import { isAnimating } from './Scene';
 
 // TODO: add tooltips to category buttons https://www.zeolearn.com/magazine/material-design-tooltip-with-css-html
-// TODO: remove the declaration part MDCs (MDCDrawer.attachTo(document.querySelector('.mdc-drawer')) is already enough)
 const radio = new MDCRadio(document.querySelector('.mdc-radio'));
 const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
-formField.input = radio;
-
 const selectors = '.mdc-button, .mdc-card__primary-action';
+
+formField.input = radio;
 [].map.call(document.querySelectorAll(selectors), element => {
     return new MDCRipple(element);
 });
@@ -32,7 +31,7 @@ Object.keys(categoryIcons).map((category, index) => {
     document.getElementById('category-icons').innerHTML += button;
 });
 
-// TODO: create function for preventing the outlined buttons to 'CSS fill' when the drawer is temporarily disabled
+// TODO: prevent the outlined buttons to 'CSS fill' when the drawer is temporarily disabled
 const categoryButtons = [];
 let lastClickedId;
 document.querySelectorAll('.category-button').forEach(element => {
@@ -67,7 +66,6 @@ document.querySelectorAll('.category-button').forEach(element => {
     });
 });
 
-// TODO: check if purifying before calling innerHTML is necessary: https://github.com/cure53/DOMPurify
 document.getElementById('cards').innerHTML = Cards;
 
 Scene.init();

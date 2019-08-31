@@ -1,9 +1,11 @@
-import { TweenLite, Power4, ScrollToPlugin } from 'gsap/all'; // TODO: check why use TweenLite?
+// import { TweenMax, Power4 } from 'gsap/TweenMax';
+// import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
+import { TweenMax, Power4, ScrollToPlugin } from 'gsap/all';
 import { MDCDrawer } from '@material/drawer';
 import { panView } from './Scene';
 
-// Without this line, ScrollToPlugin may get dropped by your bundler because of tree shaking
-const plugins = [ ScrollToPlugin ];
+// Without this line, ScrollToPlugin may get dropped by Webpack because of tree shaking
+const plugins = [ScrollToPlugin];
 
 const container = document.querySelector('.mdc-drawer__content');
 const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
@@ -34,21 +36,21 @@ export const getDrawer = () => {
     return drawer.open;
 };
 
-export const scrollToCategory = id => { // TODO: check how this function and 'scrollToItem' can be combined
+export const scrollToCategory = id => {
     const categoryName = id.split('-')[0];
     const offset = document.getElementById(categoryName).offsetTop;
 
-    TweenLite.to(container, 1.25, {
-        delay: 0.2,
-        ease: Power4.easeInOut,
-        scrollTo: offset - 12
-    });
+    animateContainer(offset);
 };
 
 export const scrollToItem = item => {
     const offset = document.getElementById(item).offsetTop;
 
-    TweenLite.to(container, 1.25, {
+    animateContainer(offset);
+};
+
+const animateContainer = offset => {
+    TweenMax.to(container, 1.25, {
         delay: 0.2,
         ease: Power4.easeInOut,
         scrollTo: offset - 12

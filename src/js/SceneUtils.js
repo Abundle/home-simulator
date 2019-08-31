@@ -1,4 +1,4 @@
-/* TODO: fill with Scene helper functions */
+// TODO: fill with Scene helper functions
 
 let selectedObject;
 

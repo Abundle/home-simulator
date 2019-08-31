@@ -15,10 +15,10 @@ import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
 import { SAOShader } from 'three/examples/jsm/shaders/SAOShader';
 import { DepthLimitedBlurShader } from 'three/examples/jsm/shaders/DepthLimitedBlurShader';
 import { UnpackDepthRGBAShader } from 'three/examples/jsm/shaders/UnpackDepthRGBAShader';
+import { WEBGL } from 'three/examples/jsm/WebGL.js';
 
+// import { TweenMax, Expo } from 'gsap/TweenMax';
 import { TweenMax, Expo } from 'gsap/all';
-
-// TODO: implement WebGL check https://threejs.org/docs/#manual/en/introduction/WebGL-compatibility-check
 
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
@@ -31,8 +31,6 @@ import { items } from './items.js';
 
 // TODO: check if importing the levels as different object works with opacity changes
 // TODO: think about mobile version (no dynamic lighting, something similar to Google Maps?)
-// TODO: check three.js fundamentals https://threejsfundamentals.org/
-// TODO: check https://materializecss.com/floating-action-button.html & https://stackoverflow.com/questions/37446746/threejs-how-to-use-css3renderer-and-webglrenderer-to-render-2-objects-on-the-sa
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
@@ -47,6 +45,8 @@ import { items } from './items.js';
 // Behance https://www.behance.net/gallery/54361197/City
 // Codepen portfolio https://codepen.io/Yakudoo/
 // Blog: https://jolicode.com/blog/making-3d-for-the-web
+// WebGL 2: https://threejs.org/docs/#manual/en/introduction/How-to-use-WebGL2
+// Three.js fundamentals https://threejsfundamentals.org/
 
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
@@ -99,7 +99,7 @@ let dirLightHelper;
 
 export let isAnimating = false;
 
-export const init = async () => {
+export const init = () => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     const aspect = screenWidth / screenHeight;
@@ -127,7 +127,7 @@ export const init = async () => {
     // renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
-    renderer.gammaInput = true;
+    // renderer.gammaInput = true;
     renderer.gammaOutput = true;
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
@@ -184,12 +184,11 @@ export const init = async () => {
 
     const loader = new GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
-    DRACOLoader.setDecoderPath(WEBPACK_MODE === 'development' ?
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath(WEBPACK_MODE === 'development' ?
         './node_modules/three/examples/js/libs/draco/gltf/' : './assets/draco/gltf/'
     );
-    loader.setDRACOLoader(new DRACOLoader());
-    // Optional: Pre-fetch Draco WASM/JS module, to save time while parsing.
-    await DRACOLoader.getDecoderModule();
+    loader.setDRACOLoader(dracoLoader);
 
     loader.load(modelName, gltf => {
         removeLoadingScreen();
@@ -217,7 +216,16 @@ export const init = async () => {
         /*mixer = new THREE.AnimationMixer(model);
         mixer.clipAction(animations[0]).play();*/
 
-        start();
+        if (WEBGL.isWebGLAvailable()) {
+            // Initiate function or other initializations here
+            start();
+        } else {
+            const warning = WEBGL.getWebGLErrorMessage();
+            container.appendChild(warning);
+        }
+
+        // Release decoder resources
+        dracoLoader.dispose();
     },
     xhr => {
         const percentage = Math.round(xhr.loaded / xhr.total * 100);
@@ -328,14 +336,11 @@ const animate = () => {
 };
 
 const resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
-    console.log('resize');
-
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const aspect = screenWidth / screenHeight;
 
     // Perspective camera
-    camera.aspect = aspect;
+    camera.aspect = screenWidth / screenHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(screenWidth, screenHeight);
     composer.setSize(screenWidth, screenHeight);
@@ -575,8 +580,6 @@ const createLabel = () => {
     object.position.set(0, 0, 0);
     labelScene.add(object);
 
-    console.log('label created');
-
     return {
         element: element,
         object: object
@@ -628,8 +631,6 @@ const removeLabel = label => {
     labelScene.add(label.object);
     label.object.position.set(0, 0, 0);
     label.object.userData = { set: false };
-
-    console.log('label removed');
 };
 
 const clickLabel = event => {

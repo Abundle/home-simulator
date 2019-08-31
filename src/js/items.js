@@ -6,7 +6,7 @@ export const categoryIcons = {
     // 'Bedroom': 'info'
 };
 
-export const items = { // TODO: de-capitalise categories?
+export const items = {
     'Default': [
         {
             id          : 1,
