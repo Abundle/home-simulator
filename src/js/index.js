@@ -22,7 +22,7 @@ const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
 formField.input = radio;
 
 const selectors = '.mdc-button, .mdc-card__primary-action';
-const ripples = [].map.call(document.querySelectorAll(selectors), element => {
+[].map.call(document.querySelectorAll(selectors), element => {
     return new MDCRipple(element);
 });
 
@@ -30,17 +30,12 @@ const ripples = [].map.call(document.querySelectorAll(selectors), element => {
 Object.keys(categoryIcons).map((category, index) => {
     const button = createCategoryButton(category, categoryIcons[category], index);
     document.getElementById('category-icons').innerHTML += button;
-
-    /*categoryButtons.push(button);
-    let buttonElement = document.getElementById('category-' + index);
-    categoryButtons.push(new MDCIconButtonToggle(buttonElement));*/
 });
 
 // TODO: create function for preventing the outlined buttons to 'CSS fill' when the drawer is temporarily disabled
 const categoryButtons = [];
 let lastClickedId;
 document.querySelectorAll('.category-button').forEach(element => {
-// document.querySelectorAll('.mdc-icon-button').forEach(element => {
     const buttonElement = new MDCIconButtonToggle(element);
     categoryButtons.push(buttonElement);
 

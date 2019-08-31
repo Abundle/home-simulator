@@ -8,7 +8,7 @@ const plugins = [ ScrollToPlugin ];
 const container = document.querySelector('.mdc-drawer__content');
 const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
 
-export const createCategoryButton = (categoryName, iconName, index) => { // id=${ categoryName + '-' + index }
+export const createCategoryButton = (categoryName, iconName, index) => {
     return `<button id=${ categoryName + '-' + index }
                     class='category-button mdc-icon-button'
                     aria-label=${ categoryName }
@@ -31,7 +31,6 @@ export const setDrawer = open => {
 };
 
 export const getDrawer = () => {
-    // console.log(drawer.open);
     return drawer.open;
 };
 

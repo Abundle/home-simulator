@@ -9,12 +9,11 @@
 @import '~@material/list/mdc-list';
 @import '~@material/animation/functions';
 
-// Normalize import
+// Normalize library import
 @import '~normalize-scss';
 
 // Local import
 @import 'material-design-theming';
-// @import 'icons';
 
 html, body {
     margin: 0;

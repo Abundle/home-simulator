@@ -16,33 +16,16 @@ import { SAOShader } from 'three/examples/jsm/shaders/SAOShader';
 import { DepthLimitedBlurShader } from 'three/examples/jsm/shaders/DepthLimitedBlurShader';
 import { UnpackDepthRGBAShader } from 'three/examples/jsm/shaders/UnpackDepthRGBAShader';
 
-/*import 'three/examples/js/controls/OrbitControls';
-import 'three/examples/js/loaders/GLTFLoader';
-import 'three/examples/js/loaders/DRACOLoader';
-import 'three/examples/js/postprocessing/EffectComposer';
-import 'three/examples/js/postprocessing/RenderPass';
-import 'three/examples/js/postprocessing/OutlinePass';
-import 'three/examples/js/postprocessing/ShaderPass';
-import 'three/examples/js/postprocessing/SAOPass';
-import 'three/examples/js/shaders/CopyShader';
-import 'three/examples/js/shaders/FXAAShader';
-import 'three/examples/js/shaders/SAOShader';
-import 'three/examples/js/shaders/DepthLimitedBlurShader';
-import 'three/examples/js/shaders/UnpackDepthRGBAShader';*/
-// import 'three/examples/js/WebGL.js';
-
 import { TweenMax, Expo } from 'gsap/all';
 
 // TODO: implement WebGL check https://threejs.org/docs/#manual/en/introduction/WebGL-compatibility-check
 
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-// import Stats from 'three/examples/js/libs/stats.min';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
-// import dat from 'three/examples/js/libs/dat.gui.min.js';
 
 // Local import
 import { scrollToItem, toggleDrawer, setDrawer } from './Categories';
-import { removeLoadingScreen, setSelectedObject } from './SceneUtils';
+import { removeLoadingScreen } from './SceneUtils';
 import modelName from '../assets/house.glb';
 import { items } from './items.js';
 
@@ -76,11 +59,8 @@ let INTERSECTED, SELECTABLE;
 let composer, outlinePass;
 
 /* Camera stuff */
-let screenWidth = window.innerWidth;
-let screenHeight = window.innerHeight;
-let aspect = screenWidth / screenHeight;
 const frustumSize = 25; // 10
-const defaultCameraPosition = { x: -30, y: 40, z: 60 }; // { x: 5, y: 3, z: 8 };
+const defaultCameraPosition = { x: -30, y: 40, z: 60 };
 
 /* Other Three.js variables */
 const clock = new THREE.Clock();
@@ -108,10 +88,8 @@ const SAOparameters = {
 };
 const meshGroup = new THREE.Group();
 const labelPivot = new THREE.Object3D();
-// const rotationQuaternion = new THREE.Quaternion();
 
 /* For debugging */
-let assistantCamera;
 let cameraHelper;
 let dirLightHelper;
 
@@ -122,7 +100,10 @@ let dirLightHelper;
 export let isAnimating = false;
 
 export const init = async () => {
-    //let canvasElement = document.getElementById('canvas');
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const aspect = screenWidth / screenHeight;
+    // const canvasElement = document.getElementById('canvas');
     const container = document.getElementById('container');
     const progress = document.getElementById('progress');
 
@@ -143,60 +124,42 @@ export const init = async () => {
     container.appendChild(stats.dom);
 
     renderer = new THREE.WebGLRenderer(); // { antialias: true }
-    //renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
+    // renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(screenWidth, screenHeight);
     renderer.gammaInput = true;
     renderer.gammaOutput = true;
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 
     labelRenderer = new CSS3DRenderer();
-    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.setSize(screenWidth, screenHeight);
     labelRenderer.domElement.style.position = 'absolute';
     labelRenderer.domElement.style.top = '0px';
     container.appendChild(labelRenderer.domElement);
 
     camera = new THREE.PerspectiveCamera(
         20,
-        window.innerWidth / window.innerHeight,
+        aspect,
         1,
         1000
     );
     // Making the Euler angles make more sense (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
     camera.rotation.order = 'YXZ';
-    /*camera = new THREE.OrthographicCamera(
-        frustumSize * aspect / - 2,
-        frustumSize * aspect / 2,
-        frustumSize / 2,
-        frustumSize / - 2,
-        1,
-        100 // 30
-    );*/
-    // camera.position.set(defaultCameraPosition.x, defaultCameraPosition.y, defaultCameraPosition.z);
-    assistantCamera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
-    assistantCamera.position.set(-10, 30, 10);
-    assistantCamera.lookAt(0, 0, 0);
 
     controls = new OrbitControls(camera, labelRenderer.domElement);
-    // controls = new OrbitControls(camera, renderer.domElement);
-    // controls = new THREE.OrbitControls(assistantCamera, renderer.domElement);
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
-    // controls.target.set(0, 0, 0);
 
     const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
     scene.add(ambientLight);
 
     directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.color.setHSL(0.1, 1, 0.5);
-    // directionalLight.position.set(0, 8, 20);
-    // directionalLight.rotation.set(0, 90, 80);
     scene.add(directionalLight);
+
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 1024;
-    directionalLight.shadow.mapSize.height = 1024;
-    // directionalLight.shadow.mapSize.width = directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.mapSize.width = directionalLight.shadow.mapSize.height = 1024;
 
     const d = 10;
     directionalLight.shadow.camera.left = -d;
@@ -217,6 +180,8 @@ export const init = async () => {
     hemisphereLight.position.set(0, 50, 0);
     // scene.add(hemisphereLight);
 
+    setSunLight();
+
     const loader = new GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
     DRACOLoader.setDecoderPath(WEBPACK_MODE === 'development' ?
@@ -231,15 +196,10 @@ export const init = async () => {
 
         const model = gltf.scene;
         // let animations = gltf.animations;
-        // model.position.set(1, 0, 1);
-        // model.position.set(1, 0, 0);
-        // model.scale.set(100, 100, 100);
-        // model.scale.set(0.01, 0.01, 0.01);
         const meshArray = [];
 
         model.traverse(node => {
             if (node instanceof THREE.Mesh) {
-                // console.log(node.material);
                 node.receiveShadow = true;
                 node.castShadow = true;
                 node.material.transparent = true;
@@ -249,19 +209,11 @@ export const init = async () => {
                 // let boundingBox = node.geometry.boundingBox.clone();
 
                 meshArray.push(node);
-                // ground.material.aoMap = node.material.aoMap;
-
-                /*node.material.map = node.material.aoMap;
-                node.material.aoMap = null;*/
-                // node.material.aoMapIntensity = 4;
-
-                // console.log(node);
             }
         });
         meshGroup.children = meshArray;
         scene.add(meshGroup);
 
-        // scene.add(model);
         /*mixer = new THREE.AnimationMixer(model);
         mixer.clipAction(animations[0]).play();*/
 
@@ -282,33 +234,29 @@ export const init = async () => {
     composer.setSize(window.innerWidth, window.innerHeight);
 
     const renderPass = new RenderPass(scene, camera);
-    // let renderPass = new THREE.RenderPass(scene, assistantCamera);
     composer.addPass(renderPass);
 
     outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
-    // outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, assistantCamera);
     outlinePass.params = outlinePassParameters;
     outlinePass.visibleEdgeColor.set('#ffffff');
     outlinePass.hiddenEdgeColor.set('#190a05');
     composer.addPass(outlinePass);
 
     const saoPass = new SAOPass(scene, camera, false, true);
-    // let saoPass = new THREE.SAOPass(scene, assistantCamera, false, true);
     saoPass.params = SAOparameters;
     composer.addPass(saoPass);
 
     // Init gui
     const gui = new GUI();
-    // var gui = new dat.GUI();
-    gui.add( saoPass.params, 'output', {
+    gui.add(saoPass.params, 'output', {
         'Beauty': SAOPass.OUTPUT.Beauty,
         'Beauty+SAO': SAOPass.OUTPUT.Default,
         'SAO': SAOPass.OUTPUT.SAO,
         'Depth': SAOPass.OUTPUT.Depth,
         'Normal': SAOPass.OUTPUT.Normal
-    } ).onChange( function ( value ) {
-        saoPass.params.output = parseInt( value );
-    } );
+    }).onChange(value => {
+        saoPass.params.output = parseInt(value);
+    });
     gui.add( saoPass.params, 'saoBias', - 1, 1 );
     gui.add( saoPass.params, 'saoIntensity', 0, 1 );
     gui.add( saoPass.params, 'saoScale', 0, 10 );
@@ -336,17 +284,13 @@ export const init = async () => {
     /*let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
     scene.add(pointLightHelper);*/
 
-    let axesHelper = new THREE.AxesHelper(5);
+    const axesHelper = new THREE.AxesHelper(5);
     // scene.add(axesHelper);
 };
 
 const start = () => {
     animate();
-
     resetCamera();
-    /*animateCamera(defaultCameraPosition, 1, 1.25, Expo.easeOut);
-    setLookAt({ x: 0, y: 3, z: 0 });*/
-    // TweenMax.to(camera.position, 1.25, { ease: Expo.easeOut, x: 5, y: 3 });
 };
 
 /*let stop = () => {
@@ -355,12 +299,6 @@ const start = () => {
 
 // Based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
 const radius = 20;
-const time = new Date().getSeconds();
-const timeToRadians = time * (Math.PI / 30);
-// const time = new Date().getTime() * 0.000002;
-// const time = new Date().getHours();
-// const time = new Date().getTime() * 0.000002;
-// const radians = (2 * Math.PI) / time;
 const animate = () => {
     requestAnimationFrame(animate);
 
@@ -372,29 +310,11 @@ const animate = () => {
 
     if (label.object.userData.set) {
         labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
-        /*rotationQuaternion.slerp(camera.quaternion, 0.05);
-        labelPivot.quaternion.y = camera.quaternion.y;*/
         // labelPivot.rotation.y = camera.rotation.y;
     }
 
     /* For debugging */
     stats.begin();
-    // stats.update();
-
-    const sinTime = Math.sin(timeToRadians);
-    const cosTime = Math.cos(timeToRadians);
-
-    directionalLight.position.set(radius * cosTime, radius * sinTime, radius * sinTime);
-
-    if (sinTime > 0.2) { // Day
-        directionalLight.intensity = 1;
-    }
-    else if (sinTime < 0.2 && sinTime > 0) { // Twilight
-        directionalLight.intensity = sinTime / 0.2;
-    }
-    else { // Night
-        directionalLight.intensity = 0;
-    }
 
     // camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
@@ -402,8 +322,6 @@ const animate = () => {
     dirLightHelper.update();
 
     composer.render();
-    // renderer.render(scene, assistantCamera);
-    // renderer.render(scene, camera);
     labelRenderer.render(labelScene, camera);
 
     stats.end();
@@ -412,32 +330,19 @@ const animate = () => {
 const resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
     console.log('resize');
 
-    /*screenWidth = window.innerWidth;
-    screenHeight = window.innerHeight;
-    aspect = screenWidth / screenHeight;*/
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    const aspect = screenWidth / screenHeight;
 
     // Perspective camera
-    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = aspect;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    composer.setSize(window.innerWidth, window.innerHeight);
-    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(screenWidth, screenHeight);
+    composer.setSize(screenWidth, screenHeight);
+    labelRenderer.setSize(screenWidth, screenHeight);
 
     // cameraHelper.update();
-
-    // Orthographic camera
-    /*camera.left = frustumSize * aspect / -2;
-    camera.right = frustumSize * aspect / 2;
-    camera.top = frustumSize / 2;
-    camera.bottom = frustumSize / -2;
-    camera.updateProjectionMatrix();*/
 };
-
-/*let selectedObjects = [];
-let addSelectedObject = object => {
-    selectedObjects = [];
-    selectedObjects.push(object);
-};*/
 
 // TODO: combine onMouseMove & onClick functions
 const onMouseMove = event => {
@@ -448,7 +353,6 @@ const onMouseMove = event => {
 
     // update the picking ray with the camera and mouse position
     raycaster.setFromCamera(mouse, camera);
-    // raycaster.setFromCamera(mouse, assistantCamera);
 
     // calculate objects intersecting the picking ray
     const intersects = raycaster.intersectObjects(scene.children, true);
@@ -460,9 +364,7 @@ const onMouseMove = event => {
 
         if (SELECTABLE) {
             const selectedObject = intersects[0].object;
-            // addSelectedObject(selectedObject);
             outlinePass.selectedObjects = [selectedObject];
-            // outlinePass.selectedObjects = selectedObjects;
         } else {
             outlinePass.selectedObjects = [];
         }
@@ -477,7 +379,6 @@ const onClick = event => {
 
     // update the picking ray with the camera and mouse position
     raycaster.setFromCamera(mouse, camera);
-    // raycaster.setFromCamera(mouse, assistantCamera);
 
     // calculate objects intersecting the picking ray
     const intersects = raycaster.intersectObjects(scene.children, true);
@@ -509,10 +410,8 @@ export const selectFloor = value => {
     const setVisibility = (level, opacity, visibility) => {
         for (let j = 0; j < meshes.length; j++) {
             if (meshes[j].material.name.includes(level.toString())) {
-                // console.log('true', meshes[j].material.name);
                 meshes[j].material.opacity = opacity;
                 meshes[j].visible = visibility;
-                // meshes[j].material.visible = visibility;
             }
         }
     };
@@ -526,7 +425,6 @@ export const selectFloor = value => {
 };
 
 export const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
-// export let animateCamera = (objectPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut, lookAt = { x: 0, y: 5, z: 0 }) => {
     TweenMax.to(camera.position, duration, {
         x: targetPosition.x,
         y: targetPosition.y,
@@ -534,11 +432,7 @@ export const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easi
         ease: easing,
         onUpdate: () => {
             camera.updateProjectionMatrix();
-            // isAnimating = true;
-        }/*,
-        onComplete: () => {
-            isAnimating = false;
-        }*/
+        }
     });
     TweenMax.to(camera, duration, {
         zoom: targetZoom,
@@ -547,24 +441,6 @@ export const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easi
             camera.updateProjectionMatrix();
         }*/
     });
-
-    /*let direction = new Vector3();
-    camera.getWorldDirection(direction);
-    console.log(direction);*/
-    // controls.target.set(x, y, z);
-
-    /*TweenMax(camera.position)
-        .to({
-            x: 25,
-            y: 25,
-            z: 25,
-        }, 1000)
-        .easing(Expo.easeInOut)
-        .on('update', ({ x, y, z }) => {
-            console.log(x, y, z);
-            camera.lookAt(1, 1, 0);
-        })
-        .start();*/
 };
 
 export const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
@@ -615,7 +491,26 @@ let animateOpacity = (objects, targetOpacity) => {
     opacityTween.start();*/
 };
 
-export const selectObject = object => {
+const setSunLight = () => {
+    const time = new Date().getHours();
+    // const time = new Date().getSeconds();
+    const timeToRadians = time * (Math.PI / 24);
+    // const timeToRadians = time * (Math.PI / 30);
+    const sinTime = radius * Math.sin(timeToRadians);
+    const cosTime = radius * Math.cos(timeToRadians);
+
+    directionalLight.position.set(cosTime, sinTime, sinTime);
+
+    if (sinTime > 0.2) { // Day
+        directionalLight.intensity = 1;
+    } else if (sinTime < 0.2 && sinTime > 0) { // Twilight
+        directionalLight.intensity = sinTime / 0.2;
+    } else { // Night
+        directionalLight.intensity = 0;
+    }
+};
+
+const selectObject = object => {
     // Abstract the level of selected object from its material name and use it to select the level
     // Check if an integer was indeed received
     const level = object.material.name.charAt(0);
@@ -636,11 +531,6 @@ export const selectObject = object => {
         y: objectPosition.y + objectSize / 2 + 6, // 4
         z: objectPosition.z + objectSize / 2 + 3,
     }, zoom);
-    /*animateCamera({
-        x: -object.position.x + 3,
-        y: object.position.y + 5,
-        z: object.position.z + 3,
-    }, zoom);*/
 
     animateLookAt(objectPosition);
 
@@ -649,31 +539,12 @@ export const selectObject = object => {
 
         const objectNameArray = object.userData.name.split(' ');
         const category = objectNameArray[1];
-        // const category = objectNameArray[objectNameArray.length - 1];
         const id = objectNameArray[2];
 
-        // setLabel(label, object, objectSize, category);
         setLabel(label, objectPosition, objectSize, category, id);
-
-        // TODO: animate camera (or object) to the side when drawer opens + Reflect selected category in the category buttons
-        /*setDrawer(true);
-        scrollToCategory(category);
-        // camera.translateX(10);*/
-
-        /*animateCamera({
-            x: 10,
-            y: object.position.y + 10,
-            z: object.position.z + 2,
-        }, zoom);*/
 
         document.getElementById('radio-' + level).checked = true;
     }
-    // setFov(fov);
-
-    // console.log(zoom, objectSize)
-    // console.log('fov: ' + fov, 'zoom: ' + zoom, objectSize)
-    // console.log('sigmoid: ' + sigmoid(objectSize), 'boundingSphere: ' + objectSize)
-    // setFov(Math.round(22 / objectSize));
 };
 
 const createLabel = () => {
@@ -697,11 +568,6 @@ const createLabel = () => {
         </div>
     `;
     // <div id='label-image' class='mdc-card__media mdc-card__media--square' style='background-image: url(${ require('../assets/img/placeholder.jpg') });'></div>
-    /*element.width = '5px';
-    element.style.background = '#ffffff';
-    element.style.fontSize = '50px'; //2em
-    element.style.color = 'black';
-    element.style.padding = '1em';*/
     document.body.appendChild(element);
 
     // CSS Object
@@ -719,6 +585,7 @@ const createLabel = () => {
 
 // TODO: check https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
 // TODO: create line as indicator from label to object
+// TODO: scroll to selected category (instead of card) in the category buttons when drawer opens
 const setLabel = (label, position, radius, category, id) => {
     const scale = 200;
     // Get selected item info based on the id
@@ -733,9 +600,6 @@ const setLabel = (label, position, radius, category, id) => {
     // document.getElementById('label-image').style.backgroundImage = 'url(../assets/img/' + objectInfo.image + ')';
 
     document.querySelector('.label-card').addEventListener('click', clickLabel);
-    /*document.querySelector('.label-card').addEventListener('click', () => {
-        console.log('hi', id);
-    });*/
 
     // Calculate the width of the label after inserting text
     const labelWidth = label.element.offsetWidth / 2;
@@ -768,7 +632,7 @@ const removeLabel = label => {
     console.log('label removed');
 };
 
-export const clickLabel = event => {
+const clickLabel = event => {
     if (!isAnimating) {
         toggleDrawer();
         scrollToItem(event.currentTarget.dataset.item);
@@ -830,13 +694,11 @@ export const panView = distance => {
     // controls.target.add(translationVectorNoAnimation);
 
     console.log(testX, testZ);
-    // console.log(testX, testZ);
 };
 
 export const resetCamera = () => {
     // Reset camera
     animateCamera(defaultCameraPosition, 1, 2, Expo.easeOut);
-    // animateCamera(defaultCameraPosition);
     animateLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
     animateFov(20);
 };
