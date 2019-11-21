@@ -18,7 +18,7 @@ import { UnpackDepthRGBAShader } from 'three/examples/jsm/shaders/UnpackDepthRGB
 import { WEBGL } from 'three/examples/jsm/WebGL.js';
 
 // import { TweenMax, Expo } from 'gsap/TweenMax';
-import { TweenMax, Expo } from 'gsap/all';
+import { gsap, Expo } from 'gsap/all';
 
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
@@ -37,6 +37,7 @@ import { items } from './items.js';
 // TODO: check performance drop in Firefox: https://stackoverflow.com/questions/18727396/webgl-and-three-js-running-great-on-chrome-but-horrible-on-firefox
 //  + From a little further away the label text looks sharp in Chrome
 // TODO: check WebAssembly memory full after a couple of reloads (memory leak?). Also see https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
+// TODO: check JavaScript functors, applicatives & monads: https://medium.com/@tzehsiang/javascript-functor-applicative-monads-in-pictures-b567c6415221#.rdwll124i
 
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
@@ -430,7 +431,7 @@ export const selectFloor = value => {
 };
 
 export const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
-    TweenMax.to(camera.position, duration, {
+    gsap.to(camera.position, duration, {
         x: targetPosition.x,
         y: targetPosition.y,
         z: targetPosition.z,
@@ -439,7 +440,7 @@ export const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easi
             camera.updateProjectionMatrix();
         }
     });
-    TweenMax.to(camera, duration, {
+    gsap.to(camera, duration, {
         zoom: targetZoom,
         ease: Expo.easeInOut,
         /*onUpdate: () => {
@@ -450,7 +451,7 @@ export const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easi
 
 export const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
     // Animate lookAt point
-    TweenMax.to(controls.target, duration, {
+    gsap.to(controls.target, duration, {
         x: lookAt.x,
         y: lookAt.y,
         z: lookAt.z,
@@ -467,7 +468,7 @@ export const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => 
 
 export const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
     // Animate camera fov
-    TweenMax.to(camera, duration, {
+    gsap.to(camera, duration, {
         fov: fov,
         ease: easing,
         /*onUpdate: () => {
@@ -477,7 +478,7 @@ export const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
 };
 
 let animateOpacity = (objects, targetOpacity) => {
-    /*TweenMax.to(object, duration, {
+    /*gsap.to(object, duration, {
         opacity: targetOpacity,
         ease: Expo.easeInOut,
         onUpdate: () => {

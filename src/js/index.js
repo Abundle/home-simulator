@@ -8,6 +8,7 @@ import { MDCIconButtonToggle } from '@material/icon-button';
 // Local import
 import '../scss/main.scss';
 // TODO: structure imports 1 way, either '* as Foo' or '{ Bar } from Foo'. Last one is probably better performance wise, except if all functions are being used
+// TODO: GitHub/portfolio link erin zetten en/of console message met GitHub link?
 import * as Scene from './Scene';
 import { Cards } from './Cards';
 import { createCategoryButton, toggleDrawer, getDrawer, scrollToCategory } from './Categories';

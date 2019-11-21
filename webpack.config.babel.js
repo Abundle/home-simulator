@@ -6,6 +6,7 @@ import autoprefixer from 'autoprefixer';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 
+// Setup Webpack + Babel (i.e. webpack.config.babel.js): https://medium.com/oredi/webpack-with-babel-7-b61f7caa9565
 // TODO: split code, see https://webpack.js.org/guides/code-splitting/
 
 export default (env, options) => {

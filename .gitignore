@@ -6,9 +6,6 @@
 # production
 /build
 
-# development
-/dist
-
 # IDE specifications
 /.idea
 
