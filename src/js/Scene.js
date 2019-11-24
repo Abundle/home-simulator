@@ -1,4 +1,23 @@
-import * as THREE from 'three';
+// import * as THREE from 'three';
+import {
+    Scene,
+    Clock,
+    Raycaster,
+    Vector2,
+    Group,
+    Object3D,
+    Color,
+    Mesh,
+    WebGLRenderer,
+    PerspectiveCamera,
+    AmbientLight,
+    DirectionalLight,
+    HemisphereLight,
+    CameraHelper, DirectionalLightHelper, HemisphereLightHelper, AxesHelper,
+    Matrix4,
+    Vector3,
+} from 'three';
+
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
@@ -11,32 +30,34 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
 /* Shaders */
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
+
+// eslint-disable-next-line no-unused-vars
 import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
+// eslint-disable-next-line no-unused-vars
 import { SAOShader } from 'three/examples/jsm/shaders/SAOShader';
+// eslint-disable-next-line no-unused-vars
 import { DepthLimitedBlurShader } from 'three/examples/jsm/shaders/DepthLimitedBlurShader';
+// eslint-disable-next-line no-unused-vars
 import { UnpackDepthRGBAShader } from 'three/examples/jsm/shaders/UnpackDepthRGBAShader';
+
 import { WEBGL } from 'three/examples/jsm/WebGL.js';
-
-// import { TweenMax, Expo } from 'gsap/TweenMax';
-import { gsap, Expo } from 'gsap/all';
-
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
+import { gsap, Expo } from 'gsap/all';
 
 // Local import
 import { scrollToItem, toggleDrawer, setDrawer } from './Categories';
-import { removeLoadingScreen } from './SceneUtils';
+import { removeLoadingScreen } from './utils/SceneUtils';
 import modelName from '../assets/house.glb';
-import { items } from './items.js';
+import items from './utils/items.js';
 
 // TODO: check if importing the levels as different object works with opacity changes
 // TODO: think about mobile version (no dynamic lighting, something similar to Google Maps?)
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
-// TODO: check performance drop in Firefox: https://stackoverflow.com/questions/18727396/webgl-and-three-js-running-great-on-chrome-but-horrible-on-firefox
-//  + From a little further away the label text looks sharp in Chrome
-// TODO: check WebAssembly memory full after a couple of reloads (memory leak?). Also see https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
+// TODO: check Firefox reclicking label + refreshing page does not reset the level radio buttons
+//  Also see https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
 // TODO: check JavaScript functors, applicatives & monads: https://medium.com/@tzehsiang/javascript-functor-applicative-monads-in-pictures-b567c6415221#.rdwll124i
 
 // Inspiration:
@@ -48,6 +69,9 @@ import { items } from './items.js';
 // Blog: https://jolicode.com/blog/making-3d-for-the-web
 // WebGL 2: https://threejs.org/docs/#manual/en/introduction/How-to-use-WebGL2
 // Three.js fundamentals https://threejsfundamentals.org/
+
+// Bug: WebAssembly memory full after a couple of reloads (memory leak with Chrome DevTools
+// See https://github.com/emscripten-core/emscripten/issues/8126).
 
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
@@ -64,9 +88,9 @@ const frustumSize = 25; // 10
 const defaultCameraPosition = { x: -30, y: 40, z: 60 };
 
 /* Other Three.js variables */
-const clock = new THREE.Clock();
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
+const clock = new Clock();
+const raycaster = new Raycaster();
+const mouse = new Vector2();
 const outlinePassParameters = {
     edgeStrength: 3,
     edgeGlow: 0.0,
@@ -87,8 +111,8 @@ const SAOparameters = {
     saoBlurStdDev: 7,
     saoBlurDepthCutoff: 0.0008
 };
-const meshGroup = new THREE.Group();
-const labelPivot = new THREE.Object3D();
+const meshGroup = new Group();
+const labelPivot = new Object3D();
 
 /* For debugging */
 let cameraHelper;
@@ -96,7 +120,6 @@ let dirLightHelper;
 
 // TODO: sun lighting check https://stackoverflow.com/questions/15478093/realistic-lighting-sunlight-with-three-js
 // TODO: use library for calculating position of the sun? https://github.com/mourner/suncalc
-// TODO: smart autocompletion check: https://tabnine.com/
 
 export let isAnimating = false;
 
@@ -112,11 +135,11 @@ export const init = () => {
     document.addEventListener('mousemove', onMouseMove);
     container.addEventListener('click', onClick);
 
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xbfe3dd);
+    scene = new Scene();
+    scene.background = new Color(0xbfe3dd);
     // scene.fog = new THREE.Fog(scene.background, 1, 5000);
 
-    labelScene = new THREE.Scene();
+    labelScene = new Scene();
     labelScene.scale.set(0.005, 0.005, 0.005);
     label = createLabel();
 
@@ -124,7 +147,7 @@ export const init = () => {
     stats = new Stats();
     container.appendChild(stats.dom);
 
-    renderer = new THREE.WebGLRenderer(); // { antialias: true }
+    renderer = new WebGLRenderer(); // { antialias: true }
     // renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
@@ -139,7 +162,7 @@ export const init = () => {
     labelRenderer.domElement.style.top = '0px';
     container.appendChild(labelRenderer.domElement);
 
-    camera = new THREE.PerspectiveCamera(
+    camera = new PerspectiveCamera(
         20,
         aspect,
         1,
@@ -152,10 +175,10 @@ export const init = () => {
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
 
-    const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+    const ambientLight = new AmbientLight(0x404040); // soft white light
     scene.add(ambientLight);
 
-    directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight = new DirectionalLight(0xffffff, 1);
     directionalLight.color.setHSL(0.1, 1, 0.5);
     scene.add(directionalLight);
 
@@ -175,19 +198,19 @@ export const init = () => {
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);*/
 
-    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+    const hemisphereLight = new HemisphereLight(0xffffff, 0xffffff, 0.6);
     hemisphereLight.color.setHSL(0.6, 1, 0.6);
     hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
     hemisphereLight.position.set(0, 50, 0);
     // scene.add(hemisphereLight);
 
-    setSunLight();
+    updateSunLight();
 
     const loader = new GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath(WEBPACK_MODE === 'development' ?
-        './node_modules/three/examples/js/libs/draco/gltf/' : './assets/draco/gltf/'
+        './node_modules/three/examples/js/libs/draco/gltf/' : './assets/draco/'
     );
     loader.setDRACOLoader(dracoLoader);
 
@@ -199,7 +222,7 @@ export const init = () => {
         const meshArray = [];
 
         model.traverse(node => {
-            if (node instanceof THREE.Mesh) {
+            if (node instanceof Mesh) {
                 node.receiveShadow = true;
                 node.castShadow = true;
                 node.material.transparent = true;
@@ -224,9 +247,6 @@ export const init = () => {
             const warning = WEBGL.getWebGLErrorMessage();
             container.appendChild(warning);
         }
-
-        // Release decoder resources
-        dracoLoader.dispose();
     },
     xhr => {
         const percentage = Math.round(xhr.loaded / xhr.total * 100);
@@ -245,7 +265,7 @@ export const init = () => {
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
 
-    outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+    outlinePass = new OutlinePass(new Vector2(window.innerWidth, window.innerHeight), scene, camera);
     outlinePass.params = outlinePassParameters;
     outlinePass.visibleEdgeColor.set('#ffffff');
     outlinePass.hiddenEdgeColor.set('#190a05');
@@ -281,19 +301,19 @@ export const init = () => {
     composer.addPass(effectFXAA);
 
     /* Helpers */
-    cameraHelper = new THREE.CameraHelper(camera);
+    cameraHelper = new CameraHelper(camera);
     // scene.add(cameraHelper);
 
-    dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 2);
+    dirLightHelper = new DirectionalLightHelper(directionalLight, 2);
     scene.add(dirLightHelper);
 
-    const hemiSphereHelper = new THREE.HemisphereLightHelper(hemisphereLight, 2);
+    const hemiSphereHelper = new HemisphereLightHelper(hemisphereLight, 2);
     // scene.add(hemiSphereHelper);
 
     /*let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
     scene.add(pointLightHelper);*/
 
-    const axesHelper = new THREE.AxesHelper(5);
+    const axesHelper = new AxesHelper(5);
     // scene.add(axesHelper);
 };
 
@@ -497,7 +517,7 @@ let animateOpacity = (objects, targetOpacity) => {
     opacityTween.start();*/
 };
 
-const setSunLight = () => {
+const updateSunLight = () => {
     const time = new Date().getHours();
     // const time = new Date().getSeconds();
     const timeToRadians = time * (Math.PI / 24);
@@ -647,13 +667,13 @@ export const panView = distance => {
     const duration = 0.5;
     const easing = Expo.easeInOut;
 
-    const object = new THREE.Object3D().copy(camera);
+    const object = new Object3D().copy(camera);
     object.position.setX(distance);
     // const cameraTargetPosition = new THREE.Vector3().copy(camera.position).setX(distance);
-    const cameraMatrix = new THREE.Matrix4().copy(object.matrix);
+    const cameraMatrix = new Matrix4().copy(object.matrix);
 
     // Copy the camera's first column (which is x) of its local transformation matrix to empty vector
-    const translationVector = new THREE.Vector3().setFromMatrixColumn(cameraMatrix , 0);
+    const translationVector = new Vector3().setFromMatrixColumn(cameraMatrix , 0);
     // Multiply the vector with the translation distance
     translationVector.multiplyScalar(distance);
 

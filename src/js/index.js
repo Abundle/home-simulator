@@ -3,26 +3,26 @@ import { MDCFormField } from '@material/form-field';
 import { MDCRadio } from '@material/radio';
 import { MDCIconButtonToggle } from '@material/icon-button';
 
-// import * as WEBGL from 'three/examples/js/WebGL';
-
 // Local import
 import '../scss/main.scss';
-// TODO: structure imports 1 way, either '* as Foo' or '{ Bar } from Foo'. Last one is probably better performance wise, except if all functions are being used
-// TODO: GitHub/portfolio link erin zetten en/of console message met GitHub link?
+// TODO: GitHub/portfolio link erin zetten of console message met portfolio & GitHub link?
 import * as Scene from './Scene';
+// import { initScene, resetCamera, resetSelected, animateCamera, animateLookAt, animateFov, selectFloor } from './Scene';
 import { Cards } from './Cards';
 import { createCategoryButton, toggleDrawer, getDrawer, scrollToCategory } from './Categories';
-// import * as Categories from './Categories';
-import { categoryIcons } from './items';
+import categoryIcons from './utils/categoryIcons';
 import { isAnimating } from './Scene';
+
+/* For debugging */
+// import './transpile.test';
 
 // TODO: add tooltips to category buttons https://www.zeolearn.com/magazine/material-design-tooltip-with-css-html
 const radio = new MDCRadio(document.querySelector('.mdc-radio'));
 const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
-const selectors = '.mdc-button, .mdc-card__primary-action';
+const buttonSelectors = '.mdc-button, .mdc-card__primary-action';
 
 formField.input = radio;
-[].map.call(document.querySelectorAll(selectors), element => {
+[].map.call(document.querySelectorAll(buttonSelectors), element => {
     return new MDCRipple(element);
 });
 

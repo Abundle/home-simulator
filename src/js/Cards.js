@@ -1,4 +1,6 @@
-import { items } from './items.js';
+import items from './utils/items.js';
+
+// TODO: instead of require, checkout https://medium.com/@godban/loading-static-and-dynamic-images-with-webpack-8a933e82cb1e
 
 export const Cards = Object.keys(items).map(category => `
     <h1 id=${ category } class='mdc-typography--headline5'>${ category.replace('_', ' ') }</h1>

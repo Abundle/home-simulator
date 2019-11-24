@@ -6,16 +6,20 @@ import autoprefixer from 'autoprefixer';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 
-// Setup Webpack + Babel (i.e. webpack.config.babel.js): https://medium.com/oredi/webpack-with-babel-7-b61f7caa9565
-// TODO: split code, see https://webpack.js.org/guides/code-splitting/
+// Name "webpack.config.babel.js' is for using ES6 in webpack config
 
-export default (env, options) => {
+// TODO: check lazy loading https://webpack.js.org/guides/code-splitting/
+
+export default (_, options) => {
     const devMode = options.mode !== 'production';
 
     return {
-        entry: './src/js/index.js',
+        entry: {
+            main: './src/js/index.js'
+        },
         output: {
-            filename: 'bundle.[chunkhash].js',
+            filename: devMode ? 'main.js' : 'main.[chunkhash].js',
+            chunkFilename: devMode ? '[name].js' : '[name].[chunkhash].js',
             publicPath: '/',
             path: path.resolve(__dirname, 'build')
         },
@@ -52,13 +56,12 @@ export default (env, options) => {
                         {
                             loader: 'sass-loader',
                             options: { // Configure sass-loader to understand the @material imports used by MDC Web
-                                includePaths: ['./node_modules'],
+                                sassOptions: {
+                                    includePaths: ['./node_modules'],
+                                },
                             },
                         }
                     ],
-                    // Next to sideEffects in package.json, add sideEffects here to include it in build.
-                    // Reference: https://webpack.js.org/guides/tree-shaking/
-                    sideEffects: true,
                 },
                 {
                     test: /\.(jpe?g|png|gif|svg|ico)$/,
@@ -84,20 +87,35 @@ export default (env, options) => {
             open: true,
             overlay: true,
         },
-        devtool: devMode ? 'inline-source-map' : 'nosources-source-map',
+        devtool: devMode ? 'eval-source-map' : false,
         optimization: {
             minimizer: [
-                new TerserPlugin({
-                    cache: true,
-                    parallel: true,
-                    sourceMap: true, // Must be set to true if using source-maps in production
-                    terserOptions: {
-                        // https://github.com/webpack-contrib/terser-webpack-plugin#terseroptions
-                        extractComments: 'all',
-                    }
+                new TerserPlugin({ // Docs: https://github.com/webpack-contrib/terser-webpack-plugin#terseroptions
+                    extractComments: 'all',
+                    // sourceMap: true, // Must be set to true if using source-maps in production
                 }),
             ],
+            // Setup from https://medium.com/hackernoon/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
+            // & https://medium.com/@Yoriiis/the-real-power-of-webpack-4-splitchunks-plugin-fad097c45ba0
+            splitChunks: {
+                chunks: 'all',
+                minSize: 0,
+                cacheGroups: {
+                    vendors: {
+                        test: /[\\/]node_modules[\\/]/,
+                        name: devMode,
+                        /*name(module) {
+                            // get the name. E.g. node_modules/packageName/not/this/part.js or node_modules/packageName
+                            const packageName = module.context.match(/[\\/]node_modules[\\/](?:(@[\w-]*?[\\/].*?|.*?)([\\/]|$))/)[1];
+                            // npm package names are URL-safe, but some servers don't like @ symbols
+                            return `npm.${ packageName.replace('@', '') }`;
+                        },*/
+                    },
+                }
+            },
             mangleWasmImports: true,
+            // Reference: https://webpack.js.org/guides/tree-shaking/
+            sideEffects: false,
         },
         plugins: [
             new CleanWebpackPlugin(),
@@ -114,8 +132,10 @@ export default (env, options) => {
                 filename: devMode ? '[name].css' : '[name].[hash].css',
                 chunkFilename: devMode ? '[id].css' : '[id].[hash].css'
             }),
-            new CopyWebpackPlugin([
-                { from: './node_modules/three/examples/js/libs/draco/gltf/', to:'assets/draco/gltf' }
+            new CopyWebpackPlugin([ // Three.js DRACO loader docs: https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco#readme
+                // { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.js', to:'assets/draco/' },
+                { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.wasm', to:'assets/draco/' },
+                { from: './node_modules/three/examples/js/libs/draco/gltf/draco_wasm_wrapper.js', to:'assets/draco/' }
             ]),
         ]
     };
