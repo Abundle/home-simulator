@@ -33,6 +33,13 @@
         ],
         "no-unused-vars": "warn",
         "no-console": "off",
-        "prefer-const": "warn"
-    }
+        "prefer-const": "warn",
+        "import/no-cycle": [
+            2,
+            { "maxDepth": 1 }
+        ]
+    },
+    "plugins": [
+        "import"
+    ]
 }

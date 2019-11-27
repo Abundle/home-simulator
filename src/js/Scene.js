@@ -46,16 +46,16 @@ import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
 import { gsap, Expo } from 'gsap/all';
 
 // Local import
-import { scrollToItem, toggleDrawer, setDrawer } from './Categories';
-import { removeLoadingScreen } from './utils/SceneUtils';
+import Categories from './Categories';
 import modelName from '../assets/house.glb';
 import items from './utils/items.js';
+import SceneUtils from './utils/SceneUtils';
 
 // TODO: check if importing the levels as different object works with opacity changes
-// TODO: think about mobile version (no dynamic lighting, something similar to Google Maps?)
+// TODO: think about mobile version (option to disable dynamic lighting)
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
-//  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
+//  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
 // TODO: check Firefox reclicking label + refreshing page does not reset the level radio buttons
 //  Also see https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
 // TODO: check JavaScript functors, applicatives & monads: https://medium.com/@tzehsiang/javascript-functor-applicative-monads-in-pictures-b567c6415221#.rdwll124i
@@ -70,47 +70,26 @@ import items from './utils/items.js';
 // WebGL 2: https://threejs.org/docs/#manual/en/introduction/How-to-use-WebGL2
 // Three.js fundamentals https://threejsfundamentals.org/
 
-// Bug: WebAssembly memory full after a couple of reloads (memory leak with Chrome DevTools
-// See https://github.com/emscripten-core/emscripten/issues/8126).
+/* Bug: WebAssembly memory full after a couple of reloads (memory leak with Chrome DevTools
+See https://github.com/emscripten-core/emscripten/issues/8126) */
 
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
 
 /* Initiate global scene variables */
 let camera, scene, labelScene, renderer, labelRenderer;
-let directionalLight, pointLight;
+let directionalLight; // pointLight
 let mixer, controls, label, stats;
-let INTERSECTED, SELECTABLE;
 let composer, outlinePass;
 
 /* Camera stuff */
-const frustumSize = 25; // 10
+// const frustumSize = 25; // 10
 const defaultCameraPosition = { x: -30, y: 40, z: 60 };
 
 /* Other Three.js variables */
 const clock = new Clock();
 const raycaster = new Raycaster();
 const mouse = new Vector2();
-const outlinePassParameters = {
-    edgeStrength: 3,
-    edgeGlow: 0.0,
-    edgeThickness: 1,
-    pulsePeriod: 0,
-    rotate: false,
-    usePatternTexture: false,
-};
-const SAOparameters = {
-    output: 0,
-    saoBias: 1,
-    saoIntensity: 0.006, // 0.08
-    saoScale: 10,
-    saoKernelRadius: 75,
-    saoMinResolution: 0,
-    saoBlur: true,
-    saoBlurRadius: 4,
-    saoBlurStdDev: 7,
-    saoBlurDepthCutoff: 0.0008
-};
 const meshGroup = new Group();
 const labelPivot = new Object3D();
 
@@ -120,10 +99,7 @@ let dirLightHelper;
 
 // TODO: sun lighting check https://stackoverflow.com/questions/15478093/realistic-lighting-sunlight-with-three-js
 // TODO: use library for calculating position of the sun? https://github.com/mourner/suncalc
-
-export let isAnimating = false;
-
-export const init = () => {
+const init = () => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     const aspect = screenWidth / screenHeight;
@@ -215,7 +191,7 @@ export const init = () => {
     loader.setDRACOLoader(dracoLoader);
 
     loader.load(modelName, gltf => {
-        removeLoadingScreen();
+        SceneUtils.removeLoadingScreen();
 
         const model = gltf.scene;
         // let animations = gltf.animations;
@@ -266,13 +242,13 @@ export const init = () => {
     composer.addPass(renderPass);
 
     outlinePass = new OutlinePass(new Vector2(window.innerWidth, window.innerHeight), scene, camera);
-    outlinePass.params = outlinePassParameters;
+    outlinePass.params = SceneUtils.outlinePassParameters;
     outlinePass.visibleEdgeColor.set('#ffffff');
     outlinePass.hiddenEdgeColor.set('#190a05');
     composer.addPass(outlinePass);
 
     const saoPass = new SAOPass(scene, camera, false, true);
-    saoPass.params = SAOparameters;
+    saoPass.params = SceneUtils.SAOparameters;
     composer.addPass(saoPass);
 
     // Init gui
@@ -385,10 +361,10 @@ const onMouseMove = event => {
 
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with 'S_', so selectable will be true
-        SELECTABLE = intersects[0].object.name.indexOf('S_') !== -1;
+        SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1)
         // SELECTABLE = intersects[0].object.name.charAt(0) === 'S';
 
-        if (SELECTABLE) {
+        if (SceneUtils.getSelectable()) {
             const selectedObject = intersects[0].object;
             outlinePass.selectedObjects = [selectedObject];
         } else {
@@ -411,26 +387,26 @@ const onClick = event => {
 
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with an 'S_', so selectable will be true
-        SELECTABLE = intersects[0].object.name.indexOf('S_') !== -1;
+        SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
         // SELECTABLE = intersects[0].object.name.charAt(0) === 'S';
 
-        if (INTERSECTED !== intersects[0].object && SELECTABLE) {
+        if (SceneUtils.getIntersected() !== intersects[0].object && SceneUtils.getSelectable()) {
             /*if (INTERSECTED) { // TODO: blur rest of scene when object is selected?
                 INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
             }*/
-            INTERSECTED = intersects[0].object;
+            SceneUtils.setIntersected(intersects[0].object);
             // INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
             // INTERSECTED.material.color.setHex(0xff0000);
 
             // console.log(INTERSECTED);
-            selectObject(INTERSECTED);
+            selectObject(SceneUtils.getIntersected());
         }
     } else {
         resetSelected();
     }
 };
 
-export const selectFloor = value => {
+const selectFloor = value => {
     const meshes = meshGroup.children;
 
     const setVisibility = (level, opacity, visibility) => {
@@ -450,7 +426,7 @@ export const selectFloor = value => {
     }
 };
 
-export const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
+const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
     gsap.to(camera.position, duration, {
         x: targetPosition.x,
         y: targetPosition.y,
@@ -469,7 +445,7 @@ export const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easi
     });
 };
 
-export const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
+const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
     // Animate lookAt point
     gsap.to(controls.target, duration, {
         x: lookAt.x,
@@ -477,16 +453,16 @@ export const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => 
         z: lookAt.z,
         ease: easing,
         onUpdate: () => {
-            isAnimating = true;
+            SceneUtils.setAnimating(true);
             // camera.updateProjectionMatrix();
         },
         onComplete: () => {
-            isAnimating = false;
+            SceneUtils.setAnimating(false);
         }
     });
 };
 
-export const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
+const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
     // Animate camera fov
     gsap.to(camera, duration, {
         fov: fov,
@@ -615,7 +591,7 @@ const setLabel = (label, position, radius, category, id) => {
     // Get selected item info based on the id
     const objectInfo = items[category].find(object => object.id === parseInt(id));
 
-    setDrawer(false);
+    Categories.setDrawer(false);
 
     document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
     document.getElementById('label-title').textContent = objectInfo.title;
@@ -645,7 +621,7 @@ const removeLabel = label => {
     label.element.style.opacity = '0';
     label.element.style.pointerEvents = 'none';
 
-    setDrawer(false);
+    Categories.setDrawer(false);
 
     document.querySelector('.label-card').removeEventListener('click', clickLabel);
 
@@ -655,15 +631,15 @@ const removeLabel = label => {
 };
 
 const clickLabel = event => {
-    if (!isAnimating) {
-        toggleDrawer();
-        scrollToItem(event.currentTarget.dataset.item);
+    if (!SceneUtils.getAnimating()) {
+        Categories.toggleDrawer();
+        Categories.scrollToItem(event.currentTarget.dataset.item);
         // scrollToItem(`${ category }-${ id }`);
     }
 };
 
 // TODO: reset translation if another object is selected + add animation
-export const panView = distance => {
+const panView = distance => {
     const duration = 0.5;
     const easing = Expo.easeInOut;
 
@@ -718,18 +694,30 @@ export const panView = distance => {
     console.log(testX, testZ);
 };
 
-export const resetCamera = () => {
+const resetCamera = () => {
     // Reset camera
     animateCamera(defaultCameraPosition, 1, 2, Expo.easeOut);
     animateLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
     animateFov(20);
 };
 
-export const resetSelected = () => {
+const resetSelected = () => {
     /*if (INTERSECTED) {
         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
     }*/
-    INTERSECTED = null;
+    SceneUtils.setIntersected(null);
 
     removeLabel(label);
 };
+
+export default {
+    init,
+    selectFloor,
+    animateCamera,
+    animateLookAt,
+    animateFov,
+    panView,
+    resetCamera,
+    resetSelected,
+};
+

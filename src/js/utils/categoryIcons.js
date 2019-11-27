@@ -1,6 +1,6 @@
 export default {
     Default: 'favorite',
-    Kitchen: 'kitchen',
-    Living_Room: 'info',
+    Kitchen: 'star',
+    Living_Room: 'bookmark',
     // 'Bedroom': 'info'
 };

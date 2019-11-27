@@ -87,11 +87,16 @@ export default (_, options) => {
             open: true,
             overlay: true,
         },
-        devtool: devMode ? 'eval-source-map' : false,
+        devtool: devMode ? 'eval-source-map' : false, // or use source-map?
         optimization: {
             minimizer: [
-                new TerserPlugin({ // Docs: https://github.com/webpack-contrib/terser-webpack-plugin#terseroptions
-                    extractComments: 'all',
+                new TerserPlugin({ // Docs: https://github.com/webpack-contrib/terser-webpack-plugin
+                    terserOptions: {
+                        output: {
+                            comments: false,
+                        },
+                    },
+                    extractComments: false,
                     // sourceMap: true, // Must be set to true if using source-maps in production
                 }),
             ],

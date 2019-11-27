@@ -4,19 +4,20 @@ import { MDCRadio } from '@material/radio';
 import { MDCIconButtonToggle } from '@material/icon-button';
 
 // Local import
-import '../scss/main.scss';
-// TODO: GitHub/portfolio link erin zetten of console message met portfolio & GitHub link?
-import * as Scene from './Scene';
-// import { initScene, resetCamera, resetSelected, animateCamera, animateLookAt, animateFov, selectFloor } from './Scene';
-import { Cards } from './Cards';
-import { createCategoryButton, toggleDrawer, getDrawer, scrollToCategory } from './Categories';
+// TODO: insert GitHub/portfolio link or console message with portfolio & GitHub link?
+import Scene from './Scene';
+import Categories from './Categories';
 import categoryIcons from './utils/categoryIcons';
-import { isAnimating } from './Scene';
+import SceneUtils from './utils/SceneUtils';
+import Cards from './Cards';
+import Views from './Views';
+import '../scss/main.scss';
 
 /* For debugging */
-// import './transpile.test';
+// import './utils/transpile.test';
 
-// TODO: add tooltips to category buttons https://www.zeolearn.com/magazine/material-design-tooltip-with-css-html
+document.getElementById('views').innerHTML = Views;
+// TODO: use Lists instead https://material-components.github.io/material-components-web-catalog/#/component/list
 const radio = new MDCRadio(document.querySelector('.mdc-radio'));
 const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
 const buttonSelectors = '.mdc-button, .mdc-card__primary-action';
@@ -28,7 +29,7 @@ formField.input = radio;
 
 // TODO: remove focus after drawer closes, also for the radio buttons
 Object.keys(categoryIcons).map((category, index) => {
-    const button = createCategoryButton(category, categoryIcons[category], index);
+    const button = Categories.createCategoryButton(category, categoryIcons[category], index);
     document.getElementById('category-icons').innerHTML += button;
 });
 
@@ -48,21 +49,20 @@ document.querySelectorAll('.category-button').forEach(element => {
         }
 
         // If the drawer is already open and another button is clicked, don't close it
-        if (getDrawer() && target.id !== lastClickedId) {
+        if (Categories.getDrawer() && target.id !== lastClickedId) {
             // Set all buttons to false except the clicked element and update last clicked element
             categoryButtons.forEach(button => {
                 button.on = button.root_ === target;
             });
             lastClickedId = target.id;
 
-            scrollToCategory(lastClickedId);
+            Categories.scrollToCategory(lastClickedId);
         } else {
             // Otherwise act as normal toggle buttons and save the last clicked element id
-            !isAnimating && toggleDrawer();
-            // drawer.open = !drawer.open;
+            !SceneUtils.getAnimating() && Categories.toggleDrawer();
             lastClickedId = target.id;
 
-            scrollToCategory(lastClickedId);
+            Categories.scrollToCategory(lastClickedId);
         }
     });
 });
