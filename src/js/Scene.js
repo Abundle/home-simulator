@@ -94,6 +94,7 @@ const meshGroup = new Group();
 const labelPivot = new Object3D();
 
 /* For debugging */
+const isDev = WEBPACK_MODE === 'development';
 let cameraHelper;
 let dirLightHelper;
 
@@ -150,6 +151,10 @@ const init = () => {
     controls = new OrbitControls(camera, labelRenderer.domElement);
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
+    controls.enablePan     = isDev;
+    controls.maxPolarAngle = isDev ? Math.PI : Math.PI /2;
+    controls.minDistance   = isDev ? 0 : 25;
+    controls.maxDistance   = isDev ? Infinity : 125;
 
     const ambientLight = new AmbientLight(0x404040); // soft white light
     scene.add(ambientLight);
@@ -185,7 +190,7 @@ const init = () => {
     const loader = new GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
     const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath(WEBPACK_MODE === 'development' ?
+    dracoLoader.setDecoderPath(isDev ?
         './node_modules/three/examples/js/libs/draco/gltf/' : './assets/draco/'
     );
     loader.setDRACOLoader(dracoLoader);
@@ -262,6 +267,7 @@ const init = () => {
     }).onChange(value => {
         saoPass.params.output = parseInt(value);
     });
+    gui.close(true);
     gui.add( saoPass.params, 'saoBias', - 1, 1 );
     gui.add( saoPass.params, 'saoIntensity', 0, 1 );
     gui.add( saoPass.params, 'saoScale', 0, 10 );
@@ -427,7 +433,8 @@ const selectFloor = value => {
 };
 
 const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
-    gsap.to(camera.position, duration, {
+    gsap.to(camera.position, {
+        duration: duration,
         x: targetPosition.x,
         y: targetPosition.y,
         z: targetPosition.z,
@@ -436,7 +443,8 @@ const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Ex
             camera.updateProjectionMatrix();
         }
     });
-    gsap.to(camera, duration, {
+    gsap.to(camera, {
+        duration: duration,
         zoom: targetZoom,
         ease: Expo.easeInOut,
         /*onUpdate: () => {
@@ -447,7 +455,8 @@ const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Ex
 
 const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
     // Animate lookAt point
-    gsap.to(controls.target, duration, {
+    gsap.to(controls.target, {
+        duration: duration,
         x: lookAt.x,
         y: lookAt.y,
         z: lookAt.z,
@@ -464,7 +473,8 @@ const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
 
 const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
     // Animate camera fov
-    gsap.to(camera, duration, {
+    gsap.to(camera, {
+        duration: duration,
         fov: fov,
         ease: easing,
         /*onUpdate: () => {
@@ -474,7 +484,8 @@ const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
 };
 
 let animateOpacity = (objects, targetOpacity) => {
-    /*gsap.to(object, duration, {
+    /*gsap.to(object, {
+        duration: duration,
         opacity: targetOpacity,
         ease: Expo.easeInOut,
         onUpdate: () => {
@@ -543,6 +554,7 @@ const selectObject = object => {
         const category = objectNameArray[1];
         const id = objectNameArray[2];
 
+        // TODO: also the other way around (clicking on an object in the cards list should focus on an object)
         setLabel(label, objectPosition, objectSize, category, id);
 
         document.getElementById('radio-' + level).checked = true;
@@ -591,7 +603,7 @@ const setLabel = (label, position, radius, category, id) => {
     // Get selected item info based on the id
     const objectInfo = items[category].find(object => object.id === parseInt(id));
 
-    Categories.setDrawer(false);
+    closeDrawer();
 
     document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
     document.getElementById('label-title').textContent = objectInfo.title;
@@ -621,7 +633,7 @@ const removeLabel = label => {
     label.element.style.opacity = '0';
     label.element.style.pointerEvents = 'none';
 
-    Categories.setDrawer(false);
+    closeDrawer();
 
     document.querySelector('.label-card').removeEventListener('click', clickLabel);
 
@@ -632,7 +644,7 @@ const removeLabel = label => {
 
 const clickLabel = event => {
     if (!SceneUtils.getAnimating()) {
-        Categories.toggleDrawer();
+        toggleDrawer();
         Categories.scrollToItem(event.currentTarget.dataset.item);
         // scrollToItem(`${ category }-${ id }`);
     }
@@ -691,7 +703,7 @@ const panView = distance => {
     controls.target.z += testZ;
     // controls.target.add(translationVectorNoAnimation);
 
-    console.log(testX, testZ);
+    // console.log(testX, testZ);
 };
 
 const resetCamera = () => {
@@ -710,14 +722,27 @@ const resetSelected = () => {
     removeLabel(label);
 };
 
+const closeDrawer = () => {
+    if (Categories.getDrawer()) {
+        panView(-1.5);
+        Categories.setDrawer(false);
+    }
+};
+
+const toggleDrawer = () => {
+    const distance = Categories.getDrawer() ? -1.5 : 1.5;
+    panView(distance);
+    Categories.setDrawer(!Categories.getDrawer());
+};
+
 export default {
     init,
     selectFloor,
     animateCamera,
     animateLookAt,
     animateFov,
-    panView,
     resetCamera,
     resetSelected,
+    toggleDrawer,
 };
 

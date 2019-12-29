@@ -102,6 +102,7 @@ export default (_, options) => {
             ],
             // Setup from https://medium.com/hackernoon/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
             // & https://medium.com/@Yoriiis/the-real-power-of-webpack-4-splitchunks-plugin-fad097c45ba0
+            // TODO: check https://gist.github.com/davidgilbertson/838312f0a948423e4c4da30e29600b16#file-webpack-config-js
             splitChunks: {
                 chunks: 'all',
                 minSize: 0,

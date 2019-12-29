@@ -1,5 +1,5 @@
 export default {
-    'Default': [
+    'Miscellaneous': [
         {
             id          : 1,
             title       : 'Bed Master Bedroom',

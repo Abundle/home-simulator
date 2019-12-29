@@ -36,7 +36,7 @@ const removeLoadingScreen = () => {
     }
 };
 
-// TODO: implement with Redux-like state
+// TODO: implement with Redux-like state?
 const getAnimating = () => { return isAnimating; };
 const setAnimating = bool => { isAnimating = bool; };
 

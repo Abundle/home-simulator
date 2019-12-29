@@ -17,7 +17,7 @@
 
 html, body {
     margin: 0;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Arial',sans-serif; // fallback
     font-size: 16px;
     overflow: hidden;
 }
@@ -72,7 +72,7 @@ html, body {
     height: 200px;
     background-color: rgba(32, 178, 170, 0.5);
 
-    button {
+    button { // TODO: add font weight
         margin: 25px;
     }
 
@@ -117,17 +117,18 @@ html, body {
         &__content {
             padding: 25px;
 
-            /*h1 {
-                text-transform: capitalize;
-            }*/
-            #cards {
-                padding-bottom: 60vh; // TODO: check for large screens
+            .category-title {
+                &:first-child {
+                    margin-top: 0;
+                }
+                &:not(:first-child) {
+                    padding-top: 35px;
+                }
             }
-        }
 
-        .mdc-list {
-            width: 100%;
-            //align-self: center;
+            #cards {
+                padding-bottom: 40vh; // TODO: check for large screens
+            }
         }
 
         // Hack to overwrite the margin-right animation
@@ -135,6 +136,11 @@ html, body {
             transform: translateX(-$custom-drawer-width);
             margin-right: 0;
         }
+    }
+
+    .mdc-list {
+        @include mdc-list-single-line-shape-radius(50%);
+        //@include mdc-list-item-graphic-fill-color($mdc-theme-primary);
     }
 
     .mdc-drawer-app-content {
@@ -147,11 +153,16 @@ html, body {
         transition: mdc-animation-exit-permanent(/* $name: */ transform, /* $duration: */ 175ms); // delay: 175ms
         transform: translateX(0);
         will-change: transform;
+        background-color: rgba(255, 255, 255, 0.5);
 
-        button {
+        .mdc-list-item__graphic {
+            margin-left: 16px;
+        }
+
+        /*button {
             @include mdc-button-filled-accessible(purple);
             //@include mdc-button-shape-radius(50%)
-        }
+        }*/
     }
 
     .mdc-card {

@@ -1,5 +1,5 @@
 export default {
-    Default: 'favorite',
+    Miscellaneous: 'favorite',
     Kitchen: 'star',
     Living_Room: 'bookmark',
     // 'Bedroom': 'info'

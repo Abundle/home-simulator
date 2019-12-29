@@ -1,76 +1,92 @@
 import { MDCRipple } from '@material/ripple/index';
 import { MDCFormField } from '@material/form-field';
 import { MDCRadio } from '@material/radio';
-import { MDCIconButtonToggle } from '@material/icon-button';
+import { MDCList } from '@material/list';
 
 // Local import
 // TODO: insert GitHub/portfolio link or console message with portfolio & GitHub link?
+// TODO: check normalize npm package
+// TODO: check smart autocompletion: https://tabnine.com/
 import Scene from './Scene';
 import Categories from './Categories';
 import categoryIcons from './utils/categoryIcons';
 import SceneUtils from './utils/SceneUtils';
-import Cards from './Cards';
+import Cards from './utils/Cards';
 import Views from './Views';
 import '../scss/main.scss';
 
 /* For debugging */
 // import './utils/transpile.test';
 
-document.getElementById('views').innerHTML = Views;
-// TODO: use Lists instead https://material-components.github.io/material-components-web-catalog/#/component/list
-const radio = new MDCRadio(document.querySelector('.mdc-radio'));
-const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
-const buttonSelectors = '.mdc-button, .mdc-card__primary-action';
-
-formField.input = radio;
-[].map.call(document.querySelectorAll(buttonSelectors), element => {
-    return new MDCRipple(element);
-});
+const list = new MDCList(document.querySelector('.mdc-list'));
+list.singleSelection = true;
 
 // TODO: remove focus after drawer closes, also for the radio buttons
 Object.keys(categoryIcons).map((category, index) => {
     const button = Categories.createCategoryButton(category, categoryIcons[category], index);
-    document.getElementById('category-icons').innerHTML += button;
+    document.getElementById('drawer-categories').innerHTML += button;
 });
 
-// TODO: prevent the outlined buttons to 'CSS fill' when the drawer is temporarily disabled
-const categoryButtons = [];
-let lastClickedId;
-document.querySelectorAll('.category-button').forEach(element => {
-    const buttonElement = new MDCIconButtonToggle(element);
-    categoryButtons.push(buttonElement);
+list.listen('MDCList:action', event => {
+    const target = event.detail.index;
+    const category = event.target.children[target];
 
-    element.addEventListener('click', event => {
-        let target = event.target; // TODO: use currentTarget? See https://stackoverflow.com/questions/29168719/can-you-target-an-elements-parent-element-using-event-target
+    if (Categories.getDrawer()) { // Drawer already open
+        Categories.scrollToCategory(category.id);
 
-        // If click on the <i> element inside the button, save the <button> parent as target
-        if (target.localName === 'i') {
-            target = target.parentElement;
-        }
+    } else {
+        // Otherwise act as normal toggle buttons and save the last clicked element id
+        !SceneUtils.getAnimating() && Scene.toggleDrawer();
 
-        // If the drawer is already open and another button is clicked, don't close it
-        if (Categories.getDrawer() && target.id !== lastClickedId) {
-            // Set all buttons to false except the clicked element and update last clicked element
-            categoryButtons.forEach(button => {
-                button.on = button.root_ === target;
-            });
-            lastClickedId = target.id;
+        Categories.scrollToCategory(category.id);
+    }
+});
 
-            Categories.scrollToCategory(lastClickedId);
-        } else {
-            // Otherwise act as normal toggle buttons and save the last clicked element id
-            !SceneUtils.getAnimating() && Categories.toggleDrawer();
-            lastClickedId = target.id;
+const initCards = content => {
+    document.getElementById('cards').innerHTML = content;
 
-            Categories.scrollToCategory(lastClickedId);
-        }
+    connectObserver(observer);
+};
+const initViews = content => {
+    document.getElementById('views').innerHTML = content;
+
+    const radio = new MDCRadio(document.querySelector('.mdc-radio'));
+    const formField = new MDCFormField(document.querySelector('.mdc-form-field'));
+    formField.input = radio;
+
+    const rippleElements = '.mdc-button, .mdc-card__primary-action';
+    [].map.call(document.querySelectorAll(rippleElements), element => new MDCRipple(element));
+    // list.listElements.map(element => new MDCRipple(element));
+};
+
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+        // console.log(entry.target.id, 'intersection');
+        if (entry.intersectionRatio > 0) { // In the view
+            const index = entry.target.id.split('-')[1];
+            list.selectedIndex = Number(index);
+        } /*else { // Out of view
+            console.log(entry.target.id, 'out of view');
+        }*/
     });
+}, {
+    root: document.querySelector('aside'),
+    rootMargin: '0px 0px -75% 0px',
+    delay: 250,
 });
 
-document.getElementById('cards').innerHTML = Cards;
+const connectObserver = obs => {
+    document.querySelectorAll('.category-title').forEach(item => {
+        obs.observe(item);
+        // console.log(item.offsetTop);
+    });
+};
 
 Scene.init();
+initCards(Cards);
+initViews(Views);
 
+// TODO: check if all this can be done at the Object.keys(categoryIcons).map.. function
 document.querySelector('.reset-view-button').addEventListener('click', () => {
     Scene.resetCamera();
     Scene.resetSelected();
@@ -100,3 +116,7 @@ document.querySelector('.side-view-button').addEventListener('click', () => {
 document.querySelector('.mdc-form-field').addEventListener('change', event => {
     Scene.selectFloor(event.target.value);
 });
+
+/*formField.listen('MDCFormField:change', event => {
+    Scene.selectFloor(event.target.value);
+});*/
