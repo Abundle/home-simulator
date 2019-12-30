@@ -6,7 +6,7 @@ import { MDCList } from '@material/list';
 // Local import
 // TODO: insert GitHub/portfolio link or console message with portfolio & GitHub link?
 // TODO: check normalize npm package
-// TODO: check smart autocompletion: https://tabnine.com/
+
 import Scene from './Scene';
 import Categories from './Categories';
 import categoryIcons from './utils/categoryIcons';
@@ -46,6 +46,7 @@ const initCards = content => {
     document.getElementById('cards').innerHTML = content;
 
     connectObserver(observer);
+    // document.querySelectorAll('.mdc-card').
 };
 const initViews = content => {
     document.getElementById('views').innerHTML = content;

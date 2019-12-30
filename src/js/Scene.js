@@ -16,6 +16,7 @@ import {
     CameraHelper, DirectionalLightHelper, HemisphereLightHelper, AxesHelper,
     Matrix4,
     Vector3,
+    sRGBEncoding,
 } from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -30,15 +31,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
 /* Shaders */
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
-
-// eslint-disable-next-line no-unused-vars
-import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
-// eslint-disable-next-line no-unused-vars
-import { SAOShader } from 'three/examples/jsm/shaders/SAOShader';
-// eslint-disable-next-line no-unused-vars
-import { DepthLimitedBlurShader } from 'three/examples/jsm/shaders/DepthLimitedBlurShader';
-// eslint-disable-next-line no-unused-vars
-import { UnpackDepthRGBAShader } from 'three/examples/jsm/shaders/UnpackDepthRGBAShader';
+import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader.js';
 
 import { WEBGL } from 'three/examples/jsm/WebGL.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
@@ -47,18 +40,17 @@ import { gsap, Expo } from 'gsap/all';
 
 // Local import
 import Categories from './Categories';
-import modelName from '../assets/house.glb';
+import modelName from '../assets/House.glb';
 import items from './utils/items.js';
 import SceneUtils from './utils/SceneUtils';
 
 // TODO: check if importing the levels as different object works with opacity changes
-// TODO: think about mobile version (option to disable dynamic lighting)
+// TODO: think about mobile version (layout, disable postprocessing etc.)
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
 // TODO: check Firefox reclicking label + refreshing page does not reset the level radio buttons
-//  Also see https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
-// TODO: check JavaScript functors, applicatives & monads: https://medium.com/@tzehsiang/javascript-functor-applicative-monads-in-pictures-b567c6415221#.rdwll124i
+// TODO: check Three.js documentation for changes
 
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
@@ -69,6 +61,9 @@ import SceneUtils from './utils/SceneUtils';
 // Blog: https://jolicode.com/blog/making-3d-for-the-web
 // WebGL 2: https://threejs.org/docs/#manual/en/introduction/How-to-use-WebGL2
 // Three.js fundamentals https://threejsfundamentals.org/
+// Smart autocompletion: https://tabnine.com/
+// JavaScript functors, applicatives & monads: https://medium.com/@tzehsiang/javascript-functor-applicative-monads-in-pictures-b567c6415221#.rdwll124i
+// How to clean up the scene https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
 
 /* Bug: WebAssembly memory full after a couple of reloads (memory leak with Chrome DevTools
 See https://github.com/emscripten-core/emscripten/issues/8126) */
@@ -76,15 +71,13 @@ See https://github.com/emscripten-core/emscripten/issues/8126) */
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
 
-/* Initiate global scene variables */
+/* Initiate global scene variables */ // TODO: move to local level if possible
 let camera, scene, labelScene, renderer, labelRenderer;
-let directionalLight; // pointLight
 let mixer, controls, label, stats;
 let composer, outlinePass;
 
 /* Camera stuff */
 // const frustumSize = 25; // 10
-const defaultCameraPosition = { x: -30, y: 40, z: 60 };
 
 /* Other Three.js variables */
 const clock = new Clock();
@@ -93,13 +86,13 @@ const mouse = new Vector2();
 const meshGroup = new Group();
 const labelPivot = new Object3D();
 
-/* For debugging */
+/* For debugging */ // TODO: dynamically add helpers, SAO & performance GUI based on Webpack mode
 const isDev = WEBPACK_MODE === 'development';
 let cameraHelper;
 let dirLightHelper;
 
 // TODO: sun lighting check https://stackoverflow.com/questions/15478093/realistic-lighting-sunlight-with-three-js
-// TODO: use library for calculating position of the sun? https://github.com/mourner/suncalc
+//  or use library for calculating position of the sun? https://github.com/mourner/suncalc
 const init = () => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
@@ -128,8 +121,8 @@ const init = () => {
     // renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
-    // renderer.gammaInput = true;
-    renderer.gammaOutput = true;
+    renderer.outputEncoding = sRGBEncoding; // See https://threejs.org/docs/#examples/en/loaders/GLTFLoader
+    // renderer.setClearColor(0xCCCCCC);
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 
@@ -156,15 +149,16 @@ const init = () => {
     controls.minDistance   = isDev ? 0 : 25;
     controls.maxDistance   = isDev ? Infinity : 125;
 
-    const ambientLight = new AmbientLight(0x404040); // soft white light
-    scene.add(ambientLight);
+    /*const ambientLight = new AmbientLight(0xFFFFFF);
+    scene.add(ambientLight);*/
+    scene.add(new AmbientLight(0x666666));
 
-    directionalLight = new DirectionalLight(0xffffff, 1);
-    directionalLight.color.setHSL(0.1, 1, 0.5);
+    const directionalLight = new DirectionalLight(0xFFFFFF);
     scene.add(directionalLight);
 
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.mapSize.width  = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
 
     const d = 10;
     directionalLight.shadow.camera.left = -d;
@@ -175,6 +169,8 @@ const init = () => {
     directionalLight.shadow.bias = -0.0001;
     // directionalLight.shadowDarkness = 0.35;
 
+    updateSunLight(directionalLight, 20);
+
     /*pointLight = new THREE.PointLight(0xf15b27, 1, 100);
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);*/
@@ -184,8 +180,6 @@ const init = () => {
     hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
     hemisphereLight.position.set(0, 50, 0);
     // scene.add(hemisphereLight);
-
-    updateSunLight();
 
     const loader = new GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
@@ -240,7 +234,7 @@ const init = () => {
     });
 
     /* Postprocessing */
-    composer = new EffectComposer(renderer); // TODO: check https://github.com/mrdoob/three.js/wiki/Migration-Guide#r104--r105
+    composer = new EffectComposer(renderer);
     composer.setSize(window.innerWidth, window.innerHeight);
 
     const renderPass = new RenderPass(scene, camera);
@@ -282,6 +276,9 @@ const init = () => {
     effectFXAA.uniforms['resolution' ].value.set(1 / window.innerWidth, 1 / window.innerHeight);
     composer.addPass(effectFXAA);
 
+    const gammaCorrection = new ShaderPass(GammaCorrectionShader);
+    composer.addPass(gammaCorrection);
+
     /* Helpers */
     cameraHelper = new CameraHelper(camera);
     // scene.add(cameraHelper);
@@ -295,13 +292,15 @@ const init = () => {
     /*let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
     scene.add(pointLightHelper);*/
 
-    const axesHelper = new AxesHelper(5);
-    // scene.add(axesHelper);
+    const axesHelper = new AxesHelper(3);
+    scene.add(axesHelper);
 };
 
 const start = () => {
+    const defaultCameraPosition = { x: -30, y: 40, z: 60 };
+
     animate();
-    resetCamera();
+    resetCamera(defaultCameraPosition);
 };
 
 /*let stop = () => {
@@ -309,12 +308,11 @@ const start = () => {
 };*/
 
 // Based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
-const radius = 20;
 const animate = () => {
     requestAnimationFrame(animate);
 
     const delta = clock.getDelta();
-    if (mixer) { // TODO: check if if-statement is necessary here
+    if (mixer) {
         mixer.update(delta);
     }
     controls.update(delta);
@@ -333,6 +331,7 @@ const animate = () => {
     dirLightHelper.update();
 
     composer.render();
+    // renderer.render(scene, camera)
     labelRenderer.render(labelScene, camera);
 
     stats.end();
@@ -367,8 +366,7 @@ const onMouseMove = event => {
 
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with 'S_', so selectable will be true
-        SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1)
-        // SELECTABLE = intersects[0].object.name.charAt(0) === 'S';
+        SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
 
         if (SceneUtils.getSelectable()) {
             const selectedObject = intersects[0].object;
@@ -394,7 +392,6 @@ const onClick = event => {
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with an 'S_', so selectable will be true
         SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
-        // SELECTABLE = intersects[0].object.name.charAt(0) === 'S';
 
         if (SceneUtils.getIntersected() !== intersects[0].object && SceneUtils.getSelectable()) {
             /*if (INTERSECTED) { // TODO: blur rest of scene when object is selected?
@@ -439,17 +436,14 @@ const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Ex
         y: targetPosition.y,
         z: targetPosition.z,
         ease: easing,
-        onUpdate: () => {
+        /*onUpdate: () => {
             camera.updateProjectionMatrix();
-        }
+        }*/
     });
     gsap.to(camera, {
         duration: duration,
         zoom: targetZoom,
         ease: Expo.easeInOut,
-        /*onUpdate: () => {
-            camera.updateProjectionMatrix();
-        }*/
     });
 };
 
@@ -463,7 +457,6 @@ const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
         ease: easing,
         onUpdate: () => {
             SceneUtils.setAnimating(true);
-            // camera.updateProjectionMatrix();
         },
         onComplete: () => {
             SceneUtils.setAnimating(false);
@@ -504,7 +497,7 @@ let animateOpacity = (objects, targetOpacity) => {
     opacityTween.start();*/
 };
 
-const updateSunLight = () => {
+const updateSunLight = (light, radius) => {
     const time = new Date().getHours();
     // const time = new Date().getSeconds();
     const timeToRadians = time * (Math.PI / 24);
@@ -512,14 +505,14 @@ const updateSunLight = () => {
     const sinTime = radius * Math.sin(timeToRadians);
     const cosTime = radius * Math.cos(timeToRadians);
 
-    directionalLight.position.set(cosTime, sinTime, sinTime);
+    light.position.set(cosTime, sinTime, sinTime);
 
     if (sinTime > 0.2) { // Day
-        directionalLight.intensity = 1;
+        light.intensity = 0.65;
     } else if (sinTime < 0.2 && sinTime > 0) { // Twilight
-        directionalLight.intensity = sinTime / 0.2;
+        light.intensity = sinTime / 0.2;
     } else { // Night
-        directionalLight.intensity = 0;
+        light.intensity = 0;
     }
 };
 
@@ -597,7 +590,7 @@ const createLabel = () => {
 
 // TODO: check https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
 // TODO: create line as indicator from label to object
-// TODO: scroll to selected category (instead of card) in the category buttons when drawer opens
+// TODO: scroll to selected category (instead of card) in the category buttons when drawer opens?
 const setLabel = (label, position, radius, category, id) => {
     const scale = 200;
     // Get selected item info based on the id
@@ -706,9 +699,9 @@ const panView = distance => {
     // console.log(testX, testZ);
 };
 
-const resetCamera = () => {
+const resetCamera = pos => {
     // Reset camera
-    animateCamera(defaultCameraPosition, 1, 2, Expo.easeOut);
+    animateCamera(pos, 1, 2, Expo.easeOut);
     animateLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
     animateFov(20);
 };
@@ -730,7 +723,7 @@ const closeDrawer = () => {
 };
 
 const toggleDrawer = () => {
-    const distance = Categories.getDrawer() ? -1.5 : 1.5;
+    const distance = Categories.getDrawer() ? -7: 7; // TODO: reimplement value based on viewport width
     panView(distance);
     Categories.setDrawer(!Categories.getDrawer());
 };

@@ -1,6 +1,6 @@
 import items from './items.js';
 
-// TODO: instead of require, checkout https://medium.com/@godban/loading-static-and-dynamic-images-with-webpack-8a933e82cb1e
+// TODO: instead of require, checkout https://medium.com/@godban/loading-static-and-dynamic-images-with-webpack-8a933e82cb1e & file-loader
 const Cards = Object.keys(items).map((category, index) => `
     <h1 id=${ category + '-' + index } class='mdc-typography--headline5 category-title'>${ category.replace('_', ' ') }</h1>
     ${ items[category].map(item => `
