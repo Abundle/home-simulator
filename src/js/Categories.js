@@ -1,8 +1,8 @@
 import { gsap, Power4, ScrollToPlugin } from 'gsap/all';
 import { MDCDrawer } from '@material/drawer';
 
-let isScrolling = false;
-const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
+// let isScrolling = false;
+const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer')); // TODO: initialise in functional way (see index.js)
 const container = document.querySelector('.mdc-drawer__content');
 
 gsap.registerPlugin(ScrollToPlugin);

@@ -21,7 +21,7 @@ export default (_, options) => {
             filename: devMode ? 'main.js' : 'main.[chunkhash].js',
             chunkFilename: devMode ? '[name].js' : '[name].[chunkhash].js',
             publicPath: '/',
-            path: path.resolve(__dirname, 'build')
+            path: path.resolve(__dirname, 'build'),
         },
         module: {
             rules: [
@@ -102,7 +102,7 @@ export default (_, options) => {
             ],
             // Setup from https://medium.com/hackernoon/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
             // & https://medium.com/@Yoriiis/the-real-power-of-webpack-4-splitchunks-plugin-fad097c45ba0
-            // TODO: check https://gist.github.com/davidgilbertson/838312f0a948423e4c4da30e29600b16#file-webpack-config-js
+            // TODO: split vendor in separate Three.js file + check https://gist.github.com/davidgilbertson/838312f0a948423e4c4da30e29600b16#file-webpack-config-js
             splitChunks: {
                 chunks: 'all',
                 minSize: 0,
@@ -130,18 +130,18 @@ export default (_, options) => {
                 filename: './index.html',
                 minify: {
                     removeComments: true,
-                    collapseWhitespace: false
+                    collapseWhitespace: false,
                 },
                 favicon: './favicon.ico'
             }),
             new MiniCssExtractPlugin({
                 filename: devMode ? '[name].css' : '[name].[hash].css',
-                chunkFilename: devMode ? '[id].css' : '[id].[hash].css'
+                chunkFilename: devMode ? '[id].css' : '[id].[hash].css',
             }),
             new CopyWebpackPlugin([ // Three.js DRACO loader docs: https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco#readme
                 // { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.js', to:'assets/draco/' },
                 { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.wasm', to:'assets/draco/' },
-                { from: './node_modules/three/examples/js/libs/draco/gltf/draco_wasm_wrapper.js', to:'assets/draco/' }
+                { from: './node_modules/three/examples/js/libs/draco/gltf/draco_wasm_wrapper.js', to:'assets/draco/' },
             ]),
         ]
     };

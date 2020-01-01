@@ -51,6 +51,7 @@ import SceneUtils from './utils/SceneUtils';
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
 // TODO: check Firefox reclicking label + refreshing page does not reset the level radio buttons
 // TODO: check Three.js documentation for changes
+// TODO: fix  3D model errors, check https://stackoverflow.com/questions/52441072/gltf2-accessor-unit-length
 
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
@@ -297,10 +298,8 @@ const init = () => {
 };
 
 const start = () => {
-    const defaultCameraPosition = { x: -30, y: 40, z: 60 };
-
     animate();
-    resetCamera(defaultCameraPosition);
+    resetCamera();
 };
 
 /*let stop = () => {
@@ -519,11 +518,11 @@ const updateSunLight = (light, radius) => {
 const selectObject = object => {
     // Abstract the level of selected object from its material name and use it to select the level
     // Check if an integer was indeed received
-    const level = object.material.name.charAt(0);
-    const objectSize = object.geometry.boundingSphere.radius;
+    const level          = object.material.name.charAt(0);
+    const objectSize     = object.geometry.boundingSphere.radius;
     const objectPosition = object.position;
     // Zoom based on boundingSphere of geometry
-    const zoom = Math.sin(objectSize);
+    const zoom           = Math.sin(objectSize);
     // let zoom = 1 / (Math.round(objectSize) * 0.75);
     // const fov = sigmoid(objectSize) * 10 + 15;
 
@@ -544,14 +543,20 @@ const selectObject = object => {
         selectFloor(level);
 
         const objectNameArray = object.userData.name.split(' ');
-        const category = objectNameArray[1];
-        const id = objectNameArray[2];
+        const category        = objectNameArray[1];
+        const id              = objectNameArray[2];
 
-        // TODO: also the other way around (clicking on an object in the cards list should focus on an object)
         setLabel(label, objectPosition, objectSize, category, id);
 
         document.getElementById('radio-' + level).checked = true;
     }
+};
+
+const getObject = name => { // TODO: create name dynamically (e.g. 'name = Kitchen_Block' => 'S_Kitchen_1_-_Kitchen_Block')
+    const object = meshGroup.getObjectByName(name);
+    // const object = meshGroup.getObjectById(id);
+    console.log(object);
+    selectObject(object);  // TODO: drawer should stay open in this case
 };
 
 const createLabel = () => {
@@ -594,7 +599,7 @@ const createLabel = () => {
 const setLabel = (label, position, radius, category, id) => {
     const scale = 200;
     // Get selected item info based on the id
-    const objectInfo = items[category].find(object => object.id === parseInt(id));
+    const objectInfo = items.cardContents[category].find(object => object.id === parseInt(id));
 
     closeDrawer();
 
@@ -699,7 +704,9 @@ const panView = distance => {
     // console.log(testX, testZ);
 };
 
-const resetCamera = pos => {
+const resetCamera = (pos = { x: -30, y: 40, z: 60 }) => {
+    // TODO: while resetting the view, the drawer should temporarily not be allowed to open
+
     // Reset camera
     animateCamera(pos, 1, 2, Expo.easeOut);
     animateLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
@@ -717,13 +724,13 @@ const resetSelected = () => {
 
 const closeDrawer = () => {
     if (Categories.getDrawer()) {
-        panView(-1.5);
+        panView(-6);
         Categories.setDrawer(false);
     }
 };
 
 const toggleDrawer = () => {
-    const distance = Categories.getDrawer() ? -7: 7; // TODO: reimplement value based on viewport width
+    const distance = Categories.getDrawer() ? -6: 6; // TODO: reimplement value based on viewport width
     panView(distance);
     Categories.setDrawer(!Categories.getDrawer());
 };
@@ -734,6 +741,7 @@ export default {
     animateCamera,
     animateLookAt,
     animateFov,
+    getObject,
     resetCamera,
     resetSelected,
     toggleDrawer,

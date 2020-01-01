@@ -22,6 +22,13 @@ html, body {
     overflow: hidden;
 }
 
+a {
+    text-decoration: none;
+    &:hover {
+        text-decoration: none;
+    }
+}
+
 ::-webkit-scrollbar {
     width: 5px;
 }
@@ -111,7 +118,7 @@ html, body {
 .info-panel {
     .mdc-drawer {
         @include mdc-drawer-width($custom-drawer-width);
-        background-color: rgba(0, 50, 25, 0.2);
+        background-color: rgba(255, 255, 255, 1);
         border: none;
 
         &__content {
@@ -132,15 +139,14 @@ html, body {
         }
 
         // Hack to overwrite the margin-right animation
-        &.mdc-drawer--open:not(.mdc-drawer--closing) + .mdc-drawer-app-content[dir='rtl'] { //
+        &.mdc-drawer--open:not(.mdc-drawer--closing) + .mdc-drawer-app-content { //
             transform: translateX(-$custom-drawer-width);
             margin-right: 0;
         }
     }
 
     .mdc-list {
-        @include mdc-list-single-line-shape-radius(50%);
-        //@include mdc-list-item-graphic-fill-color($mdc-theme-primary);
+        @include mdc-list-single-line-shape-radius(8px);
     }
 
     .mdc-drawer-app-content {
@@ -156,13 +162,8 @@ html, body {
         background-color: rgba(255, 255, 255, 0.5);
 
         .mdc-list-item__graphic {
-            margin-left: 16px;
+            margin-right: 16px;
         }
-
-        /*button {
-            @include mdc-button-filled-accessible(purple);
-            //@include mdc-button-shape-radius(50%)
-        }*/
     }
 
     .mdc-card {
@@ -176,8 +177,8 @@ html, body {
             align-items: flex-end;
             color: white;
         }
-        &__actions {
-            padding: 0;
+        &__action {
+            padding: 1rem;
         }
         &__primary {
             padding: 1rem;
@@ -196,8 +197,6 @@ html, body {
 
 
 .label-card {
-    //color: red;
-
     .mdc-card {
         .mdc-typography--headline6 {
             line-height: 1rem;

@@ -1,5 +1,3 @@
-import {Scene} from 'three';
-
 let INTERSECTED, SELECTABLE;
 let isAnimating = false;
 // let selectedObject;
