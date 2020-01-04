@@ -17,7 +17,7 @@ const Cards = Object.keys(items.cardContents).map((category, index) => `
                     </div>
                 </div>
             </a>
-            <div class='mdc-card__secondary mdc-typography mdc-typography--body2'>${ item.content }</div>
+            ${ item.content === '' ? '' : `<div class='mdc-card__secondary mdc-typography mdc-typography--body2'>${ item.content }</div>`}
             <div class='mdc-card__actions mdc-card__actions--full-bleed'>
                 <button class='mdc-button mdc-card__action mdc-card__action--button'>
                     <span class='mdc-button__label'><span id='${ item.name }' class='mdc-button__ripple'></span>Select item</span>

@@ -48,6 +48,11 @@ a {
     background: rgba($mdc-theme-primary, 0.5);
 }
 
+/* Smartphone */
+/*@media only screen and (max-width: 760px) {
+    #some-element { display: none; }
+}*/
+
 .loading-container {
     position: absolute;
     top: 0;
@@ -196,6 +201,7 @@ a {
             display: flex;
             align-items: flex-end;
             color: white;
+            background-color: rgba(0, 0, 0, 0.15);
         }
         &__action {
             padding: 1rem;

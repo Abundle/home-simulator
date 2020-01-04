@@ -16,7 +16,7 @@ import '../scss/main.scss';
 /* For testing Babel */
 // import './utils/transpile.test';
 
-// TODO: add title top left + insert GitHub & portfolio link or console message with portfolio & GitHub link?
+const isMobile = window.screen.width <= 760;
 
 const initList = selector => {
     const elem = new MDCList(document.querySelector(selector));
@@ -140,12 +140,21 @@ const initControls = content => {
         Scene.resetSelected();
     });
 
-    const checkbox = new MDCCheckbox(document.querySelector('.mdc-checkbox'));
     const formField = new MDCFormField(document.querySelector('#controls > .mdc-form-field'));
-    formField.input = checkbox;
+    const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-checkbox'));
+    const saoCheckbox = new MDCCheckbox(document.querySelector('.sao-checkbox'));
 
-    formField.listen('change', event => {
+    saoCheckbox.checked = !isMobile;
+    Scene.showSAO(!isMobile);
+
+    formField.input = performanceCheckbox;
+    formField.input = saoCheckbox;
+
+    performanceCheckbox.listen('change', event => {
         Scene.showPerformanceMonitor(event.target.checked);
+    });
+    saoCheckbox.listen('change', event => {
+        Scene.showSAO(event.target.checked);
     });
 };
 
@@ -161,3 +170,19 @@ initRipples('.mdc-card__primary-action', false);
 // When clicked rapidly, the ripples distort the layout. Disabling for now
 /*initRipples('.mdc-button', false);
 initRipples('.mdc-icon-button', true);*/
+
+const greet = 'Hey fellow developer!';
+const beNice = 'Good to see you here, hope you\'re doing great.';
+const persuasion = 'Interested in my work?';
+const link = 'Here\'s my portfolio: https://aidanbundel.com';
+const exitConvo = 'Made with 💙';
+
+console.log(`
+  %c
+  ${ greet }
+  ${ beNice }
+  ${ persuasion }
+  ${ link }
+  
+  ${ exitConvo }
+`, 'color: blue; font-size: 14px');

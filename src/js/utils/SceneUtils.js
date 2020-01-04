@@ -2,13 +2,13 @@ import { Vector2 } from 'three';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
 
-let INTERSECTED,
-    SELECTABLE,
+let SELECTABLE,
     SHOW,
     isAnimating = false;
-// let selectedObject;
 
-// let scene = new Scene();
+let INTERSECTED, SAO = {};
+// let SAO         = isMobile ? 1 : 0;
+
 const outlinePassParameters = {
     edgeStrength: 3,
     edgeGlow: 0.0,
@@ -19,7 +19,7 @@ const outlinePassParameters = {
 };
 
 const SAOparameters = {
-    output: 0,
+    output: 0, // TODO: checkbox should be unchecked on mobile screensize
     saoBias: 1,
     saoIntensity: 0.006, // 0.08
     saoScale: 10,
@@ -52,6 +52,9 @@ const setSelectable = bool => { SELECTABLE = bool; };
 
 const getPerformanceMonitor = () => { return SHOW; };
 const setPerformanceMonitor = bool => { SHOW = bool; };
+
+const getSaoPass = () => { return SAO; };
+const setSaoPass = pass => { SAO = pass; };
 
 const initGUI = saoPass => {
     const gui = new GUI();
@@ -100,6 +103,8 @@ export default {
     setSelectable,
     getPerformanceMonitor,
     setPerformanceMonitor,
+    getSaoPass,
+    setSaoPass,
     initGUI,
     getMouseObject,
 };

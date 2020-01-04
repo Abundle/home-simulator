@@ -232,6 +232,7 @@ const init = () => {
 
     const saoPass = new SAOPass(scene, camera, false, true);
     saoPass.params = SceneUtils.SAOparameters;
+    SceneUtils.setSaoPass(saoPass);
     composer.addPass(saoPass);
 
     const effectFXAA = new ShaderPass(FXAAShader);
@@ -263,6 +264,10 @@ const init = () => {
     }
 };
 
+const showSAO = bool => {
+    SceneUtils.getSaoPass().params.output = bool ? 0 : 1; // 0 = SAO and 1 = Beauty
+};
+
 const start = () => {
     animate();
     resetCamera();
@@ -284,22 +289,16 @@ const animate = () => {
         // labelPivot.rotation.y = camera.rotation.y;
     }
 
-    if (SceneUtils.getPerformanceMonitor()) {
-        stats.begin();
-    }
+    SceneUtils.getPerformanceMonitor() && stats.begin();
 
     // camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
-    if (isDev) {
-        dirLightHelper.update();
-    }
+    isDev && dirLightHelper.update();
 
     composer.render();
     labelRenderer.render(labelScene, camera);
 
-    if (SceneUtils.getPerformanceMonitor()) {
-        stats.end();
-    }
+    SceneUtils.getPerformanceMonitor() && stats.end();
 };
 
 const resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
@@ -548,7 +547,6 @@ const createLabel = () => {
 
 // TODO: check https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
 // TODO: create line as indicator from label to object
-// TODO: scroll to selected category (instead of card) in the category buttons when drawer opens?
 const setLabel = (label, position, radius, category, id) => {
     const scale = 200;
     // Get selected item info based on the id
@@ -703,5 +701,6 @@ export default {
     resetSelected,
     toggleDrawer,
     showPerformanceMonitor,
+    showSAO,
 };
 
