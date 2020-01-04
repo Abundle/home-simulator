@@ -290,7 +290,9 @@ const animate = () => {
 
     // camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
-    dirLightHelper.update();
+    if (isDev) {
+        dirLightHelper.update();
+    }
 
     composer.render();
     labelRenderer.render(labelScene, camera);
