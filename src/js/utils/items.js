@@ -1,9 +1,25 @@
-const categoryIcons = { // TODO: move to other file and delete this one
+import placeholder from '../../assets/img/placeholder.jpg';
+
+const categoryIcons = {
     Miscellaneous: 'category',
     Kitchen: 'kitchen',
     Living_Room: 'local_cafe',
     // 'Bedroom': 'search'
 };
+
+const levels = [
+    'Basement',
+    'Ground floor',
+    'Upper floor',
+    'House'
+];
+
+const controls = [
+    'reset',
+    'front',
+    'top',
+    'back'
+];
 
 const cardContents = {
     'Miscellaneous': [
@@ -13,7 +29,7 @@ const cardContents = {
             title   : 'Bed Master Bedroom',
             subtitle: 'by Kurt Wagner',
             content : 'Visit ten places on our planet that are undergoing the biggest changes today.',
-            image   : 'placeholder.jpg',
+            image   : placeholder,
             icon    : 'king_bed',
             url     : 'https://www.google.com/',
         },
@@ -23,7 +39,7 @@ const cardContents = {
             title   : 'Bed Bedroom',
             subtitle: 'by Hello World',
             content : 'Lorem ipsum roof.',
-            image   : 'fallback.jpg',
+            image   : 'test.jpg',
             icon    : 'single_bed',
             url     : 'http://example.com/',
         }
@@ -35,7 +51,7 @@ const cardContents = {
             title   : 'Kitchen Block',
             subtitle: 'by Hello World',
             content : 'Lorem ipsum.',
-            image   : 'placeholder.jpg',
+            image   : placeholder,
             icon    : 'kitchen',
             url     : 'http://example.com/',
         },
@@ -45,7 +61,7 @@ const cardContents = {
             title   : 'Dining Table',
             subtitle: 'by Hello World',
             content : 'Lorem ipsum.',
-            image   : 'fallback.jpg',
+            image   : 'test.jpg',
             icon    : 'restaurant',
             url     : 'http://example.com/',
         }
@@ -57,7 +73,7 @@ const cardContents = {
             title   : 'Sofa',
             subtitle: 'by Hello World',
             content : 'Lorem ipsum.',
-            image   : 'placeholder.jpg',
+            image   : placeholder,
             icon    : 'search',
             url     : 'https://www.google.com/',
         },
@@ -67,7 +83,7 @@ const cardContents = {
             title   : 'TV',
             subtitle: 'by Hello World',
             content : 'Lorem ipsum.',
-            image   : 'fallback.jpg',
+            image   : 'test.jpg',
             icon    : 'tv',
             url     : 'https://www.google.com/',
         },
@@ -77,7 +93,7 @@ const cardContents = {
             title   : 'TV Cabinet',
             subtitle: 'by Hello World',
             content : 'Lorem ipsum.',
-            image   : 'placeholder.jpg',
+            image   : placeholder,
             icon    : 'search',
             url     : 'https://www.google.com/',
         },
@@ -87,7 +103,7 @@ const cardContents = {
             title   : 'Stairs',
             subtitle: 'by Hello World',
             content : 'Lorem ipsum.',
-            image   : 'fallback.jpg',
+            image   : 'test.jpg',
             icon    : 'search',
             url     : 'https://www.google.com/',
         }
@@ -96,5 +112,7 @@ const cardContents = {
 
 export default {
     categoryIcons,
+    levels,
+    controls,
     cardContents,
 };

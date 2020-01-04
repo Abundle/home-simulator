@@ -1,5 +1,17 @@
-$mdc-theme-primary: #f15b27;
-$mdc-theme-secondary: #76ff03;
-$mdc-theme-background: #fff;
+$mdc-theme-primary: purple;
+$mdc-theme-secondary: #f15b27;
+//$mdc-theme-on-primary: #000000;
+//$mdc-theme-on-secondary: #ffffff;
+$mdc-theme-background: #ffffff;
+
+$mdc-typography-styles-subtitle1: (
+    margin: 0.5em 0,
+);
+$mdc-typography-styles-caption: (
+    margin: 0.5em 0,
+);
+$mdc-typography-styles-overline: (
+    margin: 0,
+);
 
 $custom-drawer-width: 400px;

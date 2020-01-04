@@ -1,6 +1,5 @@
-import items from './items.js';
+import items from './utils/items.js';
 
-// TODO: instead of require, checkout https://medium.com/@godban/loading-static-and-dynamic-images-with-webpack-8a933e82cb1e & file-loader
 const Cards = Object.keys(items.cardContents).map((category, index) => `
     <h1 id=${ category + '-' + index } class='mdc-typography--headline5 category-title'>${ category.replace('_', ' ') }</h1>
     
@@ -8,7 +7,7 @@ const Cards = Object.keys(items.cardContents).map((category, index) => `
         <div id='${ category }-${ item.id }' class='mdc-card mdc-card--outlined'>
             <a href=${ item.url } target='_blank'>
                 <div class='mdc-card__primary-action' tabindex='0'>
-                    <div class='mdc-card__media mdc-card__media--16-9' style='background-image: url(${ require('../../assets/img/' + item.image) });'>
+                    <div class='mdc-card__media mdc-card__media--16-9' style='background-image: url(${ item.image });'>
                         <div class='mdc-card__media-content'>
                             <div class='mdc-card__primary'>
                                 <h2 class='mdc-card__title mdc-typography mdc-typography--headline6'>${ item.title }</h2>

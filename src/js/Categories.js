@@ -2,12 +2,12 @@ import { gsap, Power4, ScrollToPlugin } from 'gsap/all';
 import { MDCDrawer } from '@material/drawer';
 
 // let isScrolling = false;
-const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer')); // TODO: initialise in functional way (see index.js)
+
+const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
 const container = document.querySelector('.mdc-drawer__content');
 
 gsap.registerPlugin(ScrollToPlugin);
 
-// TODO: check if index is necessary
 const createCategoryButton = (categoryName, iconName, index) => {
     return `<li id=${ categoryName + '-' + index }  
                 class='mdc-list-item'

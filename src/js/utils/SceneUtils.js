@@ -1,5 +1,11 @@
-let INTERSECTED, SELECTABLE;
-let isAnimating = false;
+import { Vector2 } from 'three';
+import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
+import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
+
+let INTERSECTED,
+    SELECTABLE,
+    SHOW,
+    isAnimating = false;
 // let selectedObject;
 
 // let scene = new Scene();
@@ -11,6 +17,7 @@ const outlinePassParameters = {
     rotate: false,
     usePatternTexture: false,
 };
+
 const SAOparameters = {
     output: 0,
     saoBias: 1,
@@ -34,7 +41,6 @@ const removeLoadingScreen = () => {
     }
 };
 
-// TODO: implement with Redux-like state?
 const getAnimating = () => { return isAnimating; };
 const setAnimating = bool => { isAnimating = bool; };
 
@@ -43,6 +49,44 @@ const setIntersected = object => { INTERSECTED = object; };
 
 const getSelectable = () => { return SELECTABLE; };
 const setSelectable = bool => { SELECTABLE = bool; };
+
+const getPerformanceMonitor = () => { return SHOW; };
+const setPerformanceMonitor = bool => { SHOW = bool; };
+
+const initGUI = saoPass => {
+    const gui = new GUI();
+
+    gui.add(saoPass.params, 'output', {
+        'Beauty'    : SAOPass.OUTPUT.Beauty,
+        'Beauty+SAO': SAOPass.OUTPUT.Default,
+        'SAO'       : SAOPass.OUTPUT.SAO,
+        'Depth'     : SAOPass.OUTPUT.Depth,
+        'Normal'    : SAOPass.OUTPUT.Normal
+    }).onChange(value => {
+        saoPass.params.output = parseInt(value);
+    });
+    gui.close(true);
+    gui.add(saoPass.params, 'saoBias', - 1, 1);
+    gui.add(saoPass.params, 'saoIntensity', 0, 1);
+    gui.add(saoPass.params, 'saoScale', 0, 10);
+    gui.add(saoPass.params, 'saoKernelRadius', 1, 100);
+    gui.add(saoPass.params, 'saoMinResolution', 0, 1);
+    gui.add(saoPass.params, 'saoBlur');
+    gui.add(saoPass.params, 'saoBlurRadius', 0, 200);
+    gui.add(saoPass.params, 'saoBlurStdDev', 0.5, 150);
+    gui.add(saoPass.params, 'saoBlurDepthCutoff', 0.0, 0.1);
+};
+
+const getMouseObject = event => {
+    const mouse = new Vector2();
+
+    // calculate mouse position in normalized device coordinates
+    // (-1 to +1) for both components
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    return mouse;
+};
 
 export default {
     outlinePassParameters,
@@ -54,6 +98,10 @@ export default {
     setIntersected,
     getSelectable,
     setSelectable,
+    getPerformanceMonitor,
+    setPerformanceMonitor,
+    initGUI,
+    getMouseObject,
 };
 
 /*export const setSelectedObject = object => {

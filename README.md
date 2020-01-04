@@ -1,5 +1,11 @@
-# Lorem ipsum
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna 
-aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis 
-aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint 
-occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+# Dream House Simulator
+Ever thought about what your dream house would look like? What furniture you would want, how you would decorate every
+space and create your own space? It would be nice to store all these thoughts in a nice way 🤔.
+
+This is my 3D mood board.
+
+## Tools
+- [Three.js](https://github.com/mrdoob/three.js/)
+- [MDC](https://github.com/material-components/material-components-web)
+- [GSAP](https://github.com/greensock/GSAP)
+- [Webpack](https://github.com/webpack)

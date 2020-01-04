@@ -33,17 +33,6 @@ export default (_, options) => {
                     }
                 },
                 {
-                    test: /\.html$/,
-                    use: {
-                        loader: 'html-loader',
-                        options: {
-                            interpolate: true,
-                            minimize: true,
-                            removeComments: true
-                        }
-                    }
-                },
-                {
                     test: /\.s(a|c)ss$/,
                     use: [
                         devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
@@ -127,12 +116,14 @@ export default (_, options) => {
             new CleanWebpackPlugin(),
             new HtmlWebpackPlugin({
                 template: './src/index.html',
-                filename: './index.html',
+                favicon: './favicon.ico',
                 minify: {
                     removeComments: true,
                     collapseWhitespace: false,
                 },
-                favicon: './favicon.ico'
+                'meta': {
+                    'theme-color': '#f15b27',
+                }
             }),
             new MiniCssExtractPlugin({
                 filename: devMode ? '[name].css' : '[name].[hash].css',

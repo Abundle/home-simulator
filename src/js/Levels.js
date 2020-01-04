@@ -1,13 +1,8 @@
-const views = [
-    'Basement',
-    'Ground floor',
-    'Upper floor',
-    'House'
-];
+import items from './utils/items';
 
-const Views = `
+const Levels = `
     <div class='mdc-form-field'>
-    ${ views.map((view, index) => {
+    ${ items.levels.map((level, index) => {
         const i = index + 1;
         
         return `
@@ -17,7 +12,7 @@ const Views = `
                        id='radio-${ i }' 
                        name='radios' 
                        value=${ i } 
-                       ${ i === views.length ? 'checked' : ''}
+                       ${ i === items.levels.length ? 'checked' : ''}
                        >
                 <div class='mdc-radio__background'>
                     <div class='mdc-radio__outer-circle'></div>
@@ -25,10 +20,10 @@ const Views = `
                 </div>
                 <div class='mdc-radio__ripple'></div>
             </div>
-            <label for='radio-${ i }'>${ view }</label>
+            <label for='radio-${ i }'>${ level }</label>
         `;
     }).join('') }
 `;
 
-export default Views;
+export default Levels;
 

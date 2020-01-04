@@ -1,8 +1,6 @@
-// import * as THREE from 'three';
 import {
     Scene,
     Clock,
-    Raycaster,
     Vector2,
     Group,
     Object3D,
@@ -10,12 +8,11 @@ import {
     Mesh,
     WebGLRenderer,
     PerspectiveCamera,
-    AmbientLight,
-    DirectionalLight,
-    HemisphereLight,
-    CameraHelper, DirectionalLightHelper, HemisphereLightHelper, AxesHelper,
+    AmbientLight, DirectionalLight, HemisphereLight,
+    DirectionalLightHelper, HemisphereLightHelper, AxesHelper,
     Matrix4,
     Vector3,
+    Raycaster,
     sRGBEncoding,
 } from 'three';
 
@@ -35,7 +32,6 @@ import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectio
 
 import { WEBGL } from 'three/examples/jsm/WebGL.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
 import { gsap, Expo } from 'gsap/all';
 
 // Local import
@@ -45,6 +41,7 @@ import items from './utils/items.js';
 import SceneUtils from './utils/SceneUtils';
 
 // TODO: check if importing the levels as different object works with opacity changes
+// TODO: disable sao by default when performance drops & on lower-tier devices
 // TODO: think about mobile version (layout, disable postprocessing etc.)
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
@@ -72,24 +69,20 @@ See https://github.com/emscripten-core/emscripten/issues/8126) */
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
 
-/* Initiate global scene variables */ // TODO: move to local level if possible
+/* Other Three.js variables */
+const clock      = new Clock();
+const raycaster  = new Raycaster();
+const meshGroup  = new Group();
+const labelPivot = new Object3D();
+const stats      = new Stats();
+
+/* Initiate global scene variables */ // TODO: remove
 let camera, scene, labelScene, renderer, labelRenderer;
-let mixer, controls, label, stats;
+let controls, label;
 let composer, outlinePass;
 
-/* Camera stuff */
-// const frustumSize = 25; // 10
-
-/* Other Three.js variables */
-const clock = new Clock();
-const raycaster = new Raycaster();
-const mouse = new Vector2();
-const meshGroup = new Group();
-const labelPivot = new Object3D();
-
-/* For debugging */ // TODO: dynamically add helpers, SAO & performance GUI based on Webpack mode
+/* For debugging */
 const isDev = WEBPACK_MODE === 'development';
-let cameraHelper;
 let dirLightHelper;
 
 // TODO: sun lighting check https://stackoverflow.com/questions/15478093/realistic-lighting-sunlight-with-three-js
@@ -113,10 +106,6 @@ const init = () => {
     labelScene = new Scene();
     labelScene.scale.set(0.005, 0.005, 0.005);
     label = createLabel();
-
-    /* For debugging */
-    stats = new Stats();
-    container.appendChild(stats.dom);
 
     renderer = new WebGLRenderer(); // { antialias: true }
     // renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
@@ -142,6 +131,7 @@ const init = () => {
     // Making the Euler angles make more sense (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
     camera.rotation.order = 'YXZ';
 
+    // TODO: temporarly disable controls when camera is moving
     controls = new OrbitControls(camera, labelRenderer.domElement);
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
@@ -150,8 +140,6 @@ const init = () => {
     controls.minDistance   = isDev ? 0 : 25;
     controls.maxDistance   = isDev ? Infinity : 125;
 
-    /*const ambientLight = new AmbientLight(0xFFFFFF);
-    scene.add(ambientLight);*/
     scene.add(new AmbientLight(0x666666));
 
     const directionalLight = new DirectionalLight(0xFFFFFF);
@@ -168,7 +156,6 @@ const init = () => {
     directionalLight.shadow.camera.bottom = -d;
     directionalLight.shadow.camera.far = 3500;
     directionalLight.shadow.bias = -0.0001;
-    // directionalLight.shadowDarkness = 0.35;
 
     updateSunLight(directionalLight, 20);
 
@@ -194,7 +181,6 @@ const init = () => {
         SceneUtils.removeLoadingScreen();
 
         const model = gltf.scene;
-        // let animations = gltf.animations;
         const meshArray = [];
 
         model.traverse(node => {
@@ -212,9 +198,6 @@ const init = () => {
         });
         meshGroup.children = meshArray;
         scene.add(meshGroup);
-
-        /*mixer = new THREE.AnimationMixer(model);
-        mixer.clipAction(animations[0]).play();*/
 
         if (WEBGL.isWebGLAvailable()) {
             // Initiate function or other initializations here
@@ -251,28 +234,6 @@ const init = () => {
     saoPass.params = SceneUtils.SAOparameters;
     composer.addPass(saoPass);
 
-    // Init gui
-    const gui = new GUI();
-    gui.add(saoPass.params, 'output', {
-        'Beauty': SAOPass.OUTPUT.Beauty,
-        'Beauty+SAO': SAOPass.OUTPUT.Default,
-        'SAO': SAOPass.OUTPUT.SAO,
-        'Depth': SAOPass.OUTPUT.Depth,
-        'Normal': SAOPass.OUTPUT.Normal
-    }).onChange(value => {
-        saoPass.params.output = parseInt(value);
-    });
-    gui.close(true);
-    gui.add( saoPass.params, 'saoBias', - 1, 1 );
-    gui.add( saoPass.params, 'saoIntensity', 0, 1 );
-    gui.add( saoPass.params, 'saoScale', 0, 10 );
-    gui.add( saoPass.params, 'saoKernelRadius', 1, 100 );
-    gui.add( saoPass.params, 'saoMinResolution', 0, 1 );
-    gui.add( saoPass.params, 'saoBlur' );
-    gui.add( saoPass.params, 'saoBlurRadius', 0, 200 );
-    gui.add( saoPass.params, 'saoBlurStdDev', 0.5, 150 );
-    gui.add( saoPass.params, 'saoBlurDepthCutoff', 0.0, 0.1 );
-
     const effectFXAA = new ShaderPass(FXAAShader);
     effectFXAA.uniforms['resolution' ].value.set(1 / window.innerWidth, 1 / window.innerHeight);
     composer.addPass(effectFXAA);
@@ -280,21 +241,26 @@ const init = () => {
     const gammaCorrection = new ShaderPass(GammaCorrectionShader);
     composer.addPass(gammaCorrection);
 
-    /* Helpers */
-    cameraHelper = new CameraHelper(camera);
-    // scene.add(cameraHelper);
+    /* Performance monitor */
+    stats.dom.style.display = 'none';
+    container.appendChild(stats.dom);
 
-    dirLightHelper = new DirectionalLightHelper(directionalLight, 2);
-    scene.add(dirLightHelper);
+    /* Init SAO GUI, helpers */
+    if (isDev) {
+        SceneUtils.initGUI(saoPass);
 
-    const hemiSphereHelper = new HemisphereLightHelper(hemisphereLight, 2);
-    // scene.add(hemiSphereHelper);
+        dirLightHelper = new DirectionalLightHelper(directionalLight, 2);
+        scene.add(dirLightHelper);
 
-    /*let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
-    scene.add(pointLightHelper);*/
+        const hemiSphereHelper = new HemisphereLightHelper(hemisphereLight, 2);
+        scene.add(hemiSphereHelper);
 
-    const axesHelper = new AxesHelper(3);
-    scene.add(axesHelper);
+        /*let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
+        scene.add(pointLightHelper);*/
+
+        const axesHelper = new AxesHelper(3);
+        scene.add(axesHelper);
+    }
 };
 
 const start = () => {
@@ -306,14 +272,11 @@ const start = () => {
     cancelAnimationFrame(frameId);
 };*/
 
-// Based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
+// Setup based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
 const animate = () => {
     requestAnimationFrame(animate);
 
     const delta = clock.getDelta();
-    if (mixer) {
-        mixer.update(delta);
-    }
     controls.update(delta);
 
     if (label.object.userData.set) {
@@ -321,19 +284,20 @@ const animate = () => {
         // labelPivot.rotation.y = camera.rotation.y;
     }
 
-    /* For debugging */
-    stats.begin();
+    if (SceneUtils.getPerformanceMonitor()) {
+        stats.begin();
+    }
 
     // camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
-    cameraHelper.update();
     dirLightHelper.update();
 
     composer.render();
-    // renderer.render(scene, camera)
     labelRenderer.render(labelScene, camera);
 
-    stats.end();
+    if (SceneUtils.getPerformanceMonitor()) {
+        stats.end();
+    }
 };
 
 const resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
@@ -346,22 +310,18 @@ const resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual
     renderer.setSize(screenWidth, screenHeight);
     composer.setSize(screenWidth, screenHeight);
     labelRenderer.setSize(screenWidth, screenHeight);
-
-    // cameraHelper.update();
 };
 
-// TODO: combine onMouseMove & onClick functions
+const getIntersects = (event, raycaster) => {
+    // Update the picking ray with the camera and mouse position
+    raycaster.setFromCamera(SceneUtils.getMouseObject(event), camera);
+
+    // Calculate objects intersecting the picking ray
+    return raycaster.intersectObjects(scene.children, true);
+};
+
 const onMouseMove = event => {
-    // calculate mouse position in normalized device coordinates
-    // (-1 to +1) for both components
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-
-    // update the picking ray with the camera and mouse position
-    raycaster.setFromCamera(mouse, camera);
-
-    // calculate objects intersecting the picking ray
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    const intersects = getIntersects(event, raycaster);
 
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with 'S_', so selectable will be true
@@ -377,16 +337,7 @@ const onMouseMove = event => {
 };
 
 const onClick = event => {
-    // calculate mouse position in normalized device coordinates
-    // (-1 to +1) for both components
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-
-    // update the picking ray with the camera and mouse position
-    raycaster.setFromCamera(mouse, camera);
-
-    // calculate objects intersecting the picking ray
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    const intersects = getIntersects(event, raycaster);
 
     if (intersects.length > 0) {
         // If an object can be selected, the name of the mesh will begin with an 'S_', so selectable will be true
@@ -606,8 +557,7 @@ const setLabel = (label, position, radius, category, id) => {
     document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
     document.getElementById('label-title').textContent = objectInfo.title;
     document.getElementById('label-subtitle').textContent = objectInfo.subtitle;
-    document.getElementById('label-image').style.backgroundImage = `url(${ require('../assets/img/' + objectInfo.image) })`;
-    // document.getElementById('label-image').style.backgroundImage = 'url(../assets/img/' + objectInfo.image + ')';
+    document.getElementById('label-image').style.backgroundImage = `url(${ objectInfo.image })`;
 
     document.querySelector('.label-card').addEventListener('click', clickLabel);
 
@@ -735,6 +685,11 @@ const toggleDrawer = () => {
     Categories.setDrawer(!Categories.getDrawer());
 };
 
+const showPerformanceMonitor = bool => {
+    stats.dom.style.display = bool ? 'block' : 'none';
+    SceneUtils.setPerformanceMonitor(bool);
+};
+
 export default {
     init,
     selectFloor,
@@ -745,5 +700,6 @@ export default {
     resetCamera,
     resetSelected,
     toggleDrawer,
+    showPerformanceMonitor,
 };
 

@@ -4,13 +4,12 @@
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'>
 
-    <link rel='shortcut icon' href='../favicon.ico' type='image/x-icon'>
-    <link rel='manifest' href='../manifest.json' />
+    <link rel='manifest' href='../manifest.json'>
 
     <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500' rel='stylesheet'>
     <link href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet'>
 
-    <title>Dream House Simulator</title>
+    <title>Sandbox</title>
 </head>
 <body>
 
@@ -20,31 +19,24 @@
     </div>
 </div>
 
-<div class='controls'>
-    <button class='reset-view-button mdc-button'>
-        <span class='mdc-button__ripple'></span>
-        <span class='mdc-button__label'>Reset View</span>
-    </button>
+<div id='levels'></div>
 
-    <button class='front-view-button mdc-button'>
-        <span class='mdc-button__ripple'></span>
-        <span class='mdc-button__label'>Front View</span>
-    </button>
+<div class='info-container'>
+    <div class='project-info'>
+        <h6 class='mdc-typography--subtitle1'>Dream House Simulator</h6>
+        <p class='mdc-typography--caption'>by Aidan Bundel</p>
 
-    <button class='top-view-button mdc-button'>
-        <span class='mdc-button__ripple'></span>
-        <span class='mdc-button__label'>Top View</span>
-    </button>
+        <a href='https://github.com/Abundle/dream-house-simulator' target='_blank'>
+            <p class='mdc-typography--overline'>GitHub</p>
+        </a>
+    </div>
 
-    <button class='side-view-button mdc-button'>
-        <span class='mdc-button__ripple'></span>
-        <span class='mdc-button__label'>Side View</span>
-    </button>
+    <div class='controls-container'>
+        <div id='controls'></div>
+    </div>
 </div>
 
-<div id='views'></div>
-
-<div id='info-container' class='info-panel'>
+<div class='cards-drawer'>
     <aside class='mdc-drawer mdc-drawer--dismissible' dir='rtl'>
         <div class='mdc-drawer__content' dir='ltr'>
             <div id='cards'></div>
