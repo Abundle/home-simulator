@@ -8,7 +8,7 @@
         "pet-project"
     ],
     "author": "Abundle",
-    "license": "ISC",
+    "license": "MIT",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "webpack-dev-server --mode development",
@@ -28,8 +28,9 @@
         "css-loader": "^3.4.0",
         "eslint": "^6.8.0",
         "eslint-plugin-import": "^2.19.1",
+        "favicons-webpack-plugin": "^3.0.0",
         "file-loader": "^5.0.2",
-        "html-webpack-plugin": "^3.2.0",
+        "html-webpack-plugin": "^4.0.0-beta.11",
         "mini-css-extract-plugin": "^0.9.0",
         "node-sass": "^4.13.0",
         "postcss-loader": "^3.0.0",
@@ -58,14 +59,8 @@
         "normalize-scss": "^7.0.1",
         "three": "^0.112.1"
     },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Abundle/dream-house-simulator.git"
-    },
-    "bugs": {
-        "url": "https://github.com/Abundle/dream-house-simulator/issues"
-    },
-    "homepage": "https://github.com/Abundle/dream-house-simulator#readme",
+    "repository": "github::Abundle/dream-house-simulator",
+    "bugs": "https://github.com/Abundle/dream-house-simulator/issues",
     "browserslist": [
         "last 1 version",
         "> 1%",

@@ -1,16 +1,18 @@
 import path from 'path';
 import { CleanWebpackPlugin } from 'clean-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
+import FaviconsWebpackPlugin from 'favicons-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import autoprefixer from 'autoprefixer';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 
-// Name "webpack.config.babel.js' is for using ES6 in webpack config
+// Name 'webpack.config.babel.js' is for using ES6 in webpack config
 
+// TODO: add plugin for inserting meta data in index.html (e.g. author, desccription)
 // TODO: check lazy loading https://webpack.js.org/guides/code-splitting/
 
-export default (_, options) => {
+export default (env, options) => {
     const devMode = options.mode !== 'production';
 
     return {
@@ -79,14 +81,13 @@ export default (_, options) => {
         devtool: devMode ? 'eval-source-map' : false, // or use source-map?
         optimization: {
             minimizer: [
-                new TerserPlugin({ // Docs: https://github.com/webpack-contrib/terser-webpack-plugin
+                new TerserPlugin({
                     terserOptions: {
                         output: {
                             comments: false,
                         },
                     },
                     extractComments: false,
-                    // sourceMap: true, // Must be set to true if using source-maps in production
                 }),
             ],
             // Setup from https://medium.com/hackernoon/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
@@ -114,9 +115,8 @@ export default (_, options) => {
         },
         plugins: [
             new CleanWebpackPlugin(),
-            new HtmlWebpackPlugin({
+            new HtmlWebpackPlugin({ // HtmlWebpackPlugin must go before FaviconsWebpackPlugin
                 template: './src/index.html',
-                favicon: './favicon.ico',
                 minify: {
                     removeComments: true,
                     collapseWhitespace: false,
@@ -133,7 +133,9 @@ export default (_, options) => {
                 // { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.js', to:'assets/draco/' },
                 { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.wasm', to:'assets/draco/' },
                 { from: './node_modules/three/examples/js/libs/draco/gltf/draco_wasm_wrapper.js', to:'assets/draco/' },
+                { from: '.htaccess' },
             ]),
+            new FaviconsWebpackPlugin(),
         ]
     };
 };
