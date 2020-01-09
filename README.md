@@ -9,3 +9,7 @@ This is my 3D mood board.
 - [MDC](https://github.com/material-components/material-components-web)
 - [GSAP](https://github.com/greensock/GSAP)
 - [Webpack](https://github.com/webpack)
+- [Blender](https://www.blender.org/)
+
+## Future Plans
+- Implement mobile version

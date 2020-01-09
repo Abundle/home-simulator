@@ -1,3 +1,6 @@
+// Normalize library import
+@import '~normalize-scss';
+
 // Import theming before components
 @import 'material-design-theming';
 
@@ -12,9 +15,6 @@
 @import '~@material/card/mdc-card';
 @import '~@material/list/mdc-list';
 @import '~@material/animation/functions';
-
-// Normalize library import
-@import '~normalize-scss';
 
 html, body {
     margin: 0;

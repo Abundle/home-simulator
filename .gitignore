@@ -12,4 +12,7 @@
 # htaccess file
 .htaccess
 
+# statistics
+stats.json
+
 npm-debug.log*

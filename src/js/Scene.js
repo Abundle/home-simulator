@@ -131,13 +131,13 @@ const init = () => {
     // Making the Euler angles make more sense (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
     camera.rotation.order = 'YXZ';
 
-    // TODO: temporarly disable controls when camera is moving
+    // TODO: temporarily disable controls when camera is moving
     controls = new OrbitControls(camera, labelRenderer.domElement);
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.25;
     controls.enablePan     = isDev;
     controls.maxPolarAngle = isDev ? Math.PI : Math.PI /2;
-    controls.minDistance   = isDev ? 0 : 25;
+    controls.minDistance   = isDev ? 0 : 15; // TODO: check in production mode
     controls.maxDistance   = isDev ? Infinity : 125;
 
     scene.add(new AmbientLight(0x666666));

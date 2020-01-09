@@ -9,11 +9,12 @@ import TerserPlugin from 'terser-webpack-plugin';
 
 // Name 'webpack.config.babel.js' is for using ES6 in webpack config
 
-// TODO: add plugin for inserting meta data in index.html (e.g. author, desccription)
 // TODO: check lazy loading https://webpack.js.org/guides/code-splitting/
 
 export default (env, options) => {
     const devMode = options.mode !== 'production';
+
+    console.log(process.env)
 
     return {
         entry: {
@@ -90,22 +91,22 @@ export default (env, options) => {
                     extractComments: false,
                 }),
             ],
-            // Setup from https://medium.com/hackernoon/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
-            // & https://medium.com/@Yoriiis/the-real-power-of-webpack-4-splitchunks-plugin-fad097c45ba0
-            // TODO: split vendor in separate Three.js file + check https://gist.github.com/davidgilbertson/838312f0a948423e4c4da30e29600b16#file-webpack-config-js
+            // Inspiration from:
+            // - https://medium.com/hackernoon/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
+            // - https://medium.com/@Yoriiis/the-real-power-of-webpack-4-splitchunks-plugin-fad097c45ba0
+            // - https://stackoverflow.com/questions/48985780/webpack-4-create-vendor-chunk
             splitChunks: {
                 chunks: 'all',
                 minSize: 0,
                 cacheGroups: {
                     vendors: {
-                        test: /[\\/]node_modules[\\/]/,
+                        test: /[\\/]node_modules[\\/](!three)[\\/]/,
+                        // test: /[\\/]node_modules[\\/]/,
                         name: devMode,
-                        /*name(module) {
-                            // get the name. E.g. node_modules/packageName/not/this/part.js or node_modules/packageName
-                            const packageName = module.context.match(/[\\/]node_modules[\\/](?:(@[\w-]*?[\\/].*?|.*?)([\\/]|$))/)[1];
-                            // npm package names are URL-safe, but some servers don't like @ symbols
-                            return `npm.${ packageName.replace('@', '') }`;
-                        },*/
+                    },
+                    threeVendor: {
+                        test: /[\\/]node_modules[\\/](three)[\\/]/,
+                        name: devMode,
                     },
                 }
             },
@@ -121,8 +122,9 @@ export default (env, options) => {
                     removeComments: true,
                     collapseWhitespace: false,
                 },
-                'meta': {
+                meta: {
                     'theme-color': '#f15b27',
+                    author: process.env.npm_package_author_name,
                 }
             }),
             new MiniCssExtractPlugin({

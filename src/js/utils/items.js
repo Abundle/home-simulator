@@ -1,5 +1,3 @@
-import placeholder from '../../assets/img/placeholder.jpg';
-
 import tv from '../../assets/img/tv.jpg';
 import tvCabinet from '../../assets/img/tv_cabinet.jpg';
 import couch from '../../assets/img/couch.jpg';
