@@ -13,3 +13,5 @@ This is my 3D mood board.
 
 ## Future Plans
 - Implement mobile version
+- Detail 3D model
+- Add more content

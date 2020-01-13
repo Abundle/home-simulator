@@ -19,7 +19,7 @@ const outlinePassParameters = {
 };
 
 const SAOparameters = {
-    output: 0, // TODO: checkbox should be unchecked on mobile screensize
+    output: 0,
     saoBias: 1,
     saoIntensity: 0.006, // 0.08
     saoScale: 10,

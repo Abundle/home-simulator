@@ -14,8 +14,6 @@ import TerserPlugin from 'terser-webpack-plugin';
 export default (env, options) => {
     const devMode = options.mode !== 'production';
 
-    console.log(process.env)
-
     return {
         entry: {
             main: './src/js/index.js'
@@ -99,14 +97,15 @@ export default (env, options) => {
                 chunks: 'all',
                 minSize: 0,
                 cacheGroups: {
-                    vendors: {
+                    vendor: {
                         test: /[\\/]node_modules[\\/](!three)[\\/]/,
                         // test: /[\\/]node_modules[\\/]/,
                         name: devMode,
                     },
-                    threeVendor: {
+                    three_vendor: {
                         test: /[\\/]node_modules[\\/](three)[\\/]/,
                         name: devMode,
+                        // name: 'npm.three',
                     },
                 }
             },
