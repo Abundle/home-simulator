@@ -11,7 +11,7 @@ const Cards = Object.keys(items.cardContents).map((category, index) => `
                         <div class='mdc-card__media-content'>
                             <div class='mdc-card__primary'>
                                 <h2 class='mdc-card__title mdc-typography mdc-typography--headline6'>${ item.title }</h2>
-                                <h3 class='mdc-card__subtitle mdc-typography mdc-typography--subtitle2'>${ item.subtitle }</h3>
+                                <h3 class='mdc-card__subtitle mdc-typography mdc-typography--subtitle2'>From ${ item.subtitle }</h3>
                             </div>
                         </div>
                     </div>

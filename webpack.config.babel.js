@@ -10,6 +10,7 @@ import TerserPlugin from 'terser-webpack-plugin';
 // Name 'webpack.config.babel.js' is for using ES6 in webpack config
 
 // TODO: check lazy loading https://webpack.js.org/guides/code-splitting/
+//  & https://css-tricks.com/the-complete-guide-to-lazy-loading-images/
 
 export default (env, options) => {
     const devMode = options.mode !== 'production';

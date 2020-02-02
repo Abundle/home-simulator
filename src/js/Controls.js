@@ -1,5 +1,6 @@
 import items from './utils/items';
 
+// TODO: change checkboxes into switches
 const Controls = `
     ${ items.controls.map(view => `
         <button class='${ view }-view-button mdc-button mdc-button--outlined'>
@@ -12,10 +13,11 @@ const Controls = `
         <div class='performance-checkbox mdc-checkbox'>
             <input type='checkbox'
                    class='mdc-checkbox__native-control'
-                   id='checkbox-1'/>
+                   id='checkbox-1'
+                   />
             <div class='mdc-checkbox__background'>
                 <svg class='mdc-checkbox__checkmark'
-                   viewBox='0 0 24 24'>
+                     viewBox='0 0 24 24'>
                     <path class='mdc-checkbox__checkmark-path'
                           fill='none'
                           d='M1.73,12.91 8.1,19.28 22.79,4.59'/>
@@ -24,7 +26,7 @@ const Controls = `
             </div>
             <div class='mdc-checkbox__ripple'></div>
         </div>
-        <label for='checkbox-1'>Show Performance Monitor</label>
+        <label for='checkbox-1'>Performance Monitor</label>
         
         <div class='sao-checkbox mdc-checkbox'>
             <input type='checkbox'
@@ -33,7 +35,7 @@ const Controls = `
                    />
             <div class='mdc-checkbox__background'>
                 <svg class='mdc-checkbox__checkmark'
-                   viewBox='0 0 24 24'>
+                     viewBox='0 0 24 24'>
                     <path class='mdc-checkbox__checkmark-path'
                           fill='none'
                           d='M1.73,12.91 8.1,19.28 22.79,4.59'/>
@@ -42,7 +44,7 @@ const Controls = `
             </div>
             <div class='mdc-checkbox__ripple'></div>
         </div>
-        <label for='checkbox-2'>Show SAO (can impact performance)</label>
+        <label for='checkbox-2'>SAO (can impact performance)</label>
     </div>
 `;
 

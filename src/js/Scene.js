@@ -1,6 +1,5 @@
 import {
     Scene,
-    Clock,
     Vector2,
     Group,
     Object3D,
@@ -10,7 +9,6 @@ import {
     PerspectiveCamera,
     AmbientLight, DirectionalLight, HemisphereLight,
     DirectionalLightHelper, HemisphereLightHelper, AxesHelper,
-    Matrix4,
     Vector3,
     Raycaster,
     sRGBEncoding,
@@ -41,14 +39,12 @@ import items from './utils/items.js';
 import SceneUtils from './utils/SceneUtils';
 
 // TODO: check if importing the levels as different object works with opacity changes
-// TODO: disable sao by default when performance drops & on lower-tier devices
+// TODO: disable sao when performance drops & on lower-tier devices
 // TODO: think about mobile version (layout, disable postprocessing etc.)
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
-// TODO: check Firefox reclicking label + refreshing page does not reset the level radio buttons
-// TODO: check Three.js documentation for changes
-// TODO: fix  3D model errors, check https://stackoverflow.com/questions/52441072/gltf2-accessor-unit-length
+// TODO: fix 3D model errors, check https://stackoverflow.com/questions/52441072/gltf2-accessor-unit-length
 
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
@@ -69,12 +65,16 @@ See https://github.com/emscripten-core/emscripten/issues/8126) */
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
 
+/* Lights */
+const directionalLight = new DirectionalLight(0xFFFFFF);
+const ambientLight     = new AmbientLight(0x666666);
+const hemisphereLight  = new HemisphereLight(0xffffff, 0xffffff, 0.05);
+
 /* Other Three.js variables */
-const clock      = new Clock();
-const raycaster  = new Raycaster();
-const meshGroup  = new Group();
-const labelPivot = new Object3D();
-const stats      = new Stats();
+const raycaster        = new Raycaster();
+const meshGroup        = new Group();
+const labelPivot       = new Object3D();
+const stats            = new Stats();
 
 /* Initiate global scene variables */ // TODO: remove
 let camera, scene, labelScene, renderer, labelRenderer;
@@ -88,8 +88,6 @@ let dirLightHelper;
 // TODO: sun lighting check https://stackoverflow.com/questions/15478093/realistic-lighting-sunlight-with-three-js
 //  or use library for calculating position of the sun? https://github.com/mourner/suncalc
 const init = () => {
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
     const aspect = screenWidth / screenHeight;
     // const canvasElement = document.getElementById('canvas');
     const container = document.getElementById('container');
@@ -97,14 +95,16 @@ const init = () => {
 
     window.addEventListener('resize', resizeCanvas, false); // TODO: check options
     document.addEventListener('mousemove', onMouseMove);
-    container.addEventListener('click', onClick);
+    container.addEventListener('mousedown', onClick, false);
 
     scene = new Scene();
-    scene.background = new Color(0xbfe3dd);
+    scene.background = new Color();
     // scene.fog = new THREE.Fog(scene.background, 1, 5000);
 
+    // updateSunLight();
+
     labelScene = new Scene();
-    labelScene.scale.set(0.005, 0.005, 0.005);
+    labelScene.scale.set(1 / scale, 1 / scale, 1 / scale); // Scale down label size scene
     label = createLabel();
 
     renderer = new WebGLRenderer(); // { antialias: true }
@@ -128,22 +128,20 @@ const init = () => {
         1,
         1000
     );
-    // Making the Euler angles make more sense (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
+    /* Making the Euler angles make more sense (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
+    rotation.y will be the camera yaw in radians
+    rotation.x will be the camera pitch in radians
+    rotation.z will be the camera roll in radians
+     */
     camera.rotation.order = 'YXZ';
 
-    // TODO: temporarily disable controls when camera is moving
     controls = new OrbitControls(camera, labelRenderer.domElement);
-    controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+    controls.enableDamping = true; // if enabled, you must call .update () in your animation loop
     controls.dampingFactor = 0.25;
     controls.enablePan     = isDev;
     controls.maxPolarAngle = isDev ? Math.PI : Math.PI /2;
-    controls.minDistance   = isDev ? 0 : 15; // TODO: check in production mode
+    controls.minDistance   = isDev ? 0 : 15;
     controls.maxDistance   = isDev ? Infinity : 125;
-
-    scene.add(new AmbientLight(0x666666));
-
-    const directionalLight = new DirectionalLight(0xFFFFFF);
-    scene.add(directionalLight);
 
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width  = 1024;
@@ -157,17 +155,17 @@ const init = () => {
     directionalLight.shadow.camera.far = 3500;
     directionalLight.shadow.bias = -0.0001;
 
-    updateSunLight(directionalLight, 20);
+    scene.add(directionalLight);
+    scene.add(ambientLight);
 
     /*pointLight = new THREE.PointLight(0xf15b27, 1, 100);
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);*/
 
-    const hemisphereLight = new HemisphereLight(0xffffff, 0xffffff, 0.6);
     hemisphereLight.color.setHSL(0.6, 1, 0.6);
     hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
-    hemisphereLight.position.set(0, 50, 0);
-    // scene.add(hemisphereLight);
+    hemisphereLight.position.set(0, 35, 0);
+    scene.add(hemisphereLight);
 
     const loader = new GLTFLoader();
     // Optional: Provide a DRACOLoader instance to decode compressed mesh data
@@ -219,12 +217,12 @@ const init = () => {
 
     /* Postprocessing */
     composer = new EffectComposer(renderer);
-    composer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(screenWidth, screenHeight);
 
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
 
-    outlinePass = new OutlinePass(new Vector2(window.innerWidth, window.innerHeight), scene, camera);
+    outlinePass = new OutlinePass(new Vector2(screenWidth, screenHeight), scene, camera);
     outlinePass.params = SceneUtils.outlinePassParameters;
     outlinePass.visibleEdgeColor.set('#ffffff');
     outlinePass.hiddenEdgeColor.set('#190a05');
@@ -236,7 +234,7 @@ const init = () => {
     composer.addPass(saoPass);
 
     const effectFXAA = new ShaderPass(FXAAShader);
-    effectFXAA.uniforms['resolution' ].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+    effectFXAA.uniforms['resolution' ].value.set(1 / screenWidth, 1 / screenHeight);
     composer.addPass(effectFXAA);
 
     const gammaCorrection = new ShaderPass(GammaCorrectionShader);
@@ -281,18 +279,39 @@ const start = () => {
 const animate = () => {
     requestAnimationFrame(animate);
 
-    const delta = clock.getDelta();
-    controls.update(delta);
+    updateSunLight();
 
     if (label.object.userData.set) {
-        labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
-        // labelPivot.rotation.y = camera.rotation.y;
+        // Since setViewOffset in panView does not seem to work for CSS3DRenderer..
+        if (Categories.getDrawer()) {
+            // Project this vector from the camera's normalized device coordinate (NDC) space into world space.
+            const vector = new Vector3(-280, 550, 0).unproject(camera);
+            // const vector = new Vector3(115, 0, -1).unproject(camera); // TODO: remove magic numbers
+            // const vector = new Vector3(-400, label.object.position.y, -1).unproject(camera);
+
+            labelPivot.quaternion.set(0, 0, 0, 0);
+            // labelPivot.rotation.y = 0;
+
+            label.object.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
+            // label.object.rotation.y = camera.rotation.y;
+
+            label.object.position.lerp(vector, 0.75);
+        } else {
+            label.object.position.set(0, 200, 0);
+            // label.object.position.set(335, 0, 0);
+            label.object.quaternion.set(0, 0, 0, 0);
+
+            labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
+            // labelPivot.rotation.y = camera.rotation.y;
+        }
     }
+
+    // required if controls.enableDamping or controls.autoRotate are set to true
+    controls.update();
+    // controls.enabled = !SceneUtils.getAnimating(); // TODO: temporarily disable controls when camera is animating
 
     SceneUtils.getPerformanceMonitor() && stats.begin();
 
-    // camera.updateProjectionMatrix();
-    camera.updateMatrixWorld();
     isDev && dirLightHelper.update();
 
     composer.render();
@@ -301,16 +320,15 @@ const animate = () => {
     SceneUtils.getPerformanceMonitor() && stats.end();
 };
 
-const resizeCanvas = () => { // Check https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
+const resizeCanvas = () => { // See https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
     // Perspective camera
     camera.aspect = screenWidth / screenHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(screenWidth, screenHeight);
+    // renderer.setSize(screenWidth, screenHeight);
     composer.setSize(screenWidth, screenHeight);
     labelRenderer.setSize(screenWidth, screenHeight);
+
+    // TODO: fix function
 };
 
 const getIntersects = (event, raycaster) => {
@@ -337,6 +355,7 @@ const onMouseMove = event => {
     }
 };
 
+// TODO: when label is in front of clickable object, the object is selected instead of the label
 const onClick = event => {
     const intersects = getIntersects(event, raycaster);
 
@@ -388,14 +407,18 @@ const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Ex
         z: targetPosition.z,
         ease: easing,
         /*onUpdate: () => {
-            camera.updateProjectionMatrix();
+            SceneUtils.setAnimating(true);
+        },
+        onComplete: () => {
+            SceneUtils.setAnimating(false);
         }*/
     });
     gsap.to(camera, {
         duration: duration,
-        zoom: targetZoom,
+        zoom: targetZoom, // TODO: zoom does not seem to do anything
         ease: Expo.easeInOut,
     });
+
 };
 
 const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
@@ -448,22 +471,41 @@ let animateOpacity = (objects, targetOpacity) => {
     opacityTween.start();*/
 };
 
-const updateSunLight = (light, radius) => {
+// From https://github.com/dirkk0/threejs_daynight
+const updateSunLight = () => {
+    const dayLightColor   = new Color(0xbfe3dd);
+    const twilightColor   = new Color(0x571a00);
+    const nightLightColor = new Color(0x000112);
     const time = new Date().getHours();
-    // const time = new Date().getSeconds();
-    const timeToRadians = time * (Math.PI / 24);
-    // const timeToRadians = time * (Math.PI / 30);
-    const sinTime = radius * Math.sin(timeToRadians);
-    const cosTime = radius * Math.cos(timeToRadians);
+    // const time = new Date().getTime() * 0.002 - 300000000;
 
-    light.position.set(cosTime, sinTime, sinTime);
+    const timeToRadians = time * (Math.PI / 12) - Math.PI * 3 / 4;
+    const nSin = Math.sin(timeToRadians);
+    const nCos = Math.cos(timeToRadians);
 
-    if (sinTime > 0.2) { // Day
-        light.intensity = 0.65;
-    } else if (sinTime < 0.2 && sinTime > 0) { // Twilight
-        light.intensity = sinTime / 0.2;
+    directionalLight.position.set(15 * nSin, 20 * nSin, 20 * nCos);
+
+    if (nSin >= 0.3 ) { // Day
+        const f = 0.65; // 0.65
+
+        directionalLight.intensity = f;
+        ambientLight.intensity = f * 0.5;
+
+        scene.background.lerp(dayLightColor, 0.05);
+    } else if (nSin < 0.3 && nSin > 0) { // Twilight
+        const f = nSin / 0.5;
+
+        directionalLight.intensity = f;
+        ambientLight.intensity = f * 0.5;
+
+        scene.background.lerp(twilightColor, 0.05);
     } else { // Night
-        light.intensity = 0;
+        const f = 0;
+
+        directionalLight.intensity = f;
+        ambientLight.intensity = f * 0.2;
+
+        scene.background.lerp(nightLightColor, 0.1);
     }
 };
 
@@ -474,19 +516,16 @@ const selectObject = object => {
     const objectSize     = object.geometry.boundingSphere.radius;
     const objectPosition = object.position;
     // Zoom based on boundingSphere of geometry
-    const zoom           = Math.sin(objectSize);
+    const zoom           = 1; // Math.sin(objectSize);
     // let zoom = 1 / (Math.round(objectSize) * 0.75);
     // const fov = sigmoid(objectSize) * 10 + 15;
 
-    /*const box = new THREE.BoxHelper( object, 0xffff00 );
-    scene.add(box);*/
-
-    // setSelectedObject(object);
+    SceneUtils.setSelectedObject(object);
 
     animateCamera({
-        x: -(objectPosition.x + objectSize / 2 + 1),
-        y: objectPosition.y + objectSize / 2 + 6, // 4
-        z: objectPosition.z + objectSize / 2 + 3,
+        x: -(objectPosition.x + objectSize + 4),
+        y: objectPosition.y + objectSize + 4,
+        z: objectPosition.z + objectSize + 6,
     }, zoom);
 
     animateLookAt(objectPosition);
@@ -498,6 +537,7 @@ const selectObject = object => {
         const category        = objectNameArray[1];
         const id              = objectNameArray[2];
 
+        // object.add(labelPivot);
         setLabel(label, objectPosition, objectSize, category, id);
 
         document.getElementById('radio-' + level).checked = true;
@@ -516,7 +556,7 @@ const createLabel = () => {
     const element = document.createElement('div');
 
     element.className = 'label-card';
-    element.style.opacity = '0';
+    element.style.opacity = isDev ? '50%' : '0';
     element.style.pointerEvents = 'none';
     // element.style.width = '375px';
     element.innerHTML = `
@@ -537,6 +577,7 @@ const createLabel = () => {
     // CSS Object
     const object = new CSS3DObject(element);
     object.position.set(0, 0, 0);
+    object.userData = { set: false };
     labelScene.add(object);
 
     return {
@@ -548,21 +589,21 @@ const createLabel = () => {
 // TODO: check https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
 // TODO: create line as indicator from label to object
 const setLabel = (label, position, radius, category, id) => {
-    const scale = 200;
     // Get selected item info based on the id
     const objectInfo = items.cardContents[category].find(object => object.id === parseInt(id));
 
-    closeDrawer();
+    // closeDrawer();
 
     document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
     document.getElementById('label-title').textContent = objectInfo.title;
-    document.getElementById('label-subtitle').textContent = objectInfo.subtitle;
+    document.getElementById('label-subtitle').textContent = `From ${ objectInfo.subtitle }`;
     document.getElementById('label-image').style.backgroundImage = `url(${ objectInfo.image })`;
 
     document.querySelector('.label-card').addEventListener('click', clickLabel);
 
     // Calculate the width of the label after inserting text
-    const labelWidth = label.element.offsetWidth / 2;
+    // const labelHeight = label.element.offsetHeight;
+    // const labelWidth = label.element.offsetWidth / 2;
 
     // Add the CSS3DObject as child to the (invisible) Object3D
     labelScene.add(labelPivot);
@@ -571,8 +612,10 @@ const setLabel = (label, position, radius, category, id) => {
 
     label.element.style.opacity = '0.8';
     label.element.style.pointerEvents = 'auto';
-    label.object.position.x = scale * radius + labelWidth; // TODO: flip label to other side because of the sidebar?
 
+    // TODO: flip label to other side because of the sidebar or put on top of object?
+    // label.object.position.y = Math.round(scale * radius + labelHeight);
+    // label.object.position.x = Math.round(scale * radius + labelWidth);
     label.object.userData = { set: true };
 };
 
@@ -581,7 +624,7 @@ const removeLabel = label => {
     label.element.style.opacity = '0';
     label.element.style.pointerEvents = 'none';
 
-    closeDrawer();
+    // closeDrawer();
 
     document.querySelector('.label-card').removeEventListener('click', clickLabel);
 
@@ -598,60 +641,25 @@ const clickLabel = event => {
     }
 };
 
-// TODO: reset translation if another object is selected + add animation
-const panView = distance => {
-    const duration = 0.5;
-    const easing = Expo.easeInOut;
+// TODO: reset translation if another object is selected
+const panView = direction => {
+    if (direction === 1) {
+        // TODO: distance at 'x' should be determined by width of the sidebar
+        camera.setViewOffset(screenWidth, screenHeight, 300 * direction, 0, screenWidth, screenHeight);
 
-    const object = new Object3D().copy(camera);
-    object.position.setX(distance);
-    // const cameraTargetPosition = new THREE.Vector3().copy(camera.position).setX(distance);
-    const cameraMatrix = new Matrix4().copy(object.matrix);
+        // labelPivot.quaternion.set(0, 0, 0, 0);
 
-    // Copy the camera's first column (which is x) of its local transformation matrix to empty vector
-    const translationVector = new Vector3().setFromMatrixColumn(cameraMatrix , 0);
-    // Multiply the vector with the translation distance
-    translationVector.multiplyScalar(distance);
+        controls.enablePan  = isDev;
+        controls.enableZoom = isDev;
+    } else {
+        camera.clearViewOffset();
 
-    const testX = Math.round( translationVector.x * 1e4 ) / 1e4;
-    const testZ = Math.round( translationVector.z * 1e4 ) / 1e4;
+        /*label.object.position.set(0, 0, 0, 0);
+        label.object.quaternion.set(0, 0, 0, 0);*/
 
-    /*TweenMax.to(camera.position, duration, {
-        x: camera.position.x + distance,
-        easing: easing,
-        onUpdate: () => {
-            camera.updateProjectionMatrix();
-        }
-    });
-    // Change X and Z values (i.e. the horizontal plane) only
-    TweenMax.to(controls.target, duration, {
-        x: controls.target.x + testX,
-        z: controls.target.z + testZ,
-        easing: easing,
-    });*/
-
-    /*cameraTargetPosition.setX(distance);
-    // Interpolate camPos toward targetPos
-    cameraPosition.lerp(cameraTargetPosition, 0.05);
-    // Apply new camPos to your camera
-    camera.position.copy(cameraPosition);
-    // camera.position.lerp(cameraTargetPosition, 0.8)*/
-
-    /*// Translation vector code from Three.js OrbitControls:
-    // https://github.com/mrdoob/three.js/blob/master/examples/js/controls/OrbitControls.js#L334
-    const translationVector = new THREE.Vector3();*/
-
-    camera.translateX(distance);
-    /*// Copy the camera's first column (which is x) of its local transformation matrix to empty vector
-    translationVectorNoAnimation.setFromMatrixColumn(camera.matrix , 0);
-    // Multiply the vector with the translation distance
-    translationVector.multiplyScalar(distance);*/
-    // Add the translation vector to the controls.target point, i.e. the camera's lookAt
-    controls.target.x += testX;
-    controls.target.z += testZ;
-    // controls.target.add(translationVectorNoAnimation);
-
-    // console.log(testX, testZ);
+        controls.enablePan  = true;
+        controls.enableZoom = true;
+    }
 };
 
 const resetCamera = (pos = { x: -30, y: 40, z: 60 }) => {
@@ -669,26 +677,36 @@ const resetSelected = () => {
     }*/
     SceneUtils.setIntersected(null);
 
+    controls.enablePan = true;
+
     removeLabel(label);
 };
 
+const openDrawer = () => {
+    panView(1);
+    Categories.setDrawer(true);
+
+};
+
 const closeDrawer = () => {
-    if (Categories.getDrawer()) {
-        panView(-6);
-        Categories.setDrawer(false);
-    }
+    panView(-1);
+    Categories.setDrawer(false);
 };
 
 const toggleDrawer = () => {
-    const distance = Categories.getDrawer() ? -6: 6; // TODO: reimplement value based on viewport width
-    panView(distance);
-    Categories.setDrawer(!Categories.getDrawer());
+    Categories.getDrawer() ? closeDrawer(): openDrawer();
+    // Categories.setDrawer(!Categories.getDrawer());
 };
 
 const showPerformanceMonitor = bool => {
     stats.dom.style.display = bool ? 'block' : 'none';
     SceneUtils.setPerformanceMonitor(bool);
 };
+
+const screenWidth = window.innerWidth;
+const screenHeight = window.innerHeight;
+const scale = 200;
+// const panViewDistance = 1.25;
 
 export default {
     init,
@@ -702,5 +720,6 @@ export default {
     toggleDrawer,
     showPerformanceMonitor,
     showSAO,
+    isDev,
 };
 

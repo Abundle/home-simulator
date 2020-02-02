@@ -11,10 +11,14 @@ import items from './utils/items';
 import Cards from './Cards';
 import Levels from './Levels';
 import Controls from './Controls';
+
+// Style import
 import '../scss/main.scss';
 
 /* For testing Babel */
 // import './utils/transpile.test';
+
+// TODO: add close button to drawer
 
 const isMobile = window.screen.width <= 760;
 
@@ -71,9 +75,6 @@ const initLevels = content => {
     formField.listen('change', event => {
         Scene.selectFloor(event.target.value);
     });
-    /*document.querySelector('.mdc-form-field').addEventListener('change', event => {
-        Scene.selectFloor(event.target.value);
-    });*/
 };
 
 const initRipples = (selectors, isUnbounded) => {
@@ -120,23 +121,23 @@ const initControls = content => {
     });
 
     document.querySelector('.front-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 1, z: 75 });
-        Scene.animateLookAt({ x: 0, y: 3, z: 0 });
+        Scene.animateCamera({ x: 0, y: 1, z: 65 });
+        Scene.animateLookAt({ x: 0, y: 5, z: 0 });
         Scene.animateFov(15);
         Scene.resetSelected();
     });
 
     document.querySelector('.top-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 75, z: 1 }); // TODO: from back to top view not working properly
+        Scene.animateCamera({ x: 1, y: 85, z: 1 }); // TODO: from back to top view not working properly
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
         Scene.animateFov(15);
         Scene.resetSelected();
     });
 
     document.querySelector('.back-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 1, z: -75 });
-        Scene.animateLookAt({ x: 0, y: 3, z: 0 });
-        Scene.animateFov(15);
+        Scene.animateCamera({ x: 0, y: 30, z: -65 });
+        Scene.animateLookAt({ x: 0, y: 2, z: 0 });
+        // Scene.animateFov(15);
         Scene.resetSelected();
     });
 
@@ -144,8 +145,11 @@ const initControls = content => {
     const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-checkbox'));
     const saoCheckbox = new MDCCheckbox(document.querySelector('.sao-checkbox'));
 
-    saoCheckbox.checked = !isMobile;
+    saoCheckbox.checked         = !isMobile;
+    performanceCheckbox.checked = Scene.isDev;
+
     Scene.showSAO(!isMobile);
+    Scene.showPerformanceMonitor(Scene.isDev);
 
     formField.input = performanceCheckbox;
     formField.input = saoCheckbox;
@@ -175,7 +179,7 @@ const greet = 'Hey fellow developer!';
 const beNice = 'Good to see you here, hope you\'re doing great.';
 const persuasion = 'Interested in my work?';
 const link = 'Here\'s my portfolio: https://aidanbundel.com';
-const exitConvo = 'Made with 💙';
+const exitConvo = 'Made with 💜';
 
 console.log(`
   %c
@@ -185,4 +189,4 @@ console.log(`
   ${ link }
   
   ${ exitConvo }
-`, 'color: blue; font-size: 14px');
+`, 'color: purple; font-size: 14px');

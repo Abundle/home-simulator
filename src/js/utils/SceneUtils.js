@@ -4,10 +4,11 @@ import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
 
 let SELECTABLE,
     SHOW,
+    INTERSECTED,
+    SELECTED,
     isAnimating = false;
 
-let INTERSECTED, SAO = {};
-// let SAO         = isMobile ? 1 : 0;
+let SAO = {};
 
 const outlinePassParameters = {
     edgeStrength: 3,
@@ -41,6 +42,7 @@ const removeLoadingScreen = () => {
     }
 };
 
+// TODO: check if this should be done differently (more Redux like?)
 const getAnimating = () => { return isAnimating; };
 const setAnimating = bool => { isAnimating = bool; };
 
@@ -49,6 +51,9 @@ const setIntersected = object => { INTERSECTED = object; };
 
 const getSelectable = () => { return SELECTABLE; };
 const setSelectable = bool => { SELECTABLE = bool; };
+
+const getSelectedObject = () => { return SELECTED; };
+const setSelectedObject = object => { SELECTED = object; };
 
 const getPerformanceMonitor = () => { return SHOW; };
 const setPerformanceMonitor = bool => { SHOW = bool; };
@@ -101,6 +106,8 @@ export default {
     setIntersected,
     getSelectable,
     setSelectable,
+    getSelectedObject,
+    setSelectedObject,
     getPerformanceMonitor,
     setPerformanceMonitor,
     getSaoPass,
