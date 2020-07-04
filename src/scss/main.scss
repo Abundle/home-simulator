@@ -1,26 +1,54 @@
 // Normalize library import
-@import '~normalize-scss';
+//@use 'normalize-scss';
 
 // Import theming before components
-@import 'material-design-theming';
+@use 'variables';
 
 // Material Design modules import
-@import '~@material/typography/mdc-typography';
-@import '~@material/button/mdc-button';
-@import '~@material/form-field/mdc-form-field';
-@import '~@material/radio/mdc-radio';
-@import '~@material/checkbox/mdc-checkbox';
-@import '~@material/drawer/mdc-drawer';
-@import '~@material/icon-button/mdc-icon-button';
-@import '~@material/card/mdc-card';
-@import '~@material/list/mdc-list';
-@import '~@material/animation/functions';
+@use '@material/theme' with (
+  $primary: variables.$primary-color,
+  $secondary: variables.$secondary-color,
+  //$on-primary: rgba(0,0,0,0.87),
+  //$on-secondary: #442b2d,
+  $background: #ffffff,
+);
+@use '@material/typography' with (
+    $styles-subtitle1: (
+        margin: 0.5em 0,
+    ),
+    $styles-caption: (
+        margin: 0.5em 0,
+    ),
+    $styles-overline: (
+        margin: 0,
+    )
+);
+@use '@material/button';
+@use '@material/form-field';
+@use '@material/radio';
+@use '@material/checkbox';
+@use '@material/drawer';
+@use '@material/icon-button';
+@use '@material/card';
+@use '@material/list';
+@use '@material/animation';
+
+//@include typography.core-styles;
+@include button.core-styles;
+@include radio.core-styles;
+@include checkbox.core-styles;
+@include drawer.core-styles;
+@include icon-button.core-styles;
+@include card.core-styles;
+@include list.core-styles;
+//@include animation.core-styles;
 
 html, body {
     margin: 0;
-    font-family: 'Arial',sans-serif; // fallback
+    font-family: 'Roboto',sans-serif; // default
     font-size: 16px;
     overflow: hidden;
+    background-color: lightblue;
 }
 
 a {
@@ -45,13 +73,18 @@ a {
 
 ::selection {
     color: white;
-    background: rgba($mdc-theme-primary, 0.5);
+    background: rgba(variables.$primary-color, 0.25);
 }
 
 /* Smartphone */
 /*@media only screen and (max-width: 760px) {
     #some-element { display: none; }
 }*/
+
+.night-theme {
+    color: white;
+    @include radio.unchecked-stroke-color(white);
+}
 
 .loading-container {
     position: absolute;
@@ -66,7 +99,7 @@ a {
     justify-content: center;
     align-items: center;
     opacity: 1;
-    background-color: $mdc-theme-primary;
+    background-color: variables.$primary-color;
     color: white;
     font-size: 2em;
     transition: opacity 300ms ease;
@@ -89,7 +122,7 @@ a {
         padding: 20px;
 
         a {
-            color: $mdc-theme-primary;
+            color: variables.$primary-color;
         }
     }
 
@@ -112,19 +145,19 @@ a {
     }
 
     .reset-view-button {
-        @include mdc-button-outline-color(purple);
+        @include button.outline-color(purple);
     }
 
     .front-view-button {
-        @include mdc-button-outline-color(blue);
+        @include button.outline-color(blue);
     }
 
     .top-view-button {
-        @include mdc-button-outline-color(green);
+        @include button.outline-color(green);
     }
 
     .back-view-button {
-        @include mdc-button-outline-color(chocolate);
+        @include button.outline-color(chocolate);
     }
 }
 
@@ -140,89 +173,99 @@ a {
 }
 
 .cards-drawer {
-    .mdc-drawer {
-        @include mdc-drawer-width($custom-drawer-width);
-        background-color: rgba(255, 255, 255, 1);
-        border: none;
+    display: flex;
+    height: 100vh;
+    border: none;
 
-        &__content {
-            padding: 25px;
-
-            .category-title {
-                &:first-child {
-                    margin-top: 0;
-                }
-                &:not(:first-child) {
-                    padding-top: 35px;
-                }
-            }
-
-            #cards {
-                padding-bottom: 40vh; // TODO: check for large screens
-            }
-        }
-
-        // Hack to overwrite the margin-right animation
-        &.mdc-drawer--open:not(.mdc-drawer--closing) + .mdc-drawer-app-content { //
-            transform: translateX(-$custom-drawer-width);
-            margin-right: 0;
-        }
-    }
 
     .mdc-list {
-        @include mdc-list-single-line-shape-radius(8px);
+        @include list.single-line-shape-radius(50%);
     }
+}
 
-    .mdc-drawer-app-content {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        position: fixed;
+.mdc-drawer {
+    @include drawer.width(variables.$custom-drawer-width);
+    position: absolute;
+    right: variables.$custom-drawer-width * -1;
+    background-color: white; // rgba(255, 255, 255, 1);
+
+    // Overwrite the open-from-left animation
+    &.mdc-drawer--open {
         right: 0;
-        height: 100%;
-        transition: mdc-animation-exit-permanent(/* $name: */ transform, /* $duration: */ 175ms); // delay: 175ms
-        transform: translateX(0);
-        will-change: transform;
-        background-color: rgba(255, 255, 255, 0.5);
 
-        .mdc-list-item__graphic {
-            margin-right: 16px;
+        + .mdc-drawer-app-content {
+            transition: animation.enter(transform, 250ms);
+            transform: translateX(variables.$custom-drawer-width * -1);
         }
     }
 
-    .mdc-card {
-        margin-top: 15px;
-        @include mdc-card-shape-radius(4px);
+    &__content {
+        padding: 25px;
 
-        &__media {
-            background-color: $mdc-theme-primary;
-            border-radius: 4px 4px 0 0;
-            //background-image: url('../assets/img/fallback.jpg');
+        .category-title {
+            &:first-child {
+                margin-top: 0;
+            }
+            &:not(:first-child) {
+                padding-top: 35px;
+            }
         }
-        &__media-content {
-            display: flex;
-            align-items: flex-end;
-            color: white;
-            background-color: rgba(0, 0, 0, 0.15);
-        }
-        &__action {
-            padding: 1rem;
-        }
-        &__primary {
-            padding: 1rem;
-        }
-        &__secondary {
-            padding: 1rem 1rem 8px;
-        }
-        &__title {
-            margin: 0;
-        }
-        &__subtitle {
-            margin: 0;
+
+        #cards {
+            padding-bottom: 40vh; // TODO: check for large screens
         }
     }
 }
 
+.mdc-drawer-app-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: fixed;
+    right: 0;
+    height: 100%;
+    transition: animation.exit-temporary(transform, 200ms);
+    transition-timing-function: animation.$standard-curve-timing-function;
+    transform: translateX(0);
+    will-change: transform;
+    background-color: rgba(255, 255, 255, 0.5);
+
+    .mdc-list-item__graphic {
+        margin-right: 16px;
+    }
+}
+
+.mdc-card {
+    margin-top: 15px;
+    @include card.shape-radius(4px);
+
+    &__media {
+        background-color: variables.$primary-color;
+        border-radius: 4px 4px 0 0;
+        //background-image: url('../assets/img/fallback.jpg');
+    }
+    &__media-content {
+        display: flex;
+        align-items: flex-end;
+        color: white;
+        background-color: rgba(0, 0, 0, 0.15);
+    }
+    &__action {
+        padding: 1rem;
+    }
+    &__primary {
+        padding: 1rem;
+    }
+    &__secondary {
+        padding: 1rem 1rem 8px;
+    }
+    &__title {
+        margin: 0;
+    }
+    &__subtitle {
+        margin: 0;
+    }
+}
 
 .label-card {
     .mdc-card {
@@ -232,7 +275,7 @@ a {
 
         &__media {
             width: 125px;
-            background-color: $mdc-theme-primary;
+            background-color: variables.$primary-color;
             //background-image: url('../assets/img/fallback.jpg');
         }
         &__primary-action {

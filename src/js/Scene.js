@@ -7,8 +7,8 @@ import {
     Mesh,
     WebGLRenderer,
     PerspectiveCamera,
-    AmbientLight, DirectionalLight, HemisphereLight,
-    DirectionalLightHelper, HemisphereLightHelper, AxesHelper,
+    AmbientLight, DirectionalLight, HemisphereLight, PointLight,
+    DirectionalLightHelper, HemisphereLightHelper, PointLightHelper, AxesHelper,
     Vector3,
     Raycaster,
     sRGBEncoding,
@@ -40,11 +40,12 @@ import SceneUtils from './utils/SceneUtils';
 
 // TODO: check if importing the levels as different object works with opacity changes
 // TODO: disable sao when performance drops & on lower-tier devices
-// TODO: think about mobile version (layout, disable postprocessing etc.)
+// TODO: fix responsiveness + think about mobile version (layout, disable postprocessing etc.)
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
 // TODO: fix 3D model errors, check https://stackoverflow.com/questions/52441072/gltf2-accessor-unit-length
+// TODO: Add lights to night mode + Enable manually switching day/evening/night?
 
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
@@ -68,7 +69,7 @@ const WEBPACK_MODE = process.env.NODE_ENV;
 /* Lights */
 const directionalLight = new DirectionalLight(0xFFFFFF);
 const ambientLight     = new AmbientLight(0x666666);
-const hemisphereLight  = new HemisphereLight(0xffffff, 0xffffff, 0.05);
+const hemisphereLight  = new HemisphereLight(0xffffff, 0xffffff, 0.3);
 
 /* Other Three.js variables */
 const raycaster        = new Raycaster();
@@ -103,11 +104,17 @@ const init = () => {
 
     // updateSunLight();
 
+    /*var geometry = new THREE.PlaneBufferGeometry( 5, 20, 32 );
+    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
+    var plane = new THREE.Mesh( geometry, material );
+    scene.add( plane );*/
+
     labelScene = new Scene();
     labelScene.scale.set(1 / scale, 1 / scale, 1 / scale); // Scale down label size scene
     label = createLabel();
 
     renderer = new WebGLRenderer(); // { antialias: true }
+    // renderer.physicallyCorrectLights = true;
     // renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
@@ -138,9 +145,8 @@ const init = () => {
     controls = new OrbitControls(camera, labelRenderer.domElement);
     controls.enableDamping = true; // if enabled, you must call .update () in your animation loop
     controls.dampingFactor = 0.25;
-    controls.enablePan     = isDev;
     controls.maxPolarAngle = isDev ? Math.PI : Math.PI /2;
-    controls.minDistance   = isDev ? 0 : 15;
+    controls.minDistance   = isDev ? 0 : 10;
     controls.maxDistance   = isDev ? Infinity : 125;
 
     directionalLight.castShadow = true;
@@ -158,8 +164,18 @@ const init = () => {
     scene.add(directionalLight);
     scene.add(ambientLight);
 
-    /*pointLight = new THREE.PointLight(0xf15b27, 1, 100);
-    pointLight.position.set(5, 5, 5);
+    updateSunLight();
+
+
+    /*const pointLight = new PointLight(0xfffffd, 0.01, 100);
+    pointLight.position.set(0, 5, -0.75);
+    scene.add(pointLight);*/
+
+    //Create a PointLight and turn on shadows for the light
+    /*const pointLight = new PointLight(0xffffff, 0.25, 100);
+    pointLight.position.set( 0, 5, 0 );
+    pointLight.castShadow = true;
+    pointLight.shadow.bias = -0.001;
     scene.add(pointLight);*/
 
     hemisphereLight.color.setHSL(0.6, 1, 0.6);
@@ -254,7 +270,7 @@ const init = () => {
         const hemiSphereHelper = new HemisphereLightHelper(hemisphereLight, 2);
         scene.add(hemiSphereHelper);
 
-        /*let pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
+        /*const pointLightHelper = new PointLightHelper(pointLight, 1);
         scene.add(pointLightHelper);*/
 
         const axesHelper = new AxesHelper(3);
@@ -279,9 +295,11 @@ const start = () => {
 const animate = () => {
     requestAnimationFrame(animate);
 
-    updateSunLight();
+    // updateSunLight();
 
     if (label.object.userData.set) {
+        controls.enablePan = true; // Quick fix
+
         // Since setViewOffset in panView does not seem to work for CSS3DRenderer..
         if (Categories.getDrawer()) {
             // Project this vector from the camera's normalized device coordinate (NDC) space into world space.
@@ -296,6 +314,7 @@ const animate = () => {
             // label.object.rotation.y = camera.rotation.y;
 
             label.object.position.lerp(vector, 0.75);
+
         } else {
             label.object.position.set(0, 200, 0);
             // label.object.position.set(335, 0, 0);
@@ -304,6 +323,8 @@ const animate = () => {
             labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
             // labelPivot.rotation.y = camera.rotation.y;
         }
+    } else {
+        controls.enablePan = true; // Quick fix
     }
 
     // required if controls.enableDamping or controls.autoRotate are set to true
@@ -473,7 +494,23 @@ let animateOpacity = (objects, targetOpacity) => {
 
 // From https://github.com/dirkk0/threejs_daynight
 const updateSunLight = () => {
-    const dayLightColor   = new Color(0xbfe3dd);
+    const time = new Date().getHours();
+    const timeToRadians = time * (Math.PI / 24);
+    const sinTime = 20 * Math.sin(timeToRadians);
+    const cosTime = 20 * Math.cos(timeToRadians);
+
+    directionalLight.position.set(cosTime, sinTime, sinTime);
+    scene.background.lerp(new Color(0xbfe3dd), 0.05);
+
+    if (sinTime > 0.2) { // Day
+        directionalLight.intensity = 0.65;
+    } else if (sinTime < 0.2 && sinTime > 0) { // Twilight
+        directionalLight.intensity = sinTime / 0.2;
+    } else { // Night
+        directionalLight.intensity = 0;
+    }
+
+    /*const dayLightColor   = new Color(0xbfe3dd);
     const twilightColor   = new Color(0x571a00);
     const nightLightColor = new Color(0x000112);
     const time = new Date().getHours();
@@ -492,6 +529,8 @@ const updateSunLight = () => {
         ambientLight.intensity = f * 0.5;
 
         scene.background.lerp(dayLightColor, 0.05);
+
+        document.querySelector('.mdc-form-field').classList.remove('night-theme');
     } else if (nSin < 0.3 && nSin > 0) { // Twilight
         const f = nSin / 0.5;
 
@@ -499,6 +538,8 @@ const updateSunLight = () => {
         ambientLight.intensity = f * 0.5;
 
         scene.background.lerp(twilightColor, 0.05);
+
+        document.querySelector('.mdc-form-field').classList.remove('night-theme');
     } else { // Night
         const f = 0;
 
@@ -506,7 +547,9 @@ const updateSunLight = () => {
         ambientLight.intensity = f * 0.2;
 
         scene.background.lerp(nightLightColor, 0.1);
-    }
+
+        document.querySelector('.mdc-form-field').classList.add('night-theme');
+    }*/
 };
 
 const selectObject = object => {
@@ -624,7 +667,7 @@ const removeLabel = label => {
     label.element.style.opacity = '0';
     label.element.style.pointerEvents = 'none';
 
-    // closeDrawer();
+    closeDrawer();
 
     document.querySelector('.label-card').removeEventListener('click', clickLabel);
 
@@ -648,17 +691,14 @@ const panView = direction => {
         camera.setViewOffset(screenWidth, screenHeight, 300 * direction, 0, screenWidth, screenHeight);
 
         // labelPivot.quaternion.set(0, 0, 0, 0);
-
-        controls.enablePan  = isDev;
-        controls.enableZoom = isDev;
     } else {
         camera.clearViewOffset();
 
         /*label.object.position.set(0, 0, 0, 0);
         label.object.quaternion.set(0, 0, 0, 0);*/
 
-        controls.enablePan  = true;
-        controls.enableZoom = true;
+        /*controls.enablePan  = true;
+        controls.enableZoom = true;*/
     }
 };
 
@@ -677,7 +717,7 @@ const resetSelected = () => {
     }*/
     SceneUtils.setIntersected(null);
 
-    controls.enablePan = true;
+    // controls.enablePan = true;
 
     removeLabel(label);
 };

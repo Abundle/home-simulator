@@ -35,7 +35,7 @@ export default (env, options) => {
                     }
                 },
                 {
-                    test: /\.s(a|c)ss$/,
+                    test: /\.scss$/,
                     use: [
                         devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
                         { loader: 'css-loader' },
@@ -47,8 +47,13 @@ export default (env, options) => {
                         {
                             loader: 'sass-loader',
                             options: { // Configure sass-loader to understand the @material imports used by MDC Web
+                                // Prefer Dart Sass
+                                implementation: require('sass'),
+
+                                // See https://github.com/webpack-contrib/sass-loader/issues/804
+                                webpackImporter: false,
                                 sassOptions: {
-                                    includePaths: ['./node_modules'],
+                                    includePaths: ['./node_modules']
                                 },
                             },
                         }
@@ -131,12 +136,14 @@ export default (env, options) => {
                 filename: devMode ? '[name].css' : '[name].[hash].css',
                 chunkFilename: devMode ? '[id].css' : '[id].[hash].css',
             }),
-            new CopyWebpackPlugin([ // Three.js DRACO loader docs: https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco#readme
-                // { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.js', to:'assets/draco/' },
-                { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.wasm', to:'assets/draco/' },
-                { from: './node_modules/three/examples/js/libs/draco/gltf/draco_wasm_wrapper.js', to:'assets/draco/' },
-                { from: '.htaccess' },
-            ]),
+            new CopyWebpackPlugin({
+                patterns: [ // Three.js DRACO loader docs: https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco#readme
+                    // { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.js', to:'assets/draco/' },
+                    { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.wasm', to:'assets/draco/' },
+                    { from: './node_modules/three/examples/js/libs/draco/gltf/draco_wasm_wrapper.js', to:'assets/draco/' },
+                    { from: '.htaccess' },
+                ]
+            }),
             new FaviconsWebpackPlugin(),
         ]
     };

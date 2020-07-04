@@ -19,6 +19,7 @@ import '../scss/main.scss';
 // import './utils/transpile.test';
 
 // TODO: add close button to drawer
+// TODO: add info box to show controls
 
 const isMobile = window.screen.width <= 760;
 
@@ -112,7 +113,7 @@ const connectObserver = obs => {
     });
 };
 
-const initControls = content => {
+const initControls = content => { // TODO: make white at 'night'
     document.getElementById('controls').innerHTML = content;
 
     document.querySelector('.reset-view-button').addEventListener('click', () => {
@@ -128,7 +129,7 @@ const initControls = content => {
     });
 
     document.querySelector('.top-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 1, y: 85, z: 1 }); // TODO: from back to top view not working properly
+        Scene.animateCamera({ x: 0, y: 85, z: 1 }); // TODO: from back to top view not working properly
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
         Scene.animateFov(15);
         Scene.resetSelected();
@@ -136,7 +137,7 @@ const initControls = content => {
 
     document.querySelector('.back-view-button').addEventListener('click', () => {
         Scene.animateCamera({ x: 0, y: 30, z: -65 });
-        Scene.animateLookAt({ x: 0, y: 2, z: 0 });
+        Scene.animateLookAt({ x: 0, y: 1, z: 0 });
         // Scene.animateFov(15);
         Scene.resetSelected();
     });
@@ -145,11 +146,11 @@ const initControls = content => {
     const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-checkbox'));
     const saoCheckbox = new MDCCheckbox(document.querySelector('.sao-checkbox'));
 
-    saoCheckbox.checked         = !isMobile;
+    saoCheckbox.checked = !isMobile;
     performanceCheckbox.checked = Scene.isDev;
 
-    Scene.showSAO(!isMobile);
-    Scene.showPerformanceMonitor(Scene.isDev);
+    Scene.showSAO(saoCheckbox.checked);
+    Scene.showPerformanceMonitor(performanceCheckbox.checked);
 
     formField.input = performanceCheckbox;
     formField.input = saoCheckbox;

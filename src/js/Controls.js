@@ -44,7 +44,7 @@ const Controls = `
             </div>
             <div class='mdc-checkbox__ripple'></div>
         </div>
-        <label for='checkbox-2'>SAO (can impact performance)</label>
+        <label for='checkbox-2'>AO (can impact performance)</label>
     </div>
 `;
 

@@ -25,8 +25,8 @@ const getDrawer = () => {
 };
 
 const setDrawer = open => {
-    // drawer.open = false;
     drawer.open = open;
+    console.log(drawer.open, open);
 };
 
 const scrollToCategory = id => {
