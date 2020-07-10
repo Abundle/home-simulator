@@ -1,5 +1,6 @@
 import items from './utils/items.js';
 
+// TODO: 'Select item' text should have the same icon
 const Cards = Object.keys(items.cardContents).map((category, index) => `
     <h1 id=${ category + '-' + index } class='mdc-typography--headline5 category-title'>${ category.replace('_', ' ') }</h1>
     

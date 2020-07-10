@@ -18,8 +18,7 @@ import '../scss/main.scss';
 /* For testing Babel */
 // import './utils/transpile.test';
 
-// TODO: add close button to drawer
-// TODO: add info box to show controls
+// TODO: add close button to drawer?
 
 const isMobile = window.screen.width <= 760;
 
@@ -42,13 +41,12 @@ const listListen = mdcList => {
         const target = event.detail.index;
         const category = event.target.children[target];
 
-        if (Categories.getDrawer()) { // Drawer already open
+        if (Categories.getDrawerState()) { // Drawer already open
             Categories.scrollToCategory(category.id);
 
         } else {
             // Otherwise toggle the drawer state
             Scene.toggleDrawer();
-            // !SceneUtils.getAnimating() && Scene.toggleDrawer();
 
             Categories.scrollToCategory(category.id);
         }
@@ -62,7 +60,8 @@ const initCards = content => {
     document.querySelectorAll('.mdc-card__actions').forEach(element => {
         element.addEventListener('click', event => {
             // const id = event.target.id.split('-')[1];
-            Scene.getObject(event.target.id);
+            const object = Scene.getObject(event.target.id);
+            Scene.selectObject(object);  // TODO: drawer should stay open in this case
         });
     });
 };
@@ -73,9 +72,9 @@ const initLevels = content => {
     const formField = new MDCFormField(document.querySelector('#levels > .mdc-form-field'));
     formField.input = radio;
 
-    formField.listen('change', event => {
-        Scene.selectFloor(event.target.value);
-    });
+    Scene.selectFloor(4);
+
+    formField.listen('change', event => { Scene.selectFloor(event.target.value); });
 };
 
 const initRipples = (selectors, isUnbounded) => {
@@ -109,11 +108,10 @@ const connectObserver = obs => {
     document.querySelectorAll('.category-title').forEach(item => {
     // [...document.querySelectorAll('.category-title')].map(item => {
         obs.observe(item);
-        // console.log(item.offsetTop);
     });
 };
 
-const initControls = content => { // TODO: make white at 'night'
+const initControls = content => { // TODO: make light at 'night'
     document.getElementById('controls').innerHTML = content;
 
     document.querySelector('.reset-view-button').addEventListener('click', () => {
@@ -122,22 +120,22 @@ const initControls = content => { // TODO: make white at 'night'
     });
 
     document.querySelector('.front-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 1, z: 65 });
-        Scene.animateLookAt({ x: 0, y: 5, z: 0 });
-        Scene.animateFov(15);
+        Scene.animateCamera({ x: 0, y: 30, z: 60 });
+        Scene.animateLookAt({ x: 0, y: 0, z: 0 });
+        // Scene.animateFov(15);
         Scene.resetSelected();
     });
 
     document.querySelector('.top-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 85, z: 1 }); // TODO: from back to top view not working properly
+        Scene.animateCamera({ x: 0, y: 60, z: 1 });
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
-        Scene.animateFov(15);
+        // Scene.animateFov(15);
         Scene.resetSelected();
     });
 
     document.querySelector('.back-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 30, z: -65 });
-        Scene.animateLookAt({ x: 0, y: 1, z: 0 });
+        Scene.animateCamera({ x: 0, y: 30, z: -60 });
+        Scene.animateLookAt({ x: 0, y: 0, z: 0 });
         // Scene.animateFov(15);
         Scene.resetSelected();
     });
@@ -190,4 +188,4 @@ console.log(`
   ${ link }
   
   ${ exitConvo }
-`, 'color: purple; font-size: 14px');
+`, 'color: purple');

@@ -22,7 +22,7 @@ const outlinePassParameters = {
 const SAOparameters = {
     output: 0,
     saoBias: 1,
-    saoIntensity: 0.006, // 0.08
+    saoIntensity: 0.01,
     saoScale: 10,
     saoKernelRadius: 75,
     saoMinResolution: 0,
@@ -42,7 +42,6 @@ const removeLoadingScreen = () => {
     }
 };
 
-// TODO: check if this should be done differently (more Redux like?)
 const getAnimating = () => { return isAnimating; };
 const setAnimating = bool => { isAnimating = bool; };
 

@@ -20,13 +20,12 @@ const createCategoryButton = (categoryName, iconName, index) => {
             </li>`;
 };
 
-const getDrawer = () => {
+const getDrawerState = () => {
     return drawer.open;
 };
 
 const setDrawer = open => {
     drawer.open = open;
-    console.log(drawer.open, open);
 };
 
 const scrollToCategory = id => {
@@ -61,7 +60,7 @@ const setScrolling = bool => { isScrolling = bool; };*/
 
 export default {
     createCategoryButton,
-    getDrawer,
+    getDrawerState,
     setDrawer,
     scrollToCategory,
     scrollToItem,

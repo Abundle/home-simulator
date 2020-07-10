@@ -1,13 +1,13 @@
 // Normalize library import
 //@use 'normalize-scss';
 
-// Import theming before components
+// Import variables before components
 @use 'variables';
 
 // Material Design modules import
 @use '@material/theme' with (
-  $primary: variables.$primary-color,
-  $secondary: variables.$secondary-color,
+  $primary: purple,
+  $secondary: #f15b27,
   //$on-primary: rgba(0,0,0,0.87),
   //$on-secondary: #442b2d,
   $background: #ffffff,
@@ -23,6 +23,8 @@
         margin: 0,
     )
 );
+
+@use '@material/typography/mdc-typography';
 @use '@material/button';
 @use '@material/form-field';
 @use '@material/radio';
@@ -33,15 +35,14 @@
 @use '@material/list';
 @use '@material/animation';
 
-//@include typography.core-styles;
 @include button.core-styles;
 @include radio.core-styles;
 @include checkbox.core-styles;
 @include drawer.core-styles;
+@include drawer.dismissible-core-styles;
 @include icon-button.core-styles;
 @include card.core-styles;
 @include list.core-styles;
-//@include animation.core-styles;
 
 html, body {
     margin: 0;
@@ -73,7 +74,7 @@ a {
 
 ::selection {
     color: white;
-    background: rgba(variables.$primary-color, 0.25);
+    background: rgba(theme.$primary, 0.25);
 }
 
 /* Smartphone */
@@ -99,7 +100,7 @@ a {
     justify-content: center;
     align-items: center;
     opacity: 1;
-    background-color: variables.$primary-color;
+    background-color: theme.$primary;
     color: white;
     font-size: 2em;
     transition: opacity 300ms ease;
@@ -122,7 +123,7 @@ a {
         padding: 20px;
 
         a {
-            color: variables.$primary-color;
+            color: theme.$primary;
         }
     }
 
@@ -187,6 +188,7 @@ a {
     @include drawer.width(variables.$custom-drawer-width);
     position: absolute;
     right: variables.$custom-drawer-width * -1;
+    transition-timing-function: animation.$standard-curve-timing-function;
     background-color: white; // rgba(255, 255, 255, 1);
 
     // Overwrite the open-from-left animation
@@ -194,7 +196,7 @@ a {
         right: 0;
 
         + .mdc-drawer-app-content {
-            transition: animation.enter(transform, 250ms);
+            transition: animation.enter(transform, 200ms);
             transform: translateX(variables.$custom-drawer-width * -1);
         }
     }
@@ -224,10 +226,9 @@ a {
     position: fixed;
     right: 0;
     height: 100%;
-    transition: animation.exit-temporary(transform, 200ms);
-    transition-timing-function: animation.$standard-curve-timing-function;
+    //transition: animation.exit-temporary(transform, 200ms);
+    //transition-timing-function: animation.$standard-curve-timing-function;
     transform: translateX(0);
-    will-change: transform;
     background-color: rgba(255, 255, 255, 0.5);
 
     .mdc-list-item__graphic {
@@ -240,7 +241,7 @@ a {
     @include card.shape-radius(4px);
 
     &__media {
-        background-color: variables.$primary-color;
+        background-color: theme.$primary;
         border-radius: 4px 4px 0 0;
         //background-image: url('../assets/img/fallback.jpg');
     }
@@ -269,21 +270,17 @@ a {
 
 .label-card {
     .mdc-card {
+        display: flex;
+        flex-direction: row;
+
         .mdc-typography--headline6 {
             line-height: 1rem;
         }
 
         &__media {
             width: 125px;
-            background-color: variables.$primary-color;
+            background-color: theme.$primary;
             //background-image: url('../assets/img/fallback.jpg');
-        }
-        &__primary-action {
-            display: flex;
-            flex-direction: row;
-        }
-        &__primary {
-            padding: 0 0.75rem;
         }
     }
 }

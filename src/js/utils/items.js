@@ -5,12 +5,14 @@ import table from '../../assets/img/table.gif';
 import kitchen from '../../assets/img/kitchen.jpg';
 import stairs from '../../assets/img/stairs.jpeg';
 import bed from '../../assets/img/bed.jpg';
+import placeholder from '../../assets/img/placeholder.jpg';
 
-const categoryIcons = {
+const categoryIcons = { // TODO: merge with cardContents
     Living_Room: 'local_cafe',
     Kitchen: 'kitchen',
+    Bedroom: 'hotel',
+    Study: 'book',
     Miscellaneous: 'category',
-    // 'Bedroom': 'search'
 };
 
 const levels = [
@@ -74,12 +76,12 @@ const cardContents = { // Needs to be in the same order as categoryIcons
         {
             id      : 1,
             name    : 'S_Kitchen_1_-_Kitchen_Block',
-            title   : 'Kitchen Block',
+            title   : 'Lorem ipsum',
             subtitle: 'Snaidero & Pininfarina',
             content : 'Design on point 👌.',
             image   : kitchen,
             icon    : 'kitchen',
-            url     : 'https://www.snaidero-usa.com/modern-design-blog/eurocucina-2018-snaidero-and-pininfarina-bring-new-vision-modern-kitchen-design',
+            url     : '',
         },
         {
             id      : 2,
@@ -89,10 +91,10 @@ const cardContents = { // Needs to be in the same order as categoryIcons
             content : '',
             image   : table,
             icon    : 'restaurant',
-            url     : 'https://www.youtube.com/watch?v=Epv2AYSrEhc',
+            url     : '',
         }
     ],
-    'Miscellaneous': [
+    'Bedroom': [
         {
             id      : 1,
             name    : 'S_Miscellaneous_1_-_Bed_Master_Bedroom', // TODO: check name
@@ -102,6 +104,40 @@ const cardContents = { // Needs to be in the same order as categoryIcons
             image   : bed,
             icon    : 'king_bed',
             url     : 'https://www.retailing.nl/blog/interview-joey-janssen-swiss-sense/',
+        },
+        {
+            id      : 2,
+            name    : 'S_Kitchen_2_-_TV',
+            title   : 'Dining Table',
+            subtitle: 'YouTube',
+            content : 'Lorem ipsum',
+            image   : placeholder,
+            icon    : 'restaurant',
+            url     : '',
+        }
+    ],
+    'Study': [
+        {
+            id      : 1,
+            name    : 'S_Miscellaneous_1_-_Bed_Master_Bedroom', // TODO: check name
+            title   : 'Bed Master Bedroom',
+            subtitle: 'Swiss Sense',
+            content : 'A bed like this would be epic.',
+            image   : bed,
+            icon    : 'king_bed',
+            url     : 'https://www.retailing.nl/blog/interview-joey-janssen-swiss-sense/',
+        }
+    ],
+    'Miscellaneous': [
+        {
+            id      : 1,
+            name    : 'S_Miscellaneous_1_-_Bed_Master_Bedroom', // TODO: check name
+            title   : 'Bed Master Bedroom',
+            subtitle: 'Swiss Sense',
+            content : 'Lorem ipsum',
+            image   : placeholder,
+            icon    : 'king_bed',
+            url     : '',
         },
         /*{
             id      : 2,

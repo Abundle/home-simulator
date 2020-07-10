@@ -6,12 +6,14 @@ import {
     Color,
     Mesh,
     WebGLRenderer,
-    PerspectiveCamera,
+    MOUSE,
+    OrthographicCamera,
     AmbientLight, DirectionalLight, HemisphereLight, PointLight,
-    DirectionalLightHelper, HemisphereLightHelper, PointLightHelper, AxesHelper,
+    CameraHelper, AxesHelper, DirectionalLightHelper, HemisphereLightHelper, PointLightHelper,
     Vector3,
     Raycaster,
     sRGBEncoding,
+    PCFSoftShadowMap,
 } from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -26,7 +28,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
 /* Shaders */
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
-import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader.js';
+import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader';
 
 import { WEBGL } from 'three/examples/jsm/WebGL.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
@@ -38,13 +40,11 @@ import modelName from '../assets/House.glb';
 import items from './utils/items.js';
 import SceneUtils from './utils/SceneUtils';
 
-// TODO: check if importing the levels as different object works with opacity changes
 // TODO: disable sao when performance drops & on lower-tier devices
 // TODO: fix responsiveness + think about mobile version (layout, disable postprocessing etc.)
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
-// TODO: fix 3D model errors, check https://stackoverflow.com/questions/52441072/gltf2-accessor-unit-length
 // TODO: Add lights to night mode + Enable manually switching day/evening/night?
 
 // Inspiration:
@@ -72,15 +72,20 @@ const ambientLight     = new AmbientLight(0x666666);
 const hemisphereLight  = new HemisphereLight(0xffffff, 0xffffff, 0.3);
 
 /* Other Three.js variables */
-const raycaster        = new Raycaster();
-const meshGroup        = new Group();
-const labelPivot       = new Object3D();
-const stats            = new Stats();
+const raycaster  = new Raycaster();
+const labelPivot = new Object3D();
+const stats      = new Stats();
 
-/* Initiate global scene variables */ // TODO: remove
+const screenWidth = window.innerWidth;
+const screenHeight = window.innerHeight;
+const frustumSize = 25;
+const labelScale = 200;
+
+/* Initiate global scene variables */ // TODO: rewrite?
 let camera, scene, labelScene, renderer, labelRenderer;
 let controls, label;
 let composer, outlinePass;
+let meshGroup  = new Group();
 
 /* For debugging */
 const isDev = WEBPACK_MODE === 'development';
@@ -90,19 +95,17 @@ let dirLightHelper;
 //  or use library for calculating position of the sun? https://github.com/mourner/suncalc
 const init = () => {
     const aspect = screenWidth / screenHeight;
-    // const canvasElement = document.getElementById('canvas');
     const container = document.getElementById('container');
     const progress = document.getElementById('progress');
 
-    window.addEventListener('resize', resizeCanvas, false); // TODO: check options
-    document.addEventListener('mousemove', onMouseMove);
-    container.addEventListener('mousedown', onClick, false);
+    window.addEventListener('resize', resizeCanvas, false); // TODO: check if false is necessary here
+    container.addEventListener('mousemove', onMouseMove);
+    container.addEventListener('click', onClick);
 
     scene = new Scene();
+    // scene.scale.set(scale, scale, scale);
     scene.background = new Color();
     // scene.fog = new THREE.Fog(scene.background, 1, 5000);
-
-    // updateSunLight();
 
     /*var geometry = new THREE.PlaneBufferGeometry( 5, 20, 32 );
     var material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
@@ -110,7 +113,7 @@ const init = () => {
     scene.add( plane );*/
 
     labelScene = new Scene();
-    labelScene.scale.set(1 / scale, 1 / scale, 1 / scale); // Scale down label size scene
+    labelScene.scale.set(1 / labelScale, 1 / labelScale, 1 / labelScale); // Scale down label size scene
     label = createLabel();
 
     renderer = new WebGLRenderer(); // { antialias: true }
@@ -119,8 +122,8 @@ const init = () => {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
     renderer.outputEncoding = sRGBEncoding; // See https://threejs.org/docs/#examples/en/loaders/GLTFLoader
-    // renderer.setClearColor(0xCCCCCC);
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
     labelRenderer = new CSS3DRenderer();
@@ -129,12 +132,17 @@ const init = () => {
     labelRenderer.domElement.style.top = '0px';
     container.appendChild(labelRenderer.domElement);
 
-    camera = new PerspectiveCamera(
-        20,
-        aspect,
-        1,
-        1000
+    camera = new OrthographicCamera(
+        frustumSize * aspect / -2,
+        frustumSize * aspect / 2,
+        frustumSize / 2,
+        frustumSize / - 2,
+        -100,
+        500
     );
+    camera.layers.enable(1);
+    camera.layers.enable(2);
+    camera.layers.enable(3);
     /* Making the Euler angles make more sense (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
     rotation.y will be the camera yaw in radians
     rotation.x will be the camera pitch in radians
@@ -143,6 +151,11 @@ const init = () => {
     camera.rotation.order = 'YXZ';
 
     controls = new OrbitControls(camera, labelRenderer.domElement);
+    controls.mouseButtons = { // This way orbiting does not interfere with selecting objects
+        LEFT: MOUSE.PAN,
+        MIDDLE: MOUSE.ROTATE,
+        RIGHT: MOUSE.DOLLY
+    };
     controls.enableDamping = true; // if enabled, you must call .update () in your animation loop
     controls.dampingFactor = 0.25;
     controls.maxPolarAngle = isDev ? Math.PI : Math.PI /2;
@@ -153,25 +166,25 @@ const init = () => {
     directionalLight.shadow.mapSize.width  = 1024;
     directionalLight.shadow.mapSize.height = 1024;
 
-    const d = 10;
+    const d = 14; // TODO: check examples for correct values
     directionalLight.shadow.camera.left = -d;
     directionalLight.shadow.camera.right = d;
     directionalLight.shadow.camera.top = d;
     directionalLight.shadow.camera.bottom = -d;
-    directionalLight.shadow.camera.far = 3500;
-    directionalLight.shadow.bias = -0.0001;
+    directionalLight.shadow.camera.near = 10;
+    directionalLight.shadow.camera.far = 100;
+    // directionalLight.shadow.bias = -0.00001;
 
     scene.add(directionalLight);
     scene.add(ambientLight);
 
     updateSunLight();
 
-
     /*const pointLight = new PointLight(0xfffffd, 0.01, 100);
     pointLight.position.set(0, 5, -0.75);
     scene.add(pointLight);*/
 
-    //Create a PointLight and turn on shadows for the light
+    // Create a PointLight and turn on shadows for the light
     /*const pointLight = new PointLight(0xffffff, 0.25, 100);
     pointLight.position.set( 0, 5, 0 );
     pointLight.castShadow = true;
@@ -184,7 +197,7 @@ const init = () => {
     scene.add(hemisphereLight);
 
     const loader = new GLTFLoader();
-    // Optional: Provide a DRACOLoader instance to decode compressed mesh data
+    // Provide a DRACOLoader instance to decode compressed mesh data
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath(isDev ?
         './node_modules/three/examples/js/libs/draco/gltf/' : './assets/draco/'
@@ -195,7 +208,6 @@ const init = () => {
         SceneUtils.removeLoadingScreen();
 
         const model = gltf.scene;
-        const meshArray = [];
 
         model.traverse(node => {
             if (node instanceof Mesh) {
@@ -203,14 +215,15 @@ const init = () => {
                 node.castShadow = true;
                 node.material.transparent = true;
 
+                const layer = parseInt(node.material.name.charAt(0));
+                node.layers.set(layer);
+
                 // Creating a bounding box with Box3 for tracking size of objects and camera zoom
                 // node.geometry.computeBoundingBox();
                 // let boundingBox = node.geometry.boundingBox.clone();
-
-                meshArray.push(node);
             }
         });
-        meshGroup.children = meshArray;
+        meshGroup = model;
         scene.add(meshGroup);
 
         if (WEBGL.isWebGLAvailable()) {
@@ -232,40 +245,18 @@ const init = () => {
     });
 
     /* Postprocessing */
-    composer = new EffectComposer(renderer);
-    composer.setSize(screenWidth, screenHeight);
-
-    const renderPass = new RenderPass(scene, camera);
-    composer.addPass(renderPass);
-
-    outlinePass = new OutlinePass(new Vector2(screenWidth, screenHeight), scene, camera);
-    outlinePass.params = SceneUtils.outlinePassParameters;
-    outlinePass.visibleEdgeColor.set('#ffffff');
-    outlinePass.hiddenEdgeColor.set('#190a05');
-    composer.addPass(outlinePass);
-
-    const saoPass = new SAOPass(scene, camera, false, true);
-    saoPass.params = SceneUtils.SAOparameters;
-    SceneUtils.setSaoPass(saoPass);
-    composer.addPass(saoPass);
-
-    const effectFXAA = new ShaderPass(FXAAShader);
-    effectFXAA.uniforms['resolution' ].value.set(1 / screenWidth, 1 / screenHeight);
-    composer.addPass(effectFXAA);
-
-    const gammaCorrection = new ShaderPass(GammaCorrectionShader);
-    composer.addPass(gammaCorrection);
+    initPostprocessing();
 
     /* Performance monitor */
     stats.dom.style.display = 'none';
     container.appendChild(stats.dom);
 
-    /* Init SAO GUI, helpers */
+    /* Init helpers */
     if (isDev) {
-        SceneUtils.initGUI(saoPass);
-
         dirLightHelper = new DirectionalLightHelper(directionalLight, 2);
         scene.add(dirLightHelper);
+        const dirLightCamHelper = new CameraHelper(directionalLight.shadow.camera);
+        scene.add(dirLightCamHelper);
 
         const hemiSphereHelper = new HemisphereLightHelper(hemisphereLight, 2);
         scene.add(hemiSphereHelper);
@@ -282,6 +273,34 @@ const showSAO = bool => {
     SceneUtils.getSaoPass().params.output = bool ? 0 : 1; // 0 = SAO and 1 = Beauty
 };
 
+const initPostprocessing = () => {
+    composer = new EffectComposer(renderer);
+    composer.setSize(screenWidth, screenHeight);
+
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    outlinePass = new OutlinePass(new Vector2(screenWidth, screenHeight), scene, camera);
+    outlinePass.params = SceneUtils.outlinePassParameters;
+    outlinePass.visibleEdgeColor.set('#ffffff');
+    outlinePass.hiddenEdgeColor.set('#190a05');
+    composer.addPass(outlinePass);
+
+    const saoPass = new SAOPass(scene, camera, false, true);
+    saoPass.params = SceneUtils.SAOparameters;
+    SceneUtils.setSaoPass(saoPass);
+    composer.addPass(saoPass);
+    isDev && SceneUtils.initGUI(saoPass);
+
+    const effectFXAA = new ShaderPass(FXAAShader);
+    effectFXAA.uniforms['resolution' ].value.set(1 / screenWidth, 1 / screenHeight);
+    composer.addPass(effectFXAA);
+
+    const gammaCorrection = new ShaderPass(GammaCorrectionShader);
+    composer.addPass(gammaCorrection);
+};
+
+// Setup based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
 const start = () => {
     animate();
     resetCamera();
@@ -291,45 +310,24 @@ const start = () => {
     cancelAnimationFrame(frameId);
 };*/
 
-// Setup based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
 const animate = () => {
     requestAnimationFrame(animate);
 
-    // updateSunLight();
+    // TODO: update sun light every hour instead of continuously
+    updateSunLight();
 
     if (label.object.userData.set) {
-        controls.enablePan = true; // Quick fix
+        label.object.position.set(0, 200, 0);
+        label.object.quaternion.set(0, 0, 0, 0);
 
-        // Since setViewOffset in panView does not seem to work for CSS3DRenderer..
-        if (Categories.getDrawer()) {
-            // Project this vector from the camera's normalized device coordinate (NDC) space into world space.
-            const vector = new Vector3(-280, 550, 0).unproject(camera);
-            // const vector = new Vector3(115, 0, -1).unproject(camera); // TODO: remove magic numbers
-            // const vector = new Vector3(-400, label.object.position.y, -1).unproject(camera);
-
-            labelPivot.quaternion.set(0, 0, 0, 0);
-            // labelPivot.rotation.y = 0;
-
-            label.object.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
-            // label.object.rotation.y = camera.rotation.y;
-
-            label.object.position.lerp(vector, 0.75);
-
-        } else {
-            label.object.position.set(0, 200, 0);
-            // label.object.position.set(335, 0, 0);
-            label.object.quaternion.set(0, 0, 0, 0);
-
-            labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
-            // labelPivot.rotation.y = camera.rotation.y;
-        }
-    } else {
-        controls.enablePan = true; // Quick fix
+        labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
+        // labelPivot.rotation.y = camera.rotation.y;
     }
 
-    // required if controls.enableDamping or controls.autoRotate are set to true
+    // Required if controls.enableDamping or controls.autoRotate are set to true
     controls.update();
-    // controls.enabled = !SceneUtils.getAnimating(); // TODO: temporarily disable controls when camera is animating
+    controls.enabled = !SceneUtils.getAnimating(); // temporarily disable controls when camera is animating
+    // TODO: while animating, the drawer should not be allowed to open
 
     SceneUtils.getPerformanceMonitor() && stats.begin();
 
@@ -342,10 +340,9 @@ const animate = () => {
 };
 
 const resizeCanvas = () => { // See https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
-    // Perspective camera
     camera.aspect = screenWidth / screenHeight;
     camera.updateProjectionMatrix();
-    // renderer.setSize(screenWidth, screenHeight);
+    renderer.setSize(screenWidth, screenHeight);
     composer.setSize(screenWidth, screenHeight);
     labelRenderer.setSize(screenWidth, screenHeight);
 
@@ -364,19 +361,20 @@ const onMouseMove = event => {
     const intersects = getIntersects(event, raycaster);
 
     if (intersects.length > 0) {
-        // If an object can be selected, the name of the mesh will begin with 'S_', so selectable will be true
-        SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
+        const hoveredObject = intersects[0].object;
+        SceneUtils.setSelectable(hoveredObject.name.indexOf('S_') !== -1);
 
         if (SceneUtils.getSelectable()) {
-            const selectedObject = intersects[0].object;
-            outlinePass.selectedObjects = [selectedObject];
+            hoverObject(hoveredObject);
+            outlinePass.selectedObjects = [hoveredObject];
+            document.body.style.cursor = 'pointer';
         } else {
             outlinePass.selectedObjects = [];
+            document.body.style.cursor = 'default';
         }
     }
 };
 
-// TODO: when label is in front of clickable object, the object is selected instead of the label
 const onClick = event => {
     const intersects = getIntersects(event, raycaster);
 
@@ -385,7 +383,7 @@ const onClick = event => {
         SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
 
         if (SceneUtils.getIntersected() !== intersects[0].object && SceneUtils.getSelectable()) {
-            /*if (INTERSECTED) { // TODO: blur rest of scene when object is selected?
+            /*if (INTERSECTED) {
                 INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
             }*/
             SceneUtils.setIntersected(intersects[0].object);
@@ -394,55 +392,58 @@ const onClick = event => {
 
             // console.log(INTERSECTED);
             selectObject(SceneUtils.getIntersected());
+        } else {
+            resetSelected();
         }
     } else {
         resetSelected();
     }
 };
 
-const selectFloor = value => {
-    const meshes = meshGroup.children;
-
-    const setVisibility = (level, opacity, visibility) => {
-        for (let j = 0; j < meshes.length; j++) {
-            if (meshes[j].material.name.includes(level.toString())) {
-                meshes[j].material.opacity = opacity;
-                meshes[j].visible = visibility;
-            }
+const selectFloor = floor => {
+    const setVisibility = (level, visibility) => {
+        if (visibility) {
+            camera.layers.enable(level);
+            raycaster.layers.enable(level);
+        } else {
+            camera.layers.disable(level);
+            raycaster.layers.disable(level);
         }
     };
 
-    for (let i = 1; i <= value; i++) {
-        setVisibility(i, 1, true); // TODO: set glass opacity differently
-    }
-    for (let i = 4; i > value; i--) {
-        setVisibility(i, 0, false);
-    }
+    for (let i = 1; i <= floor; i++) { setVisibility(i, true); }
+    for (let i = 4; i > floor; i--) { setVisibility(i, false); }
 };
 
-const animateCamera = (targetPosition, targetZoom = 1, duration = 2, easing = Expo.easeInOut) => {
+const animateCamera = (targetPosition, targetZoom = 1, duration = 1.5, easing= Expo.easeInOut, _openDrawer = false) => {
     gsap.to(camera.position, {
         duration: duration,
         x: targetPosition.x,
         y: targetPosition.y,
         z: targetPosition.z,
         ease: easing,
-        /*onUpdate: () => {
+        onUpdate: () => {
             SceneUtils.setAnimating(true);
         },
         onComplete: () => {
             SceneUtils.setAnimating(false);
-        }*/
+
+            if (_openDrawer) {
+                openDrawer();
+            }
+        }
     });
     gsap.to(camera, {
         duration: duration,
-        zoom: targetZoom, // TODO: zoom does not seem to do anything
+        zoom: targetZoom,
         ease: Expo.easeInOut,
+        onUpdate: () => {
+            camera.updateProjectionMatrix();
+        },
     });
-
 };
 
-const animateLookAt = (lookAt, duration = 2, easing = Expo.easeInOut) => {
+const animateLookAt = (lookAt, duration = 1.5, easing = Expo.easeInOut) => {
     // Animate lookAt point
     gsap.to(controls.target, {
         duration: duration,
@@ -471,33 +472,12 @@ const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
     });
 };
 
-let animateOpacity = (objects, targetOpacity) => {
-    /*gsap.to(object, {
-        duration: duration,
-        opacity: targetOpacity,
-        ease: Expo.easeInOut,
-        onUpdate: () => {
-            console.log(object.opacity)
-        }
-    });*/
-
-    /*opacityTween = new Tween(Object.assign({}, currentOpacity))
-        .to(Object.assign({}, targetOpacity), 500)
-        .delay(500)
-        .on('update', (o) => {
-            for (let i = 0; i < targetProperties.objects.length; i++) {
-                targetProperties.objects[i].material.opacity = o[i];
-            }
-        });
-    opacityTween.start();*/
-};
-
 // From https://github.com/dirkk0/threejs_daynight
 const updateSunLight = () => {
     const time = new Date().getHours();
     const timeToRadians = time * (Math.PI / 24);
-    const sinTime = 20 * Math.sin(timeToRadians);
-    const cosTime = 20 * Math.cos(timeToRadians);
+    const sinTime = 50 * Math.sin(timeToRadians); // TODO: why times 20 again?
+    const cosTime = 50 * Math.cos(timeToRadians);
 
     directionalLight.position.set(cosTime, sinTime, sinTime);
     scene.background.lerp(new Color(0xbfe3dd), 0.05);
@@ -552,37 +532,41 @@ const updateSunLight = () => {
     }*/
 };
 
-const selectObject = object => {
+const hoverObject = object => {
+    const objectNameArray = object.userData.name.split(' ');
+    const category        = objectNameArray[1];
+    const id              = objectNameArray[2];
+
+    setLabel(label, object.position, object.geometry.boundingSphere.radius, category, id);
+};
+
+const selectObject = object => { // TODO: blur rest of scene when object is selected?
     // Abstract the level of selected object from its material name and use it to select the level
     // Check if an integer was indeed received
     const level          = object.material.name.charAt(0);
     const objectSize     = object.geometry.boundingSphere.radius;
     const objectPosition = object.position;
     // Zoom based on boundingSphere of geometry
-    const zoom           = 1; // Math.sin(objectSize);
+    const zoom = 10; // Math.sin(objectSize);
     // let zoom = 1 / (Math.round(objectSize) * 0.75);
     // const fov = sigmoid(objectSize) * 10 + 15;
 
     SceneUtils.setSelectedObject(object);
 
     animateCamera({
-        x: -(objectPosition.x + objectSize + 4),
-        y: objectPosition.y + objectSize + 4,
-        z: objectPosition.z + objectSize + 6,
-    }, zoom);
+        x: objectPosition.x + objectSize,
+        y: objectPosition.y + objectSize,
+        z: objectPosition.z + objectSize,
+    }, zoom, undefined, undefined, true);
 
     animateLookAt(objectPosition);
+
+    // Categories.getDrawerState() && closeDrawer();
 
     if (level) {
         selectFloor(level);
 
-        const objectNameArray = object.userData.name.split(' ');
-        const category        = objectNameArray[1];
-        const id              = objectNameArray[2];
-
         // object.add(labelPivot);
-        setLabel(label, objectPosition, objectSize, category, id);
-
         document.getElementById('radio-' + level).checked = true;
     }
 };
@@ -591,27 +575,25 @@ const getObject = name => { // TODO: create name dynamically (e.g. 'name = Kitch
     const object = meshGroup.getObjectByName(name);
     // const object = meshGroup.getObjectById(id);
     console.log(object);
-    selectObject(object);  // TODO: drawer should stay open in this case
+    return object;
 };
 
 const createLabel = () => {
     // HTML
     const element = document.createElement('div');
 
+    // TODO: remove clickable behaviour from card
     element.className = 'label-card';
     element.style.opacity = isDev ? '50%' : '0';
-    element.style.pointerEvents = 'none';
-    // element.style.width = '375px';
+    // element.style.pointerEvents = 'none';
     element.innerHTML = `
         <div class='mdc-card'>
-            <div class='mdc-card__primary-action' tabindex='0'>
-                <div id='label-image' class='mdc-card__media mdc-card__media--square'></div>
+            <div id='label-image' class='mdc-card__media mdc-card__media--square'></div>
                 <div class='mdc-card__primary'>
-                    <h2 id='label-title' class='mdc-card__title mdc-typography mdc-typography--headline6'></h2>
-                    <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography mdc-typography--subtitle2'></h3>
-                    <div class='mdc-card__secondary mdc-typography mdc-typography--body2'>Click here for more info</div>
+                    <h2 id='label-title' class='mdc-card__title mdc-typography--headline6'></h2>
+                    <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography--subtitle2'></h3>
+                    <div class='mdc-card__secondary mdc-typography--body2'>Click for more info</div>
                 </div>
-            </div>
         </div>
     `;
     // <div id='label-image' class='mdc-card__media mdc-card__media--square' style='background-image: url(${ require('../assets/img/placeholder.jpg') });'></div>
@@ -629,20 +611,19 @@ const createLabel = () => {
     };
 };
 
+const panOffset = new Vector3();
 // TODO: check https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
-// TODO: create line as indicator from label to object
+// TODO: create line as indicator from label to object + Highlight card in drawer
 const setLabel = (label, position, radius, category, id) => {
     // Get selected item info based on the id
     const objectInfo = items.cardContents[category].find(object => object.id === parseInt(id));
 
-    // closeDrawer();
-
-    document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
-    document.getElementById('label-title').textContent = objectInfo.title;
-    document.getElementById('label-subtitle').textContent = `From ${ objectInfo.subtitle }`;
-    document.getElementById('label-image').style.backgroundImage = `url(${ objectInfo.image })`;
-
-    document.querySelector('.label-card').addEventListener('click', clickLabel);
+    if (document.querySelector('.label-card')) {
+        document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
+        document.getElementById('label-title').textContent = objectInfo.title;
+        document.getElementById('label-subtitle').textContent = `From ${ objectInfo.subtitle }`;
+        document.getElementById('label-image').style.backgroundImage = `url(${ objectInfo.image })`;
+    }
 
     // Calculate the width of the label after inserting text
     // const labelHeight = label.element.offsetHeight;
@@ -651,14 +632,14 @@ const setLabel = (label, position, radius, category, id) => {
     // Add the CSS3DObject as child to the (invisible) Object3D
     labelScene.add(labelPivot);
     labelPivot.add(label.object);
-    labelPivot.position.set(scale * position.x, scale * position.y, scale * position.z);
 
-    label.element.style.opacity = '0.8';
-    label.element.style.pointerEvents = 'auto';
+    // Correct for scaling down label
+    labelPivot.position.set(labelScale * position.x, labelScale * position.y, labelScale * position.z);
 
-    // TODO: flip label to other side because of the sidebar or put on top of object?
-    // label.object.position.y = Math.round(scale * radius + labelHeight);
-    // label.object.position.x = Math.round(scale * radius + labelWidth);
+    label.element.style.opacity = '0.9';
+    // label.element.style.pointerEvents = 'auto';
+
+    // TODO: restyle label
     label.object.userData = { set: true };
 };
 
@@ -667,48 +648,37 @@ const removeLabel = label => {
     label.element.style.opacity = '0';
     label.element.style.pointerEvents = 'none';
 
-    closeDrawer();
-
-    document.querySelector('.label-card').removeEventListener('click', clickLabel);
-
     labelScene.add(label.object);
     label.object.position.set(0, 0, 0);
     label.object.userData = { set: false };
 };
 
-const clickLabel = event => {
-    if (!SceneUtils.getAnimating()) {
-        toggleDrawer();
-        Categories.scrollToItem(event.currentTarget.dataset.item);
-        // scrollToItem(`${ category }-${ id }`);
-    }
-};
-
-// TODO: reset translation if another object is selected
+// TODO: also reset translation if another object is selected
 const panView = direction => {
-    if (direction === 1) {
-        // TODO: distance at 'x' should be determined by width of the sidebar
-        camera.setViewOffset(screenWidth, screenHeight, 300 * direction, 0, screenWidth, screenHeight);
+    const distance = 200; // TODO: distance at 'x' should be determined relatively to width of sidebar
 
-        // labelPivot.quaternion.set(0, 0, 0, 0);
-    } else {
-        camera.clearViewOffset();
+    // From OrbitControls, use for animating the offset?
+    /*const v = new Vector3();
+    v.setFromMatrixColumn(camera.matrix, 0); // get X column of objectMatrix
+    v.multiplyScalar(2);
 
-        /*label.object.position.set(0, 0, 0, 0);
-        label.object.quaternion.set(0, 0, 0, 0);*/
+    panOffset.add(v);
+    // camera.translateX(direction * distance);
+    // controls.target.add(panOffset);
+    // label.object.position.add(panOffset);*/
 
-        /*controls.enablePan  = true;
-        controls.enableZoom = true;*/
-    }
+    direction === 1 ? camera.setViewOffset(screenWidth, screenHeight, distance, 0, screenWidth, screenHeight)
+        : camera.clearViewOffset();
 };
 
-const resetCamera = (pos = { x: -30, y: 40, z: 60 }) => {
-    // TODO: while resetting the view, the drawer should temporarily not be allowed to open
+const resetCamera = () => {
+    const pos = { x: -30, y: 40, z: 60 };
+    // const pos = { x: -1200, y: 1600, z: 2400 };
 
     // Reset camera
-    animateCamera(pos, 1, 2, Expo.easeOut);
-    animateLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
-    animateFov(20);
+    animateCamera(pos, 1, undefined, Expo.easeOut);
+    // animateLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
+    // animateFov(20);
 };
 
 const resetSelected = () => {
@@ -717,36 +687,40 @@ const resetSelected = () => {
     }*/
     SceneUtils.setIntersected(null);
 
-    // controls.enablePan = true;
-
+    closeDrawer();
     removeLabel(label);
 };
 
+// TODO: move to other file
 const openDrawer = () => {
     panView(1);
     Categories.setDrawer(true);
 
+    controls.enablePan = false;
+    controls.enableZoom = false;
+
+    // Categories.scrollToItem(event.currentTarget.dataset.item); // TODO: enable again
+    // Categories.scrollToItem(`${ category }-${ id }`);
+
+    //removeLabel(label);
 };
 
 const closeDrawer = () => {
     panView(-1);
     Categories.setDrawer(false);
+
+    controls.enablePan = true;
+    controls.enableZoom = true;
 };
 
 const toggleDrawer = () => {
-    Categories.getDrawer() ? closeDrawer(): openDrawer();
-    // Categories.setDrawer(!Categories.getDrawer());
+    Categories.getDrawerState() ? closeDrawer(): openDrawer();
 };
 
 const showPerformanceMonitor = bool => {
     stats.dom.style.display = bool ? 'block' : 'none';
     SceneUtils.setPerformanceMonitor(bool);
 };
-
-const screenWidth = window.innerWidth;
-const screenHeight = window.innerHeight;
-const scale = 200;
-// const panViewDistance = 1.25;
 
 export default {
     init,
@@ -755,6 +729,7 @@ export default {
     animateLookAt,
     animateFov,
     getObject,
+    selectObject,
     resetCamera,
     resetSelected,
     toggleDrawer,
