@@ -7,6 +7,7 @@ import {
     Mesh,
     WebGLRenderer,
     MOUSE,
+    PerspectiveCamera,
     OrthographicCamera,
     AmbientLight, DirectionalLight, HemisphereLight, PointLight,
     CameraHelper, AxesHelper, DirectionalLightHelper, HemisphereLightHelper, PointLightHelper,
@@ -26,6 +27,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
+import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
 /* Shaders */
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
 import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader';
@@ -82,10 +84,11 @@ const frustumSize = 25;
 const labelScale = 200;
 
 /* Initiate global scene variables */ // TODO: rewrite?
-let camera, scene, labelScene, renderer, labelRenderer;
+let container, camera, scene, labelScene, renderer, labelRenderer;
 let controls, label;
 let composer, outlinePass;
 let meshGroup  = new Group();
+let isFocus = false;
 
 /* For debugging */
 const isDev = WEBPACK_MODE === 'development';
@@ -95,7 +98,7 @@ let dirLightHelper;
 //  or use library for calculating position of the sun? https://github.com/mourner/suncalc
 const init = () => {
     const aspect = screenWidth / screenHeight;
-    const container = document.getElementById('container');
+    container = document.getElementById('container');
     const progress = document.getElementById('progress');
 
     window.addEventListener('resize', resizeCanvas, false); // TODO: check if false is necessary here
@@ -132,14 +135,21 @@ const init = () => {
     labelRenderer.domElement.style.top = '0px';
     container.appendChild(labelRenderer.domElement);
 
-    camera = new OrthographicCamera(
+    camera = new PerspectiveCamera(
+        5,
+        aspect,
+        1,
+        1000
+    );
+    /*camera = new OrthographicCamera(
         frustumSize * aspect / -2,
         frustumSize * aspect / 2,
         frustumSize / 2,
         frustumSize / - 2,
         -100,
         500
-    );
+    );*/
+    camera.aspect = aspect;
     camera.layers.enable(1);
     camera.layers.enable(2);
     camera.layers.enable(3);
@@ -269,10 +279,6 @@ const init = () => {
     }
 };
 
-const showSAO = bool => {
-    SceneUtils.getSaoPass().params.output = bool ? 0 : 1; // 0 = SAO and 1 = Beauty
-};
-
 const initPostprocessing = () => {
     composer = new EffectComposer(renderer);
     composer.setSize(screenWidth, screenHeight);
@@ -287,17 +293,22 @@ const initPostprocessing = () => {
     composer.addPass(outlinePass);
 
     const saoPass = new SAOPass(scene, camera, false, true);
-    saoPass.params = SceneUtils.SAOparameters;
+    saoPass.params = SceneUtils.saoParameters;
     SceneUtils.setSaoPass(saoPass);
     composer.addPass(saoPass);
-    isDev && SceneUtils.initGUI(saoPass);
 
     const effectFXAA = new ShaderPass(FXAAShader);
-    effectFXAA.uniforms['resolution' ].value.set(1 / screenWidth, 1 / screenHeight);
+    effectFXAA.uniforms['resolution'].value.set(1 / screenWidth, 1 / screenHeight);
     composer.addPass(effectFXAA);
 
     const gammaCorrection = new ShaderPass(GammaCorrectionShader);
     composer.addPass(gammaCorrection);
+
+    const bokehPass = new BokehPass(scene, camera, SceneUtils.bokehParameters);
+    SceneUtils.setBokehPass(bokehPass);
+    composer.addPass(bokehPass);
+
+    isDev && SceneUtils.initGUI(saoPass, bokehPass);
 };
 
 // Setup based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
@@ -310,6 +321,7 @@ const start = () => {
     cancelAnimationFrame(frameId);
 };*/
 
+// const panOffset = new Vector3();
 const animate = () => {
     requestAnimationFrame(animate);
 
@@ -378,25 +390,32 @@ const onMouseMove = event => {
 const onClick = event => {
     const intersects = getIntersects(event, raycaster);
 
-    if (intersects.length > 0) {
-        // If an object can be selected, the name of the mesh will begin with an 'S_', so selectable will be true
-        SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
+    if (isFocus) {
+        resetCamera();
+        resetSelected();
+    } else {
+        if (intersects.length > 0) {
+            // If an object can be selected, the name of the mesh will begin with an 'S_', so selectable will be true
+            SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
 
-        if (SceneUtils.getIntersected() !== intersects[0].object && SceneUtils.getSelectable()) {
-            /*if (INTERSECTED) {
-                INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
-            }*/
-            SceneUtils.setIntersected(intersects[0].object);
-            // INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
-            // INTERSECTED.material.color.setHex(0xff0000);
+            if (SceneUtils.getIntersected() !== intersects[0].object && SceneUtils.getSelectable()) {
+                /*if (INTERSECTED) {
+                    INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
+                }*/
+                SceneUtils.setIntersected(intersects[0].object);
+                // INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+                // INTERSECTED.material.color.setHex(0xff0000);
 
-            // console.log(INTERSECTED);
-            selectObject(SceneUtils.getIntersected());
-        } else {
+                // console.log(INTERSECTED);
+                selectObject(SceneUtils.getIntersected());
+                removeLabel(label);
+                document.body.style.cursor = 'default';
+            } else { // Non-selectable object was clicked
+                resetSelected();
+            }
+        } else { // Background was clicked
             resetSelected();
         }
-    } else {
-        resetSelected();
     }
 };
 
@@ -422,11 +441,18 @@ const animateCamera = (targetPosition, targetZoom = 1, duration = 1.5, easing= E
         y: targetPosition.y,
         z: targetPosition.z,
         ease: easing,
-        onUpdate: () => {
+        onStart: () => {
             SceneUtils.setAnimating(true);
+
+            // TODO: create function for setting focus and removing/adding event listeners?
+            container.removeEventListener('mousemove', onMouseMove);
+            container.removeEventListener('click', onClick);
         },
         onComplete: () => {
             SceneUtils.setAnimating(false);
+
+            container.addEventListener('mousemove', onMouseMove);
+            container.addEventListener('click', onClick);
 
             if (_openDrawer) {
                 openDrawer();
@@ -451,7 +477,7 @@ const animateLookAt = (lookAt, duration = 1.5, easing = Expo.easeInOut) => {
         y: lookAt.y,
         z: lookAt.z,
         ease: easing,
-        onUpdate: () => {
+        onStart: () => {
             SceneUtils.setAnimating(true);
         },
         onComplete: () => {
@@ -540,33 +566,34 @@ const hoverObject = object => {
     setLabel(label, object.position, object.geometry.boundingSphere.radius, category, id);
 };
 
-const selectObject = object => { // TODO: blur rest of scene when object is selected?
+const selectObject = object => {
+    const objectNameArray = object.userData.name.split(' ');
+    const category        = objectNameArray[1];
+    const id              = objectNameArray[2];
     // Abstract the level of selected object from its material name and use it to select the level
-    // Check if an integer was indeed received
     const level          = object.material.name.charAt(0);
     const objectSize     = object.geometry.boundingSphere.radius;
     const objectPosition = object.position;
     // Zoom based on boundingSphere of geometry
-    const zoom = 10; // Math.sin(objectSize);
-    // let zoom = 1 / (Math.round(objectSize) * 0.75);
+    const zoom = 1; // Math.sin(objectSize);
     // const fov = sigmoid(objectSize) * 10 + 15;
 
     SceneUtils.setSelectedObject(object);
 
     animateCamera({
-        x: objectPosition.x + objectSize,
-        y: objectPosition.y + objectSize,
-        z: objectPosition.z + objectSize,
+        x: objectPosition.x + objectSize + 15,
+        y: objectPosition.y + objectSize + 15,
+        z: objectPosition.z + objectSize + 15,
     }, zoom, undefined, undefined, true);
 
     animateLookAt(objectPosition);
 
-    // Categories.getDrawerState() && closeDrawer();
+    setTimeout(() => { // TODO: check if this can be done differently
+        Categories.scrollToItem(`${ category }-${ id }`);
+    }, 2000);
 
     if (level) {
         selectFloor(level);
-
-        // object.add(labelPivot);
         document.getElementById('radio-' + level).checked = true;
     }
 };
@@ -574,15 +601,14 @@ const selectObject = object => { // TODO: blur rest of scene when object is sele
 const getObject = name => { // TODO: create name dynamically (e.g. 'name = Kitchen_Block' => 'S_Kitchen_1_-_Kitchen_Block')
     const object = meshGroup.getObjectByName(name);
     // const object = meshGroup.getObjectById(id);
-    console.log(object);
+    // console.log(object);
     return object;
 };
 
-const createLabel = () => {
+const createLabel = () => { // TODO: restyle label
     // HTML
     const element = document.createElement('div');
 
-    // TODO: remove clickable behaviour from card
     element.className = 'label-card';
     element.style.opacity = isDev ? '50%' : '0';
     // element.style.pointerEvents = 'none';
@@ -611,15 +637,14 @@ const createLabel = () => {
     };
 };
 
-const panOffset = new Vector3();
-// TODO: check https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
+// TODO: scale label with camera position https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
 // TODO: create line as indicator from label to object + Highlight card in drawer
 const setLabel = (label, position, radius, category, id) => {
     // Get selected item info based on the id
     const objectInfo = items.cardContents[category].find(object => object.id === parseInt(id));
 
     if (document.querySelector('.label-card')) {
-        document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
+        // document.querySelector('.label-card').dataset.item = `${ category }-${ id }`;
         document.getElementById('label-title').textContent = objectInfo.title;
         document.getElementById('label-subtitle').textContent = `From ${ objectInfo.subtitle }`;
         document.getElementById('label-image').style.backgroundImage = `url(${ objectInfo.image })`;
@@ -638,14 +663,12 @@ const setLabel = (label, position, radius, category, id) => {
 
     label.element.style.opacity = '0.9';
     // label.element.style.pointerEvents = 'auto';
-
-    // TODO: restyle label
     label.object.userData = { set: true };
 };
 
 const removeLabel = label => {
     // label.element.innerHTML = '';
-    label.element.style.opacity = '0';
+    label.element.style.opacity = isDev ? '50%' : '0';
     label.element.style.pointerEvents = 'none';
 
     labelScene.add(label.object);
@@ -672,12 +695,11 @@ const panView = direction => {
 };
 
 const resetCamera = () => {
-    const pos = { x: -30, y: 40, z: 60 };
-    // const pos = { x: -1200, y: 1600, z: 2400 };
+    const pos = { x: -100, y: 150, z: 250 };
 
     // Reset camera
     animateCamera(pos, 1, undefined, Expo.easeOut);
-    // animateLookAt({ x: 0, y: 1, z: 0 }, 2, Expo.easeOut);
+    animateLookAt({ x: 0, y: 0, z: 0 });
     // animateFov(20);
 };
 
@@ -689,32 +711,54 @@ const resetSelected = () => {
 
     closeDrawer();
     removeLabel(label);
+    SceneUtils.setSelectedObject(undefined);
 };
 
-// TODO: move to other file
 const openDrawer = () => {
     panView(1);
-    Categories.setDrawer(true);
+    Categories.setDrawerState(true);
+    isFocus = Categories.getDrawerState() && SceneUtils.getSelectedObject() !== undefined;
 
+    // When drawer is opened, disable label hovering & outline and part of the OrbitControls
     controls.enablePan = false;
     controls.enableZoom = false;
 
-    // Categories.scrollToItem(event.currentTarget.dataset.item); // TODO: enable again
-    // Categories.scrollToItem(`${ category }-${ id }`);
+    !isFocus && removeLabel(label); // TODO: only remove label if no item was selected
 
-    //removeLabel(label);
+    container.removeEventListener('mousemove', onMouseMove);
+    // container.removeEventListener('click', onClick);
+
+    // Set blur effect to focus on side panel
+    isFocus ? showBlur({ focus: 27, aperture: 0.003 }) : showBlur({ focus: 0, aperture: 10 });
 };
 
 const closeDrawer = () => {
     panView(-1);
-    Categories.setDrawer(false);
+    Categories.setDrawerState(false);
+    isFocus = false;
 
     controls.enablePan = true;
     controls.enableZoom = true;
+
+    container.addEventListener('mousemove', onMouseMove);
+
+    showBlur();
+
+    // TODO: remove focus on categories in drawer
 };
 
 const toggleDrawer = () => {
     Categories.getDrawerState() ? closeDrawer(): openDrawer();
+};
+
+const showSAO = bool => {
+    SceneUtils.getSaoPass().params.output = bool ? 0 : 1; // 0 = SAO and 1 = Beauty
+};
+
+const showBlur = (values = { focus: 0, aperture: 0 }) => {
+    Object.entries(values).map(([key, value]) => {
+        SceneUtils.getBokehPass().uniforms[key].value = value;
+    });
 };
 
 const showPerformanceMonitor = bool => {
@@ -730,6 +774,7 @@ export default {
     animateFov,
     getObject,
     selectObject,
+    hoverObject,
     resetCamera,
     resetSelected,
     toggleDrawer,

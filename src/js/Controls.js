@@ -5,7 +5,7 @@ const Controls = `
     ${ items.controls.map(view => `
         <button class='${ view }-view-button mdc-button mdc-button--outlined'>
             <span class='mdc-button__ripple'></span>
-            <span class='mdc-button__label'>${ view } View</span>
+            <span class='mdc-button__label'>${ view }</span>
         </button>
     `).join('') }    
     

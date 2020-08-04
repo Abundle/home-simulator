@@ -59,12 +59,12 @@ const initCards = content => {
     connectObserver(observer);
     document.querySelectorAll('.mdc-card__actions').forEach(element => {
         element.addEventListener('click', event => {
-            // const id = event.target.id.split('-')[1];
             const object = Scene.getObject(event.target.id);
-            Scene.selectObject(object);  // TODO: drawer should stay open in this case
+            Scene.selectObject(object);  // Drawer stays open in this case
         });
     });
 };
+
 const initLevels = content => {
     document.getElementById('levels').innerHTML = content;
 
@@ -169,12 +169,12 @@ initCards(Cards);
 initLevels(Levels);
 initControls(Controls);
 
-initRipples('.mdc-card__primary-action', false);
+initRipples('.mdc-button, .mdc-card__primary-action', false);
 // When clicked rapidly, the ripples distort the layout. Disabling for now
 /*initRipples('.mdc-button', false);
 initRipples('.mdc-icon-button', true);*/
 
-const greet = 'Hey fellow developer!';
+const greet = 'Hey there!';
 const beNice = 'Good to see you here, hope you\'re doing great.';
 const persuasion = 'Interested in my work?';
 const link = 'Here\'s my portfolio: https://aidanbundel.com';

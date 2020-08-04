@@ -77,6 +77,12 @@ a {
     background: rgba(theme.$primary, 0.25);
 }
 
+.dg .a {
+        float: left;
+        margin-right: 0;
+        margin-left: 80px;
+}
+
 /* Smartphone */
 /*@media only screen and (max-width: 760px) {
     #some-element { display: none; }
@@ -193,11 +199,16 @@ a {
 
     // Overwrite the open-from-left animation
     &.mdc-drawer--open {
-        right: 0;
-
         + .mdc-drawer-app-content {
-            transition: animation.enter(transform, 200ms);
+            transition: animation.enter(transform, 200ms, 70ms);
             transform: translateX(variables.$custom-drawer-width * -1);
+        }
+    }
+
+    &.mdc-drawer--closing {
+        + .mdc-drawer-app-content {
+            transition: animation.exit-temporary(transform, 200ms);
+            transform: translateX(0);
         }
     }
 
@@ -226,9 +237,6 @@ a {
     position: fixed;
     right: 0;
     height: 100%;
-    //transition: animation.exit-temporary(transform, 200ms);
-    //transition-timing-function: animation.$standard-curve-timing-function;
-    transform: translateX(0);
     background-color: rgba(255, 255, 255, 0.5);
 
     .mdc-list-item__graphic {
@@ -238,18 +246,18 @@ a {
 
 .mdc-card {
     margin-top: 15px;
-    @include card.shape-radius(4px);
+    @include card.shape-radius(5px);
 
-    &__media {
+    .mdc-card__media--16-9 {
+        border-radius: 5px;
         background-color: theme.$primary;
-        border-radius: 4px 4px 0 0;
-        //background-image: url('../assets/img/fallback.jpg');
     }
     &__media-content {
         display: flex;
         align-items: flex-end;
         color: white;
         background-color: rgba(0, 0, 0, 0.15);
+        border-radius: 5px;
     }
     &__action {
         padding: 1rem;

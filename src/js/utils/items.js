@@ -38,7 +38,7 @@ const cardContents = { // Needs to be in the same order as categoryIcons
             subtitle: 'Meubella',
             content : '',
             image   : couch,
-            icon    : 'search',
+            icon    : 'weekend',
             url     : 'https://www.meubella.nl/hoekbank-nicoreta-zwart-rechts-10523.html',
         },
         {
@@ -81,23 +81,23 @@ const cardContents = { // Needs to be in the same order as categoryIcons
             content : 'Design on point 👌.',
             image   : kitchen,
             icon    : 'kitchen',
-            url     : '',
+            url     : 'https://example.com/',
         },
         {
             id      : 2,
-            name    : 'S_Kitchen_2_-_TV',
+            name    : 'S_Kitchen_2_-_Dining_Table',
             title   : 'Dining Table',
             subtitle: 'YouTube',
             content : '',
             image   : table,
             icon    : 'restaurant',
-            url     : '',
+            url     : 'https://example.com/',
         }
     ],
     'Bedroom': [
         {
             id      : 1,
-            name    : 'S_Miscellaneous_1_-_Bed_Master_Bedroom', // TODO: check name
+            name    : 'S_Default_2_-_Bed_Bedroom', // TODO: check name
             title   : 'Bed Master Bedroom',
             subtitle: 'Swiss Sense',
             content : 'A bed like this would be epic.',
@@ -113,13 +113,13 @@ const cardContents = { // Needs to be in the same order as categoryIcons
             content : 'Lorem ipsum',
             image   : placeholder,
             icon    : 'restaurant',
-            url     : '',
+            url     : 'https://example.com/',
         }
     ],
     'Study': [
         {
             id      : 1,
-            name    : 'S_Miscellaneous_1_-_Bed_Master_Bedroom', // TODO: check name
+            name    : 'S_Default_1_-_Bed_Master_Bedroom', // TODO: check name
             title   : 'Bed Master Bedroom',
             subtitle: 'Swiss Sense',
             content : 'A bed like this would be epic.',
@@ -137,7 +137,7 @@ const cardContents = { // Needs to be in the same order as categoryIcons
             content : 'Lorem ipsum',
             image   : placeholder,
             icon    : 'king_bed',
-            url     : '',
+            url     : 'https://example.com/',
         },
         /*{
             id      : 2,

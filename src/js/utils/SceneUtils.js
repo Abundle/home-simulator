@@ -1,14 +1,13 @@
 import { Vector2 } from 'three';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
-import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js';
+import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
 
 let SELECTABLE,
     SHOW,
     INTERSECTED,
     SELECTED,
     isAnimating = false;
-
-let SAO = {};
+let SAO, BOKEH = {};
 
 const outlinePassParameters = {
     edgeStrength: 3,
@@ -19,7 +18,7 @@ const outlinePassParameters = {
     usePatternTexture: false,
 };
 
-const SAOparameters = {
+const saoParameters = {
     output: 0,
     saoBias: 1,
     saoIntensity: 0.01,
@@ -30,6 +29,12 @@ const SAOparameters = {
     saoBlurRadius: 4,
     saoBlurStdDev: 7,
     saoBlurDepthCutoff: 0.0008
+};
+
+const bokehParameters = {
+    focus: 0,
+    aperture: 0,
+    maxblur: 0.01
 };
 
 const removeLoadingScreen = () => {
@@ -60,7 +65,10 @@ const setPerformanceMonitor = bool => { SHOW = bool; };
 const getSaoPass = () => { return SAO; };
 const setSaoPass = pass => { SAO = pass; };
 
-const initGUI = saoPass => {
+const getBokehPass = () => { return BOKEH; };
+const setBokehPass = pass => { BOKEH = pass; };
+
+const initGUI = (saoPass, bokehPass) => {
     const gui = new GUI();
 
     gui.add(saoPass.params, 'output', {
@@ -70,7 +78,16 @@ const initGUI = saoPass => {
         'Depth'     : SAOPass.OUTPUT.Depth,
         'Normal'    : SAOPass.OUTPUT.Normal
     }).onChange(value => {
-        saoPass.params.output = parseInt(value);
+        saoPass.params.output = value;
+    });
+    gui.add(bokehParameters, 'focus', 0, 50, 1).onChange(value => {
+        bokehPass.uniforms['focus'].value = value;
+    });
+    gui.add(bokehParameters, 'aperture', 0, 10, 0.1).onChange(value => {
+        bokehPass.uniforms['aperture'].value = value * 0.001;
+    });
+    gui.add(bokehParameters, 'maxblur', 0, 0.01, 0.001).onChange(value => {
+        bokehPass.uniforms['maxblur'].value = value;
     });
     gui.close(true);
     gui.add(saoPass.params, 'saoBias', - 1, 1);
@@ -97,7 +114,8 @@ const getMouseObject = event => {
 
 export default {
     outlinePassParameters,
-    SAOparameters,
+    saoParameters,
+    bokehParameters,
     removeLoadingScreen,
     getAnimating,
     setAnimating,
@@ -111,6 +129,8 @@ export default {
     setPerformanceMonitor,
     getSaoPass,
     setSaoPass,
+    getBokehPass,
+    setBokehPass,
     initGUI,
     getMouseObject,
 };

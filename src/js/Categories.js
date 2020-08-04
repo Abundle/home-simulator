@@ -20,13 +20,8 @@ const createCategoryButton = (categoryName, iconName, index) => {
             </li>`;
 };
 
-const getDrawerState = () => {
-    return drawer.open;
-};
-
-const setDrawer = open => {
-    drawer.open = open;
-};
+const getDrawerState = () => { return drawer.open; };
+const setDrawerState = open => { drawer.open = open; };
 
 const scrollToCategory = id => {
     const offset = document.getElementById(id).offsetTop;
@@ -61,7 +56,7 @@ const setScrolling = bool => { isScrolling = bool; };*/
 export default {
     createCategoryButton,
     getDrawerState,
-    setDrawer,
+    setDrawerState,
     scrollToCategory,
     scrollToItem,
     // getScrolling,
