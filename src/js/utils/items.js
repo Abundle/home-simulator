@@ -7,14 +7,6 @@ import stairs from '../../assets/img/stairs.jpeg';
 import bed from '../../assets/img/bed.jpg';
 import placeholder from '../../assets/img/placeholder.jpg';
 
-const categoryIcons = { // TODO: merge with cardContents
-    Living_Room: 'local_cafe',
-    Kitchen: 'kitchen',
-    Bedroom: 'hotel',
-    Study: 'book',
-    Miscellaneous: 'category',
-};
-
 const levels = [
     'Basement',
     'Ground floor',
@@ -28,6 +20,14 @@ const controls = [
     'top',
     'back'
 ];
+
+const categoryIcons = { // TODO: merge with cardContents
+    Living_Room: 'local_cafe',
+    Kitchen: 'kitchen',
+    Bedroom: 'hotel',
+    Study: 'book',
+    Miscellaneous: 'category',
+};
 
 const cardContents = { // Needs to be in the same order as categoryIcons
     'Living_Room': [
@@ -97,7 +97,7 @@ const cardContents = { // Needs to be in the same order as categoryIcons
     'Bedroom': [
         {
             id      : 1,
-            name    : 'S_Default_2_-_Bed_Bedroom', // TODO: check name
+            name    : 'S_Default_2_-_Bed_Bedroom',
             title   : 'Bed Master Bedroom',
             subtitle: 'Swiss Sense',
             content : 'A bed like this would be epic.',
@@ -119,7 +119,7 @@ const cardContents = { // Needs to be in the same order as categoryIcons
     'Study': [
         {
             id      : 1,
-            name    : 'S_Default_1_-_Bed_Master_Bedroom', // TODO: check name
+            name    : 'S_Default_1_-_Bed_Master_Bedroom',
             title   : 'Bed Master Bedroom',
             subtitle: 'Swiss Sense',
             content : 'A bed like this would be epic.',
@@ -131,7 +131,7 @@ const cardContents = { // Needs to be in the same order as categoryIcons
     'Miscellaneous': [
         {
             id      : 1,
-            name    : 'S_Miscellaneous_1_-_Bed_Master_Bedroom', // TODO: check name
+            name    : 'S_Miscellaneous_1_-_Bed_Master_Bedroom',
             title   : 'Bed Master Bedroom',
             subtitle: 'Swiss Sense',
             content : 'Lorem ipsum',

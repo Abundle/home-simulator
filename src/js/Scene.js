@@ -43,7 +43,7 @@ import items from './utils/items.js';
 import SceneUtils from './utils/SceneUtils';
 
 // TODO: disable sao when performance drops & on lower-tier devices
-// TODO: fix responsiveness + think about mobile version (layout, disable postprocessing etc.)
+// TODO: add mobile version (layout, disable postprocessing etc.) + Test on large screens
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
@@ -62,9 +62,6 @@ import SceneUtils from './utils/SceneUtils';
 // JavaScript functors, applicatives & monads: https://medium.com/@tzehsiang/javascript-functor-applicative-monads-in-pictures-b567c6415221#.rdwll124i
 // How to clean up the scene https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
 
-/* Bug: WebAssembly memory full after a couple of reloads (memory leak with Chrome DevTools
-See https://github.com/emscripten-core/emscripten/issues/8126) */
-
 /* Global constants */
 const WEBPACK_MODE = process.env.NODE_ENV;
 
@@ -80,8 +77,9 @@ const stats      = new Stats();
 
 const screenWidth = window.innerWidth;
 const screenHeight = window.innerHeight;
-const frustumSize = 25;
+// const frustumSize = 25;
 const labelScale = 200;
+const labelToCameraRatio = 75;
 
 /* Initiate global scene variables */ // TODO: rewrite?
 let container, camera, scene, labelScene, renderer, labelRenderer;
@@ -116,7 +114,7 @@ const init = () => {
     scene.add( plane );*/
 
     labelScene = new Scene();
-    labelScene.scale.set(1 / labelScale, 1 / labelScale, 1 / labelScale); // Scale down label size scene
+    labelScene.scale.setScalar(1 / labelScale); // Scale down label size scene
     label = createLabel();
 
     renderer = new WebGLRenderer(); // { antialias: true }
@@ -163,7 +161,7 @@ const init = () => {
     controls = new OrbitControls(camera, labelRenderer.domElement);
     controls.mouseButtons = { // This way orbiting does not interfere with selecting objects
         LEFT: MOUSE.PAN,
-        MIDDLE: MOUSE.ROTATE,
+        MIDDLE: MOUSE.ROTATE, // TODO: fix touchpad gestures (that do not have a dedicated middle mouse button)
         RIGHT: MOUSE.DOLLY
     };
     controls.enableDamping = true; // if enabled, you must call .update () in your animation loop
@@ -176,7 +174,7 @@ const init = () => {
     directionalLight.shadow.mapSize.width  = 1024;
     directionalLight.shadow.mapSize.height = 1024;
 
-    const d = 14; // TODO: check examples for correct values
+    const d = 14; // TODO: fix shadow artifacts
     directionalLight.shadow.camera.left = -d;
     directionalLight.shadow.camera.right = d;
     directionalLight.shadow.camera.top = d;
@@ -326,14 +324,17 @@ const animate = () => {
     requestAnimationFrame(animate);
 
     // TODO: update sun light every hour instead of continuously
-    updateSunLight();
+    // updateSunLight();
 
     if (label.object.userData.set) {
-        label.object.position.set(0, 200, 0);
+        label.object.position.set(0, 300, 0);
         label.object.quaternion.set(0, 0, 0, 0);
 
         labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
         // labelPivot.rotation.y = camera.rotation.y;
+
+        const labelToCameraScale = objectPosition.distanceTo(camera.position) / labelToCameraRatio;
+        label.object.scale.setScalar(labelToCameraScale);
     }
 
     // Required if controls.enableDamping or controls.autoRotate are set to true
@@ -358,7 +359,7 @@ const resizeCanvas = () => { // See https://threejs.org/docs/index.html#manual/e
     composer.setSize(screenWidth, screenHeight);
     labelRenderer.setSize(screenWidth, screenHeight);
 
-    // TODO: fix function
+    // TODO: fix resize function
 };
 
 const getIntersects = (event, raycaster) => {
@@ -599,10 +600,9 @@ const selectObject = object => {
 };
 
 const getObject = name => { // TODO: create name dynamically (e.g. 'name = Kitchen_Block' => 'S_Kitchen_1_-_Kitchen_Block')
-    const object = meshGroup.getObjectByName(name);
+    // const object = meshGroup.getObjectByName(name);
     // const object = meshGroup.getObjectById(id);
-    // console.log(object);
-    return object;
+    return meshGroup.getObjectByName(name);
 };
 
 const createLabel = () => { // TODO: restyle label
@@ -611,7 +611,6 @@ const createLabel = () => { // TODO: restyle label
 
     element.className = 'label-card';
     element.style.opacity = isDev ? '50%' : '0';
-    // element.style.pointerEvents = 'none';
     element.innerHTML = `
         <div class='mdc-card'>
             <div id='label-image' class='mdc-card__media mdc-card__media--square'></div>
@@ -637,8 +636,8 @@ const createLabel = () => { // TODO: restyle label
     };
 };
 
-// TODO: scale label with camera position https://discourse.threejs.org/t/scale-css3drenderer-respect-to-webglrenderer/4938/6
-// TODO: create line as indicator from label to object + Highlight card in drawer
+const objectPosition = new Vector3();
+// TODO: create line as indicator from label to object
 const setLabel = (label, position, radius, category, id) => {
     // Get selected item info based on the id
     const objectInfo = items.cardContents[category].find(object => object.id === parseInt(id));
@@ -654,6 +653,9 @@ const setLabel = (label, position, radius, category, id) => {
     // const labelHeight = label.element.offsetHeight;
     // const labelWidth = label.element.offsetWidth / 2;
 
+    objectPosition.copy(labelPivot.position);
+    objectPosition.divideScalar(labelScale);
+
     // Add the CSS3DObject as child to the (invisible) Object3D
     labelScene.add(labelPivot);
     labelPivot.add(label.object);
@@ -661,8 +663,7 @@ const setLabel = (label, position, radius, category, id) => {
     // Correct for scaling down label
     labelPivot.position.set(labelScale * position.x, labelScale * position.y, labelScale * position.z);
 
-    label.element.style.opacity = '0.9';
-    // label.element.style.pointerEvents = 'auto';
+    label.element.style.opacity = '90%';
     label.object.userData = { set: true };
 };
 
@@ -676,7 +677,6 @@ const removeLabel = label => {
     label.object.userData = { set: false };
 };
 
-// TODO: also reset translation if another object is selected
 const panView = direction => {
     const distance = 200; // TODO: distance at 'x' should be determined relatively to width of sidebar
 
@@ -743,8 +743,6 @@ const closeDrawer = () => {
     container.addEventListener('mousemove', onMouseMove);
 
     showBlur();
-
-    // TODO: remove focus on categories in drawer
 };
 
 const toggleDrawer = () => {

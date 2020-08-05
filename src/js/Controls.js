@@ -1,6 +1,6 @@
 import items from './utils/items';
 
-// TODO: change checkboxes into switches
+// TODO: change checkboxes into switches?
 const Controls = `
     ${ items.controls.map(view => `
         <button class='${ view }-view-button mdc-button mdc-button--outlined'>

@@ -3,7 +3,6 @@ import { MDCDrawer } from '@material/drawer';
 
 // let isScrolling = false;
 
-// TODO: implement with multiple images for one item (drawer expands and shows multiple cards?)
 const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
 const container = document.querySelector('.mdc-drawer__content');
 

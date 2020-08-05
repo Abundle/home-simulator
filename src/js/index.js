@@ -19,6 +19,7 @@ import '../scss/main.scss';
 // import './utils/transpile.test';
 
 // TODO: add close button to drawer?
+// TODO: if an item in drawer is selected/focused (highlighted), make other items in drawer darker
 
 const isMobile = window.screen.width <= 760;
 
@@ -29,7 +30,7 @@ const initList = selector => {
 };
 
 const initCategoryList = categoryIcons => {
-    // TODO: remove focus after drawer closes (also for the radio buttons?)
+    // TODO: remove focus after drawer closes (also for the level radio buttons)
     Object.keys(categoryIcons).map((category, index) => {
         const button = Categories.createCategoryButton(category, categoryIcons[category], index);
         document.getElementById('drawer-categories').innerHTML += button;
