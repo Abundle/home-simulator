@@ -1,4 +1,4 @@
-import { Vector2 } from 'three';
+import {Color, Vector2} from 'three';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
 
@@ -112,6 +112,11 @@ const getMouseObject = event => {
     return mouse;
 };
 
+// From https://github.com/dirkk0/threejs_daynight
+const updateSunLight = (scene, directionalLight, ambientLight) => {
+    console.log(scene, directionalLight, ambientLight);
+};
+
 export default {
     outlinePassParameters,
     saoParameters,
@@ -133,18 +138,5 @@ export default {
     setBokehPass,
     initGUI,
     getMouseObject,
+    updateSunLight,
 };
-
-/*export const setSelectedObject = object => {
-    selectedObject = object;
-};
-
-export const getSelectedObjectPosition = () => {
-    return selectedObject.position;
-};
-
-export const sigmoid = x => {
-    return 1 / (1 + Math.pow(Math.E, -x));
-    // return 1 / (1 + Math.pow(Math.E, -x));
-};*/
-

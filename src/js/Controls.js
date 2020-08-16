@@ -1,6 +1,6 @@
 import items from './utils/items';
 
-// TODO: change checkboxes into switches?
+// TODO: fix layout
 const Controls = `
     ${ items.controls.map(view => `
         <button class='${ view }-view-button mdc-button mdc-button--outlined'>
@@ -44,7 +44,7 @@ const Controls = `
             </div>
             <div class='mdc-checkbox__ripple'></div>
         </div>
-        <label for='checkbox-2'>AO (can impact performance)</label>
+        <label for='checkbox-2'>Ambient Occlusion (can impact performance)</label>
     </div>
 `;
 

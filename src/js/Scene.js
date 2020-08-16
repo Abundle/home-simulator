@@ -8,13 +8,11 @@ import {
     WebGLRenderer,
     MOUSE,
     PerspectiveCamera,
-    OrthographicCamera,
     AmbientLight, DirectionalLight, HemisphereLight, PointLight,
-    CameraHelper, AxesHelper, DirectionalLightHelper, HemisphereLightHelper, PointLightHelper,
+    CameraHelper, AxesHelper, HemisphereLightHelper, PointLightHelper,
     Vector3,
     Raycaster,
     sRGBEncoding,
-    PCFSoftShadowMap,
 } from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -67,8 +65,10 @@ const WEBPACK_MODE = process.env.NODE_ENV;
 
 /* Lights */
 const directionalLight = new DirectionalLight(0xFFFFFF);
-const ambientLight     = new AmbientLight(0x666666);
-const hemisphereLight  = new HemisphereLight(0xffffff, 0xffffff, 0.3);
+const ambientLight     = new AmbientLight(0xFFFFFF);
+const hemisphereLight  = new HemisphereLight(0xFFFFFF, 0xFFFFFF, 0.3);
+const pointLight       = new PointLight(0xfff1e0, 1, 10);
+// const pointLight       = new PointLight(0xfffffd, 0.01, 100);
 
 /* Other Three.js variables */
 const raycaster  = new Raycaster();
@@ -90,7 +90,6 @@ let isFocus = false;
 
 /* For debugging */
 const isDev = WEBPACK_MODE === 'development';
-let dirLightHelper;
 
 // TODO: sun lighting check https://stackoverflow.com/questions/15478093/realistic-lighting-sunlight-with-three-js
 //  or use library for calculating position of the sun? https://github.com/mourner/suncalc
@@ -105,6 +104,7 @@ const init = () => {
 
     scene = new Scene();
     // scene.scale.set(scale, scale, scale);
+    // scene.background = new Color(0xbfe3dd);
     scene.background = new Color();
     // scene.fog = new THREE.Fog(scene.background, 1, 5000);
 
@@ -124,7 +124,7 @@ const init = () => {
     renderer.setSize(screenWidth, screenHeight);
     renderer.outputEncoding = sRGBEncoding; // See https://threejs.org/docs/#examples/en/loaders/GLTFLoader
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = PCFSoftShadowMap;
+    // renderer.shadowMap.type = PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
     labelRenderer = new CSS3DRenderer();
@@ -139,14 +139,6 @@ const init = () => {
         1,
         1000
     );
-    /*camera = new OrthographicCamera(
-        frustumSize * aspect / -2,
-        frustumSize * aspect / 2,
-        frustumSize / 2,
-        frustumSize / - 2,
-        -100,
-        500
-    );*/
     camera.aspect = aspect;
     camera.layers.enable(1);
     camera.layers.enable(2);
@@ -170,37 +162,34 @@ const init = () => {
     controls.minDistance   = isDev ? 0 : 10;
     controls.maxDistance   = isDev ? Infinity : 125;
 
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width  = 1024;
-    directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.castShadow = true; // TODO: turn off for 'light performance mode'
+    directionalLight.shadow.mapSize.width  = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
 
-    const d = 14; // TODO: fix shadow artifacts
+    const d = 10;
     directionalLight.shadow.camera.left = -d;
     directionalLight.shadow.camera.right = d;
     directionalLight.shadow.camera.top = d;
     directionalLight.shadow.camera.bottom = -d;
-    directionalLight.shadow.camera.near = 10;
-    directionalLight.shadow.camera.far = 100;
+    // directionalLight.shadow.camera.near = 10;
+    // directionalLight.shadow.camera.far = 100;
     // directionalLight.shadow.bias = -0.00001;
+
+    updateSunLight();
 
     scene.add(directionalLight);
     scene.add(ambientLight);
 
-    updateSunLight();
-
-    /*const pointLight = new PointLight(0xfffffd, 0.01, 100);
-    pointLight.position.set(0, 5, -0.75);
-    scene.add(pointLight);*/
-
     // Create a PointLight and turn on shadows for the light
+    pointLight.castShadow = true;
+    pointLight.position.set(0, 5, -0.75);
+    scene.add(pointLight);
     /*const pointLight = new PointLight(0xffffff, 0.25, 100);
     pointLight.position.set( 0, 5, 0 );
     pointLight.castShadow = true;
     pointLight.shadow.bias = -0.001;
     scene.add(pointLight);*/
 
-    hemisphereLight.color.setHSL(0.6, 1, 0.6);
-    hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
     hemisphereLight.position.set(0, 35, 0);
     scene.add(hemisphereLight);
 
@@ -261,16 +250,14 @@ const init = () => {
 
     /* Init helpers */
     if (isDev) {
-        dirLightHelper = new DirectionalLightHelper(directionalLight, 2);
-        scene.add(dirLightHelper);
         const dirLightCamHelper = new CameraHelper(directionalLight.shadow.camera);
         scene.add(dirLightCamHelper);
 
         const hemiSphereHelper = new HemisphereLightHelper(hemisphereLight, 2);
         scene.add(hemiSphereHelper);
 
-        /*const pointLightHelper = new PointLightHelper(pointLight, 1);
-        scene.add(pointLightHelper);*/
+        const pointLightHelper = new PointLightHelper(pointLight, 0.5);
+        scene.add(pointLightHelper);
 
         const axesHelper = new AxesHelper(3);
         scene.add(axesHelper);
@@ -319,32 +306,29 @@ const start = () => {
     cancelAnimationFrame(frameId);
 };*/
 
-// const panOffset = new Vector3();
 const animate = () => {
     requestAnimationFrame(animate);
 
     // TODO: update sun light every hour instead of continuously
-    // updateSunLight();
+    updateSunLight();
 
     if (label.object.userData.set) {
-        label.object.position.set(0, 300, 0);
         label.object.quaternion.set(0, 0, 0, 0);
 
         labelPivot.quaternion.slerp(camera.quaternion, 0.08); // t is value between 0 and 1
         // labelPivot.rotation.y = camera.rotation.y;
 
+        // Scale and position label when zooming in or out
         const labelToCameraScale = objectPosition.distanceTo(camera.position) / labelToCameraRatio;
         label.object.scale.setScalar(labelToCameraScale);
+        label.object.position.y = labelToCameraScale * 100 + 150;
     }
 
     // Required if controls.enableDamping or controls.autoRotate are set to true
     controls.update();
     controls.enabled = !SceneUtils.getAnimating(); // temporarily disable controls when camera is animating
-    // TODO: while animating, the drawer should not be allowed to open
 
     SceneUtils.getPerformanceMonitor() && stats.begin();
-
-    isDev && dirLightHelper.update();
 
     composer.render();
     labelRenderer.render(labelScene, camera);
@@ -416,6 +400,101 @@ const onClick = event => {
             }
         } else { // Background was clicked
             resetSelected();
+        }
+    }
+};
+
+let time = -30;
+let dayAlpha = 0;
+let twilightAlpha = 0;
+let nightAlpha = 0;
+// TODO: add moonlight as well?
+const updateSunLight = () => { // Inspired by https://github.com/dirkk0/threejs_daynight
+    // const time = new Date().getHours();
+    time += 0.01;
+    if (time > 23) {
+        time = 0;
+    }
+    const timeToRadians = time * (2 * Math.PI / 24);
+    const radius = 50; // Distance between sun and model
+    const nSin = radius * Math.sin(timeToRadians);
+    const nCos = radius * Math.cos(timeToRadians);
+
+    const f = Math.max(0, nSin / 50); // intensity from 0 to 1
+    const dayLightColor           = new Color(0xbfe3dd);
+    const dayLightColorAmbient    = new Color(0x666666);
+    const dayLightColorHemiSky    = new Color(0x3284ff);
+    const dayLightColorHemiGround = new Color(0xffc87f);
+    const twilightColor           = new Color(0x571000);
+    // const twilightColor           = new Color(0xf15b27);
+    const twilightColorHemiSky    = new Color(0xb82b00);
+    const twilightColorHemiGround = new Color(0xb82b00);
+    const nightLightColor         = new Color(0x000112);
+    const nightLightColorAmbient  = new Color(0xdefff9);
+
+    directionalLight.position.set(nCos, nSin, nSin);
+
+    // TODO: fix duplicate code
+    if (nSin >= 20) { // Day
+        directionalLight.intensity = f;
+        ambientLight.intensity = f;
+
+        twilightAlpha = 0;
+        nightAlpha = 0;
+        dayAlpha += 0.001; // Color transition speed
+        scene.background.lerp(dayLightColor, Math.min(1, dayAlpha));
+        ambientLight.color.lerp(dayLightColorAmbient, Math.min(1, dayAlpha));
+        hemisphereLight.color.lerp(dayLightColorHemiSky, Math.min(1, dayAlpha));
+        hemisphereLight.groundColor.lerp(dayLightColorHemiGround, Math.min(1, dayAlpha));
+        // console.log('Day', Math.min(1, dayAlpha))
+
+        setNightThemeUI(false);
+        setPointLights(true);
+    } else if (nSin < 20 && nSin > 0) { // Twilight
+        directionalLight.intensity = f;
+        ambientLight.intensity = f;
+
+        dayAlpha = 0;
+        twilightAlpha += 0.001;
+        scene.background.lerp(twilightColor, Math.min(1, twilightAlpha));
+        ambientLight.color.lerp(twilightColor, Math.min(1, twilightAlpha));
+        hemisphereLight.color.lerp(twilightColorHemiSky, Math.min(1, twilightAlpha));
+        hemisphereLight.groundColor.lerp(twilightColorHemiGround, Math.min(1, twilightAlpha));
+        // console.log('Twilight', Math.min(1, twilightAlpha))
+
+        setNightThemeUI(false);
+        setPointLights(true);
+    } else { // Night
+        directionalLight.intensity = f;
+        ambientLight.intensity = f;
+
+        twilightAlpha = 0;
+        nightAlpha += 0.001;
+        scene.background.lerp(nightLightColor, Math.min(1, nightAlpha));
+        ambientLight.color.lerp(nightLightColorAmbient, Math.min(1, nightAlpha));
+        hemisphereLight.color.lerp(nightLightColor, Math.min(1, nightAlpha));
+        hemisphereLight.groundColor.lerp(nightLightColor, Math.min(1, nightAlpha));
+        // console.log('Night', Math.min(1, nightAlpha))
+
+        setPointLights(true);
+        setNightThemeUI(true);
+    }
+};
+
+const setPointLights = bool => {
+    if (bool) {
+        pointLight.intensity = 1;
+    } else {
+        pointLight.intensity = 0;
+    }
+};
+
+const setNightThemeUI = bool => {
+    if (document.querySelector('#levels > .mdc-form-field')) {
+        if (bool) {
+            document.querySelector('#levels > .mdc-form-field').classList.add('night-theme');
+        } else {
+            document.querySelector('#levels > .mdc-form-field').classList.remove('night-theme');
         }
     }
 };
@@ -499,66 +578,6 @@ const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
     });
 };
 
-// From https://github.com/dirkk0/threejs_daynight
-const updateSunLight = () => {
-    const time = new Date().getHours();
-    const timeToRadians = time * (Math.PI / 24);
-    const sinTime = 50 * Math.sin(timeToRadians); // TODO: why times 20 again?
-    const cosTime = 50 * Math.cos(timeToRadians);
-
-    directionalLight.position.set(cosTime, sinTime, sinTime);
-    scene.background.lerp(new Color(0xbfe3dd), 0.05);
-
-    if (sinTime > 0.2) { // Day
-        directionalLight.intensity = 0.65;
-    } else if (sinTime < 0.2 && sinTime > 0) { // Twilight
-        directionalLight.intensity = sinTime / 0.2;
-    } else { // Night
-        directionalLight.intensity = 0;
-    }
-
-    /*const dayLightColor   = new Color(0xbfe3dd);
-    const twilightColor   = new Color(0x571a00);
-    const nightLightColor = new Color(0x000112);
-    const time = new Date().getHours();
-    // const time = new Date().getTime() * 0.002 - 300000000;
-
-    const timeToRadians = time * (Math.PI / 12) - Math.PI * 3 / 4;
-    const nSin = Math.sin(timeToRadians);
-    const nCos = Math.cos(timeToRadians);
-
-    directionalLight.position.set(15 * nSin, 20 * nSin, 20 * nCos);
-
-    if (nSin >= 0.3 ) { // Day
-        const f = 0.65; // 0.65
-
-        directionalLight.intensity = f;
-        ambientLight.intensity = f * 0.5;
-
-        scene.background.lerp(dayLightColor, 0.05);
-
-        document.querySelector('.mdc-form-field').classList.remove('night-theme');
-    } else if (nSin < 0.3 && nSin > 0) { // Twilight
-        const f = nSin / 0.5;
-
-        directionalLight.intensity = f;
-        ambientLight.intensity = f * 0.5;
-
-        scene.background.lerp(twilightColor, 0.05);
-
-        document.querySelector('.mdc-form-field').classList.remove('night-theme');
-    } else { // Night
-        const f = 0;
-
-        directionalLight.intensity = f;
-        ambientLight.intensity = f * 0.2;
-
-        scene.background.lerp(nightLightColor, 0.1);
-
-        document.querySelector('.mdc-form-field').classList.add('night-theme');
-    }*/
-};
-
 const hoverObject = object => {
     const objectNameArray = object.userData.name.split(' ');
     const category        = objectNameArray[1];
@@ -630,6 +649,9 @@ const createLabel = () => { // TODO: restyle label
     object.userData = { set: false };
     labelScene.add(object);
 
+    // object.applyMatrix4(new Matrix4().makeTranslation(0, 500, 0));
+    // element.style.height = '700px';
+
     return {
         element: element,
         object: object
@@ -653,6 +675,7 @@ const setLabel = (label, position, radius, category, id) => {
     // const labelHeight = label.element.offsetHeight;
     // const labelWidth = label.element.offsetWidth / 2;
 
+    // For calculating the distance between camera and selected object when scaling the label on camera zoom
     objectPosition.copy(labelPivot.position);
     objectPosition.divideScalar(labelScale);
 
@@ -678,17 +701,8 @@ const removeLabel = label => {
 };
 
 const panView = direction => {
-    const distance = 200; // TODO: distance at 'x' should be determined relatively to width of sidebar
-
-    // From OrbitControls, use for animating the offset?
-    /*const v = new Vector3();
-    v.setFromMatrixColumn(camera.matrix, 0); // get X column of objectMatrix
-    v.multiplyScalar(2);
-
-    panOffset.add(v);
-    // camera.translateX(direction * distance);
-    // controls.target.add(panOffset);
-    // label.object.position.add(panOffset);*/
+    // TODO: distance should be determined relatively to width of sidebar + make boolean from direction
+    const distance = 200;
 
     direction === 1 ? camera.setViewOffset(screenWidth, screenHeight, distance, 0, screenWidth, screenHeight)
         : camera.clearViewOffset();

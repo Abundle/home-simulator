@@ -16,7 +16,10 @@ import Controls from './Controls';
 import '../scss/main.scss';
 
 /* For testing Babel */
-// import './utils/transpile.test';
+// TODO: keep an eye out for Babel 8 https://github.com/babel/babel/tree/master/eslint/babel-eslint-parser
+/*if (Scene.isDev) {
+    import './utils/transpile.test';
+}*/
 
 // TODO: add close button to drawer?
 // TODO: if an item in drawer is selected/focused (highlighted), make other items in drawer darker
@@ -145,7 +148,7 @@ const initControls = content => { // TODO: make light at 'night'
     const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-checkbox'));
     const saoCheckbox = new MDCCheckbox(document.querySelector('.sao-checkbox'));
 
-    saoCheckbox.checked = !isMobile;
+    saoCheckbox.checked = false;//!isMobile;
     performanceCheckbox.checked = Scene.isDev;
 
     Scene.showSAO(saoCheckbox.checked);
