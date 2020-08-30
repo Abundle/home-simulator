@@ -18,7 +18,7 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
-import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer';
+import { CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer';
 /* Postprocessing */
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
@@ -36,16 +36,14 @@ import { gsap, Expo } from 'gsap/all';
 
 // Local import
 import Categories from './Categories';
+import SceneUtils from './utils/SceneUtils';
 import modelName from '../assets/House.glb';
 import items from './utils/items.js';
-import SceneUtils from './utils/SceneUtils';
 
-// TODO: disable sao when performance drops & on lower-tier devices
-// TODO: add mobile version (layout, disable postprocessing etc.) + Test on large screens
+// TODO: test on large screens
 // TODO: for improving light through window check:
 //  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
 //  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
-// TODO: Add lights to night mode + Enable manually switching day/evening/night?
 
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
@@ -54,57 +52,77 @@ import SceneUtils from './utils/SceneUtils';
 // Behance https://www.behance.net/gallery/54361197/City
 // Codepen portfolio https://codepen.io/Yakudoo/
 // Blog: https://jolicode.com/blog/making-3d-for-the-web
-// WebGL 2: https://threejs.org/docs/#manual/en/introduction/How-to-use-WebGL2
+// WebGL 2 and WebGPU: https://discourse.threejs.org/t/whats-going-on-with-webgl2-webgpu/13115/56
 // Three.js fundamentals https://threejsfundamentals.org/
 // Smart autocompletion: https://tabnine.com/
-// JavaScript functors, applicatives & monads: https://medium.com/@tzehsiang/javascript-functor-applicative-monads-in-pictures-b567c6415221#.rdwll124i
 // How to clean up the scene https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
+// Library for calculating position of the sun https://github.com/mourner/suncalc
 
-/* Global constants */
+/* For debugging */
 const WEBPACK_MODE = process.env.NODE_ENV;
+const isDev = WEBPACK_MODE === 'development';
 
-/* Lights */
+/* Three.js variables */
+const container     = document.getElementById('container');
+const renderer      = new WebGLRenderer(); // { canvas: canvasElement }
+const scene         = new Scene();
+const labelScene    = new Scene();
+const labelRenderer = new CSS3DRenderer();
+const raycaster     = new Raycaster();
+const labelPivot    = new Object3D();
+const meshGroup     = new Group();
+const stats         = new Stats();
+
+const screenWidth   = window.innerWidth;
+const screenHeight  = window.innerHeight;
+const aspect        = screenWidth / screenHeight;
+const camera        = new PerspectiveCamera(
+    5,
+    aspect,
+    1,
+    1000
+);
+const controls      = new OrbitControls(camera, labelRenderer.domElement);
+const composer      = new EffectComposer(renderer);
+const outlinePass   = new OutlinePass(new Vector2(screenWidth, screenHeight), scene, camera);
+const effectFXAA    = new ShaderPass(FXAAShader);
+const label         = SceneUtils.createLabel();
+
+const panViewDistance    = 200; // TODO: distance should be determined relatively to width of sidebar
+const labelScale         = 200;
+const labelToCameraRatio = 75;
+const nrOfLevels         = 4;
+
+/* Lights & colors */
+const dayLightColor           = new Color(0xbfe3dd);
+const dayLightColorAmbient    = new Color(0x666666);
+const dayLightColorHemiSky    = new Color(0x3284ff);
+const dayLightColorHemiGround = new Color(0xffc87f);
+const twilightColor           = new Color(0x571000);
+const twilightColorHemiSky    = new Color(0xb82b00);
+const twilightColorHemiGround = new Color(0xb82b00);
+const nightLightColor         = new Color(0x000112);
+const nightLightColorAmbient  = new Color(0xdefff9);
+const nightLightColorHemiSky  = new Color(0x0d103d);
+
 const directionalLight = new DirectionalLight(0xFFFFFF);
 const ambientLight     = new AmbientLight(0xFFFFFF);
 const hemisphereLight  = new HemisphereLight(0xFFFFFF, 0xFFFFFF, 0.3);
-const pointLight       = new PointLight(0xfff1e0, 1, 10);
-// const pointLight       = new PointLight(0xfffffd, 0.01, 100);
+const pointLights      = {
+    'hallway': { object: new PointLight(0xfff1e0, 1, 5), position: new Vector3(-6, 5, 0) },
+    'kitchen': { object: new PointLight(0xffffff, 1, 5), position: new Vector3(-3, 5, -0.75) },
+    'kitchen_table': { object: new PointLight(0xffd6aa, 1, 10), position: new Vector3(0, 5, -0.75) },
+    'living_room': { object: new PointLight(0xfff1e0, 1, 5), position: new Vector3(3, 5, -0.75) },
+};
 
-/* Other Three.js variables */
-const raycaster  = new Raycaster();
-const labelPivot = new Object3D();
-const stats      = new Stats();
-
-const screenWidth = window.innerWidth;
-const screenHeight = window.innerHeight;
-// const frustumSize = 25;
-const labelScale = 200;
-const labelToCameraRatio = 75;
-
-/* Initiate global scene variables */ // TODO: rewrite?
-let container, camera, scene, labelScene, renderer, labelRenderer;
-let controls, label;
-let composer, outlinePass;
-let meshGroup  = new Group();
-let isFocus = false;
-
-/* For debugging */
-const isDev = WEBPACK_MODE === 'development';
-
-// TODO: sun lighting check https://stackoverflow.com/questions/15478093/realistic-lighting-sunlight-with-three-js
-//  or use library for calculating position of the sun? https://github.com/mourner/suncalc
 const init = () => {
-    const aspect = screenWidth / screenHeight;
-    container = document.getElementById('container');
     const progress = document.getElementById('progress');
 
-    window.addEventListener('resize', resizeCanvas, false); // TODO: check if false is necessary here
+    window.addEventListener('resize', resizeCanvas);
     container.addEventListener('mousemove', onMouseMove);
     container.addEventListener('click', onClick);
 
-    scene = new Scene();
     // scene.scale.set(scale, scale, scale);
-    // scene.background = new Color(0xbfe3dd);
     scene.background = new Color();
     // scene.fog = new THREE.Fog(scene.background, 1, 5000);
 
@@ -113,13 +131,9 @@ const init = () => {
     var plane = new THREE.Mesh( geometry, material );
     scene.add( plane );*/
 
-    labelScene = new Scene();
+    labelScene.add(label.object);
     labelScene.scale.setScalar(1 / labelScale); // Scale down label size scene
-    label = createLabel();
 
-    renderer = new WebGLRenderer(); // { antialias: true }
-    // renderer.physicallyCorrectLights = true;
-    // renderer = new THREE.WebGLRenderer({ canvas: canvasElement, antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
     renderer.outputEncoding = sRGBEncoding; // See https://threejs.org/docs/#examples/en/loaders/GLTFLoader
@@ -127,30 +141,20 @@ const init = () => {
     // renderer.shadowMap.type = PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
-    labelRenderer = new CSS3DRenderer();
     labelRenderer.setSize(screenWidth, screenHeight);
     labelRenderer.domElement.style.position = 'absolute';
     labelRenderer.domElement.style.top = '0px';
     container.appendChild(labelRenderer.domElement);
 
-    camera = new PerspectiveCamera(
-        5,
-        aspect,
-        1,
-        1000
-    );
     camera.aspect = aspect;
-    camera.layers.enable(1);
-    camera.layers.enable(2);
-    camera.layers.enable(3);
-    /* Making the Euler angles make more sense (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
+    /* Making the Euler angles make more sense
+    (from https://stackoverflow.com/questions/28569026/three-js-extract-rotation-in-radians-from-camera)
     rotation.y will be the camera yaw in radians
     rotation.x will be the camera pitch in radians
     rotation.z will be the camera roll in radians
      */
     camera.rotation.order = 'YXZ';
 
-    controls = new OrbitControls(camera, labelRenderer.domElement);
     controls.mouseButtons = { // This way orbiting does not interfere with selecting objects
         LEFT: MOUSE.PAN,
         MIDDLE: MOUSE.ROTATE, // TODO: fix touchpad gestures (that do not have a dedicated middle mouse button)
@@ -160,9 +164,9 @@ const init = () => {
     controls.dampingFactor = 0.25;
     controls.maxPolarAngle = isDev ? Math.PI : Math.PI /2;
     controls.minDistance   = isDev ? 0 : 10;
-    controls.maxDistance   = isDev ? Infinity : 125;
+    controls.maxDistance   = isDev ? Infinity : 500;
 
-    directionalLight.castShadow = true; // TODO: turn off for 'light performance mode'
+    directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width  = 2048;
     directionalLight.shadow.mapSize.height = 2048;
 
@@ -171,24 +175,16 @@ const init = () => {
     directionalLight.shadow.camera.right = d;
     directionalLight.shadow.camera.top = d;
     directionalLight.shadow.camera.bottom = -d;
-    // directionalLight.shadow.camera.near = 10;
-    // directionalLight.shadow.camera.far = 100;
-    // directionalLight.shadow.bias = -0.00001;
-
-    updateSunLight();
 
     scene.add(directionalLight);
     scene.add(ambientLight);
 
     // Create a PointLight and turn on shadows for the light
-    pointLight.castShadow = true;
-    pointLight.position.set(0, 5, -0.75);
-    scene.add(pointLight);
-    /*const pointLight = new PointLight(0xffffff, 0.25, 100);
-    pointLight.position.set( 0, 5, 0 );
-    pointLight.castShadow = true;
-    pointLight.shadow.bias = -0.001;
-    scene.add(pointLight);*/
+    for (const pointLight of Object.values(pointLights)) {
+        pointLight.object.castShadow = true;
+        pointLight.object.position.copy(pointLight.position);
+        scene.add(pointLight.object);
+    }
 
     hemisphereLight.position.set(0, 35, 0);
     scene.add(hemisphereLight);
@@ -220,10 +216,10 @@ const init = () => {
                 // let boundingBox = node.geometry.boundingBox.clone();
             }
         });
-        meshGroup = model;
+        meshGroup.add(model); // Will create a group in a group, but it seems to work as well
         scene.add(meshGroup);
 
-        if (WEBGL.isWebGLAvailable()) {
+        if (WEBGL.isWebGLAvailable()) { // TODO: check detector.js in other project
             // Initiate function or other initializations here
             start();
         } else {
@@ -241,6 +237,9 @@ const init = () => {
         console.log('Error', error);
     });
 
+    /* Set lights */
+    updateSunLight();
+
     /* Postprocessing */
     initPostprocessing();
 
@@ -256,22 +255,22 @@ const init = () => {
         const hemiSphereHelper = new HemisphereLightHelper(hemisphereLight, 2);
         scene.add(hemiSphereHelper);
 
-        const pointLightHelper = new PointLightHelper(pointLight, 0.5);
-        scene.add(pointLightHelper);
-
         const axesHelper = new AxesHelper(3);
         scene.add(axesHelper);
+
+        for (const pointLight of Object.values(pointLights)) {
+            const pointLightHelper = new PointLightHelper(pointLight.object, 0.5);
+            scene.add(pointLightHelper);
+        }
     }
 };
 
 const initPostprocessing = () => {
-    composer = new EffectComposer(renderer);
     composer.setSize(screenWidth, screenHeight);
 
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
 
-    outlinePass = new OutlinePass(new Vector2(screenWidth, screenHeight), scene, camera);
     outlinePass.params = SceneUtils.outlinePassParameters;
     outlinePass.visibleEdgeColor.set('#ffffff');
     outlinePass.hiddenEdgeColor.set('#190a05');
@@ -282,7 +281,6 @@ const initPostprocessing = () => {
     SceneUtils.setSaoPass(saoPass);
     composer.addPass(saoPass);
 
-    const effectFXAA = new ShaderPass(FXAAShader);
     effectFXAA.uniforms['resolution'].value.set(1 / screenWidth, 1 / screenHeight);
     composer.addPass(effectFXAA);
 
@@ -296,21 +294,18 @@ const initPostprocessing = () => {
     isDev && SceneUtils.initGUI(saoPass, bokehPass);
 };
 
-// Setup based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
+// Three.js functions setup based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
 const start = () => {
     animate();
     resetCamera();
 };
 
-/*let stop = () => {
-    cancelAnimationFrame(frameId);
-};*/
-
 const animate = () => {
     requestAnimationFrame(animate);
 
-    // TODO: update sun light every hour instead of continuously
-    updateSunLight();
+    // TODO: update sun light every hour instead of continuously, see
+    //  https://stackoverflow.com/questions/42518873/best-way-to-call-periodically-twice-a-day-an-api-from-node-js-to-get-data
+    // updateSunLight();
 
     if (label.object.userData.set) {
         label.object.quaternion.set(0, 0, 0, 0);
@@ -336,14 +331,21 @@ const animate = () => {
     SceneUtils.getPerformanceMonitor() && stats.end();
 };
 
-const resizeCanvas = () => { // See https://threejs.org/docs/index.html#manual/en/introduction/FAQ for resize formula
+const resizeCanvas = () => {
+    // From https://github.com/mrdoob/three.js/blob/master/examples/webgl_postprocessing_outline.html
     camera.aspect = screenWidth / screenHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(screenWidth, screenHeight);
-    composer.setSize(screenWidth, screenHeight);
-    labelRenderer.setSize(screenWidth, screenHeight);
 
-    // TODO: fix resize function
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(width, height);
+    composer.setSize(width, height);
+    labelRenderer.setSize(width, height);
+
+    effectFXAA.uniforms['resolution'].value.set(1/width, 1/height);
 };
 
 const getIntersects = (event, raycaster) => {
@@ -375,7 +377,7 @@ const onMouseMove = event => {
 const onClick = event => {
     const intersects = getIntersects(event, raycaster);
 
-    if (isFocus) {
+    if (SceneUtils.getFocus()) {
         resetCamera();
         resetSelected();
     } else {
@@ -404,99 +406,82 @@ const onClick = event => {
     }
 };
 
-let time = -30;
-let dayAlpha = 0;
-let twilightAlpha = 0;
-let nightAlpha = 0;
+const changeLightColors = (transitionAlpha, colors) => {
+    scene.background.lerp(colors[0], Math.min(1, transitionAlpha));
+    ambientLight.color.lerp(colors[1], Math.min(1, transitionAlpha));
+    hemisphereLight.color.lerp(colors[2], Math.min(1, transitionAlpha));
+    hemisphereLight.groundColor.lerp(colors[3], Math.min(1, transitionAlpha));
+};
+
 // TODO: add moonlight as well?
-const updateSunLight = () => { // Inspired by https://github.com/dirkk0/threejs_daynight
-    // const time = new Date().getHours();
-    time += 0.01;
-    if (time > 23) {
-        time = 0;
+let time = 12;
+let dayAlpha = 1;
+let twilightAlpha = 1;
+let nightAlpha = 1;
+const dt = 0.01;
+const updateSunLight = () => {
+    /*Roughly simulate day- and nightlight
+    Inspired by https://github.com/dirkk0/threejs_daynight*/
+    if (isDev) {
+        time += dt;
+        if (time > 24) {
+            time = 0;
+        }
+    } else {
+        time = new Date().getHours();
     }
-    const timeToRadians = time * (2 * Math.PI / 24);
+
+    // Initial time (00:00) is a quarter turn counterclockwise
+    const timeToRadians = -Math.PI / 2 + time * (2 * Math.PI / 24);
     const radius = 50; // Distance between sun and model
     const nSin = radius * Math.sin(timeToRadians);
     const nCos = radius * Math.cos(timeToRadians);
 
-    const f = Math.max(0, nSin / 50); // intensity from 0 to 1
-    const dayLightColor           = new Color(0xbfe3dd);
-    const dayLightColorAmbient    = new Color(0x666666);
-    const dayLightColorHemiSky    = new Color(0x3284ff);
-    const dayLightColorHemiGround = new Color(0xffc87f);
-    const twilightColor           = new Color(0x571000);
-    // const twilightColor           = new Color(0xf15b27);
-    const twilightColorHemiSky    = new Color(0xb82b00);
-    const twilightColorHemiGround = new Color(0xb82b00);
-    const nightLightColor         = new Color(0x000112);
-    const nightLightColorAmbient  = new Color(0xdefff9);
+    const f = Math.max(0, nSin / 50); // Intensity from 0 to 1
 
     directionalLight.position.set(nCos, nSin, nSin);
+    directionalLight.intensity = f;
+    ambientLight.intensity = f;
 
-    // TODO: fix duplicate code
-    if (nSin >= 20) { // Day
-        directionalLight.intensity = f;
-        ambientLight.intensity = f;
-
+    if (nSin >= 15) { // Day
         twilightAlpha = 0;
         nightAlpha = 0;
-        dayAlpha += 0.001; // Color transition speed
-        scene.background.lerp(dayLightColor, Math.min(1, dayAlpha));
-        ambientLight.color.lerp(dayLightColorAmbient, Math.min(1, dayAlpha));
-        hemisphereLight.color.lerp(dayLightColorHemiSky, Math.min(1, dayAlpha));
-        hemisphereLight.groundColor.lerp(dayLightColorHemiGround, Math.min(1, dayAlpha));
-        // console.log('Day', Math.min(1, dayAlpha))
+        dayAlpha += dt * 0.1; // Color transition speed
 
-        setNightThemeUI(false);
-        setPointLights(true);
-    } else if (nSin < 20 && nSin > 0) { // Twilight
-        directionalLight.intensity = f;
-        ambientLight.intensity = f;
+        changeLightColors(
+            dayAlpha,
+            [dayLightColor, dayLightColorAmbient, dayLightColorHemiSky, dayLightColorHemiGround]);
 
+        SceneUtils.setNightThemeUI(false);
+        setPointLights(false);
+    } else if (nSin < 15 && nSin > 0) { // Twilight
         dayAlpha = 0;
-        twilightAlpha += 0.001;
-        scene.background.lerp(twilightColor, Math.min(1, twilightAlpha));
-        ambientLight.color.lerp(twilightColor, Math.min(1, twilightAlpha));
-        hemisphereLight.color.lerp(twilightColorHemiSky, Math.min(1, twilightAlpha));
-        hemisphereLight.groundColor.lerp(twilightColorHemiGround, Math.min(1, twilightAlpha));
-        // console.log('Twilight', Math.min(1, twilightAlpha))
+        twilightAlpha += dt * 0.1;
 
-        setNightThemeUI(false);
+        changeLightColors(
+            twilightAlpha,
+            [twilightColor, twilightColor, twilightColorHemiSky, twilightColorHemiGround]);
+
+        SceneUtils.setNightThemeUI(false);
         setPointLights(true);
     } else { // Night
-        directionalLight.intensity = f;
-        ambientLight.intensity = f;
-
         twilightAlpha = 0;
-        nightAlpha += 0.001;
-        scene.background.lerp(nightLightColor, Math.min(1, nightAlpha));
-        ambientLight.color.lerp(nightLightColorAmbient, Math.min(1, nightAlpha));
-        hemisphereLight.color.lerp(nightLightColor, Math.min(1, nightAlpha));
-        hemisphereLight.groundColor.lerp(nightLightColor, Math.min(1, nightAlpha));
-        // console.log('Night', Math.min(1, nightAlpha))
+        nightAlpha += dt * 0.1;
 
+        changeLightColors(
+            nightAlpha,
+            [nightLightColor, nightLightColorAmbient, nightLightColorHemiSky, nightLightColor]);
+
+        // TODO: AO does not look very nice in this scenario, so tweak values (at night)
+        SceneUtils.setNightThemeUI(true);
         setPointLights(true);
-        setNightThemeUI(true);
     }
 };
 
 const setPointLights = bool => {
-    if (bool) {
-        pointLight.intensity = 1;
-    } else {
-        pointLight.intensity = 0;
-    }
-};
-
-const setNightThemeUI = bool => {
-    if (document.querySelector('#levels > .mdc-form-field')) {
-        if (bool) {
-            document.querySelector('#levels > .mdc-form-field').classList.add('night-theme');
-        } else {
-            document.querySelector('#levels > .mdc-form-field').classList.remove('night-theme');
-        }
-    }
+    Object.values(pointLights).forEach(light => {
+        light.object.intensity = bool ? 1 : 0;
+    });
 };
 
 const selectFloor = floor => {
@@ -511,10 +496,14 @@ const selectFloor = floor => {
     };
 
     for (let i = 1; i <= floor; i++) { setVisibility(i, true); }
-    for (let i = 4; i > floor; i--) { setVisibility(i, false); }
+    for (let i = nrOfLevels; i > floor; i--) { setVisibility(i, false); }
 };
 
-const animateCamera = (targetPosition, targetZoom = 1, duration = 1.5, easing= Expo.easeInOut, _openDrawer = false) => {
+const animateCamera = (targetPosition,
+    targetZoom = 1,
+    duration = 1.5,
+    easing= Expo.easeInOut,
+    _openDrawer = false) => {
     gsap.to(camera.position, {
         duration: duration,
         x: targetPosition.x,
@@ -524,7 +513,6 @@ const animateCamera = (targetPosition, targetZoom = 1, duration = 1.5, easing= E
         onStart: () => {
             SceneUtils.setAnimating(true);
 
-            // TODO: create function for setting focus and removing/adding event listeners?
             container.removeEventListener('mousemove', onMouseMove);
             container.removeEventListener('click', onClick);
         },
@@ -566,18 +554,6 @@ const animateLookAt = (lookAt, duration = 1.5, easing = Expo.easeInOut) => {
     });
 };
 
-const animateFov = (fov, duration = 2, easing = Expo.easeInOut) => {
-    // Animate camera fov
-    gsap.to(camera, {
-        duration: duration,
-        fov: fov,
-        ease: easing,
-        /*onUpdate: () => {
-            camera.updateProjectionMatrix();
-        }*/
-    });
-};
-
 const hoverObject = object => {
     const objectNameArray = object.userData.name.split(' ');
     const category        = objectNameArray[1];
@@ -596,7 +572,6 @@ const selectObject = object => {
     const objectPosition = object.position;
     // Zoom based on boundingSphere of geometry
     const zoom = 1; // Math.sin(objectSize);
-    // const fov = sigmoid(objectSize) * 10 + 15;
 
     SceneUtils.setSelectedObject(object);
 
@@ -622,40 +597,6 @@ const getObject = name => { // TODO: create name dynamically (e.g. 'name = Kitch
     // const object = meshGroup.getObjectByName(name);
     // const object = meshGroup.getObjectById(id);
     return meshGroup.getObjectByName(name);
-};
-
-const createLabel = () => { // TODO: restyle label
-    // HTML
-    const element = document.createElement('div');
-
-    element.className = 'label-card';
-    element.style.opacity = isDev ? '50%' : '0';
-    element.innerHTML = `
-        <div class='mdc-card'>
-            <div id='label-image' class='mdc-card__media mdc-card__media--square'></div>
-                <div class='mdc-card__primary'>
-                    <h2 id='label-title' class='mdc-card__title mdc-typography--headline6'></h2>
-                    <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography--subtitle2'></h3>
-                    <div class='mdc-card__secondary mdc-typography--body2'>Click for more info</div>
-                </div>
-        </div>
-    `;
-    // <div id='label-image' class='mdc-card__media mdc-card__media--square' style='background-image: url(${ require('../assets/img/placeholder.jpg') });'></div>
-    document.body.appendChild(element);
-
-    // CSS Object
-    const object = new CSS3DObject(element);
-    object.position.set(0, 0, 0);
-    object.userData = { set: false };
-    labelScene.add(object);
-
-    // object.applyMatrix4(new Matrix4().makeTranslation(0, 500, 0));
-    // element.style.height = '700px';
-
-    return {
-        element: element,
-        object: object
-    };
 };
 
 const objectPosition = new Vector3();
@@ -692,7 +633,7 @@ const setLabel = (label, position, radius, category, id) => {
 
 const removeLabel = label => {
     // label.element.innerHTML = '';
-    label.element.style.opacity = isDev ? '50%' : '0';
+    label.element.style.opacity = isDev ? '10%' : '0';
     label.element.style.pointerEvents = 'none';
 
     labelScene.add(label.object);
@@ -700,11 +641,8 @@ const removeLabel = label => {
     label.object.userData = { set: false };
 };
 
-const panView = direction => {
-    // TODO: distance should be determined relatively to width of sidebar + make boolean from direction
-    const distance = 200;
-
-    direction === 1 ? camera.setViewOffset(screenWidth, screenHeight, distance, 0, screenWidth, screenHeight)
+const panView = bool => {
+    bool ? camera.setViewOffset(screenWidth, screenHeight, panViewDistance, 0, screenWidth, screenHeight)
         : camera.clearViewOffset();
 };
 
@@ -714,7 +652,6 @@ const resetCamera = () => {
     // Reset camera
     animateCamera(pos, 1, undefined, Expo.easeOut);
     animateLookAt({ x: 0, y: 0, z: 0 });
-    // animateFov(20);
 };
 
 const resetSelected = () => {
@@ -729,27 +666,27 @@ const resetSelected = () => {
 };
 
 const openDrawer = () => {
-    panView(1);
+    panView(true);
     Categories.setDrawerState(true);
-    isFocus = Categories.getDrawerState() && SceneUtils.getSelectedObject() !== undefined;
+    SceneUtils.setFocus(Categories.getDrawerState() && SceneUtils.getSelectedObject() !== undefined);
 
-    // When drawer is opened, disable label hovering & outline and part of the OrbitControls
+    // When drawer is opened, disable label hovering & outline and some of the OrbitControls
     controls.enablePan = false;
     controls.enableZoom = false;
 
-    !isFocus && removeLabel(label); // TODO: only remove label if no item was selected
+    !SceneUtils.getFocus() && removeLabel(label);
 
     container.removeEventListener('mousemove', onMouseMove);
-    // container.removeEventListener('click', onClick);
 
     // Set blur effect to focus on side panel
-    isFocus ? showBlur({ focus: 27, aperture: 0.003 }) : showBlur({ focus: 0, aperture: 10 });
+    SceneUtils.getFocus() ? showBlur({ focus: 27, aperture: 0.003 })
+        : showBlur({ focus: 0, aperture: 10 });
 };
 
 const closeDrawer = () => {
-    panView(-1);
+    panView(false);
     Categories.setDrawerState(false);
-    isFocus = false;
+    SceneUtils.setFocus(false);
 
     controls.enablePan = true;
     controls.enableZoom = true;
@@ -778,12 +715,24 @@ const showPerformanceMonitor = bool => {
     SceneUtils.setPerformanceMonitor(bool);
 };
 
+const castShadows = bool => {
+    directionalLight.castShadow = bool;
+    for (const pointLight of Object.values(pointLights)) {
+        pointLight.object.castShadow = bool;
+    }
+    /*scene.traverse(node => {
+        if (node instanceof Mesh) {
+            node.receiveShadow = bool;
+            node.castShadow = bool;
+        }
+    });*/
+};
+
 export default {
     init,
     selectFloor,
     animateCamera,
     animateLookAt,
-    animateFov,
     getObject,
     selectObject,
     hoverObject,
@@ -792,6 +741,8 @@ export default {
     toggleDrawer,
     showPerformanceMonitor,
     showSAO,
+    castShadows,
+    nrOfLevels,
     isDev,
 };
 

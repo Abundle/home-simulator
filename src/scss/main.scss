@@ -1,8 +1,7 @@
-// Normalize library import
-//@use 'normalize-scss';
-
 // Import variables before components
 @use 'variables';
+
+@use 'normalize.css/normalize.css';
 
 // Material Design modules import
 @use '@material/theme' with (
@@ -37,6 +36,7 @@
 
 @include button.core-styles;
 @include radio.core-styles;
+@include form-field.core-styles;
 @include checkbox.core-styles;
 @include drawer.core-styles;
 @include drawer.dismissible-core-styles;
@@ -121,8 +121,8 @@ a {
     position: fixed;
     left: 0;
     bottom: 0;
-    width: 370px;
-    height: 350px;
+    width: 300px;
+    height: 400px;
     background-color: rgba(255, 255, 255, 0.5);
 
     .project-info {
@@ -135,18 +135,19 @@ a {
 
     .controls-container {
         height: 100%;
-        padding: 10px 0 0 0;
+        padding: 0;
         background-color: white;
 
         #controls {
-            width: 350px;
-            margin: auto;
+            .button-container {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                justify-items: center;
 
-            /*.mdc-form-field {}*/
-
-            button {
-                width: 130px;
-                margin: 10px;
+                button {
+                    width: 125px;
+                    margin: 10px;
+                }
             }
         }
     }

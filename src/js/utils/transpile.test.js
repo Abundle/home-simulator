@@ -1,6 +1,6 @@
 
 const component = () => {
-    let element = document.createElement('div');
+    const element = document.createElement('div');
     const obj = { a: 'alpha', b: 'bravo' };
 
     // ES7 Object spread test
@@ -26,7 +26,7 @@ const component = () => {
     console.log(/^.$/s.test('\n')); // Prints true
 
     // ES named capture groups
-    console.log("ES8 named capture groups");
+    console.log('ES8 named capture groups');
     const eventDate = /(?<year>[0-9]{4})-(?<month>[0-9]{2})-(?<day>[0-9]{2})/;
     const matchedObject = eventDate.exec('2019-04-03');
     console.log(matchedObject.groups.year); // Prints 2019
@@ -34,7 +34,7 @@ const component = () => {
     console.log(matchedObject.groups.day); // Prints 03
 
     // ES finally
-    console.log('ES8 finally Promise')
+    console.log('ES8 finally Promise');
     fetch('https://www.google.com/')
         .then()
         .catch()
@@ -44,7 +44,7 @@ const component = () => {
     function specByYear(strings, specExpression) {
         const str0 = strings[0];
         const str1 = strings[1];
-        const currentYear = new Date().getFullYear();;
+        const currentYear = new Date().getFullYear();
 
         return str0 + specExpression + currentYear + str1;
     }

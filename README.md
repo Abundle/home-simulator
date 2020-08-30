@@ -5,13 +5,15 @@ space and create your own space? It would be nice to store all these thoughts in
 This is my 3D mood board.
 
 ## Tools
+Including but not limited to:
 - [Three.js](https://github.com/mrdoob/three.js/)
 - [MDC](https://github.com/material-components/material-components-web)
 - [GSAP](https://github.com/greensock/GSAP)
 - [Webpack](https://github.com/webpack)
 - [Blender](https://www.blender.org/)
 
-## Future Plans
+## Ideas and Plans for the Future
 - Implement mobile version
 - Detail 3D model
 - Add more content
+- Display real weather conditions

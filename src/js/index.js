@@ -14,29 +14,24 @@ import Controls from './Controls';
 
 // Style import
 import '../scss/main.scss';
+// Normalize library import
+// import 'normalize.css';
 
 /* For testing Babel */
-// TODO: keep an eye out for Babel 8 https://github.com/babel/babel/tree/master/eslint/babel-eslint-parser
-/*if (Scene.isDev) {
-    import './utils/transpile.test';
-}*/
+// import './utils/transpile.test';
 
 // TODO: add close button to drawer?
 // TODO: if an item in drawer is selected/focused (highlighted), make other items in drawer darker
 
-const isMobile = window.screen.width <= 760;
-
-const initList = selector => {
-    const elem = new MDCList(document.querySelector(selector));
-    elem.singleSelection = true;
-    return elem;
-};
+const isMobile = window.screen.width <= 900;
+const categoryList = new MDCList(document.querySelector('#drawer-categories'));
+categoryList.singleSelection = true;
 
 const initCategoryList = categoryIcons => {
     // TODO: remove focus after drawer closes (also for the level radio buttons)
     Object.keys(categoryIcons).map((category, index) => {
         const button = Categories.createCategoryButton(category, categoryIcons[category], index);
-        document.getElementById('drawer-categories').innerHTML += button;
+        document.querySelector('#drawer-categories').innerHTML += button;
     });
 };
 
@@ -58,7 +53,7 @@ const listListen = mdcList => {
 };
 
 const initCards = content => {
-    document.getElementById('cards').innerHTML = content;
+    document.querySelector('#cards').innerHTML = content;
 
     connectObserver(observer);
     document.querySelectorAll('.mdc-card__actions').forEach(element => {
@@ -70,13 +65,13 @@ const initCards = content => {
 };
 
 const initLevels = content => {
-    document.getElementById('levels').innerHTML = content;
+    document.querySelector('#levels').innerHTML = content;
 
     const radio = new MDCRadio(document.querySelector('.mdc-radio'));
     const formField = new MDCFormField(document.querySelector('#levels > .mdc-form-field'));
     formField.input = radio;
 
-    Scene.selectFloor(4);
+    Scene.selectFloor(Scene.nrOfLevels);
 
     formField.listen('change', event => { Scene.selectFloor(event.target.value); });
 };
@@ -97,7 +92,7 @@ const observer = new IntersectionObserver(entries => {
         // console.log(entry.target.id, 'intersection');
         if (entry.intersectionRatio > 0) { // In the view
             const index = entry.target.id.split('-')[1];
-            list.selectedIndex = Number(index);
+            categoryList.selectedIndex = Number(index);
         } /*else { // Out of view
             console.log(entry.target.id, 'out of view');
         }*/
@@ -115,8 +110,8 @@ const connectObserver = obs => {
     });
 };
 
-const initControls = content => { // TODO: make light at 'night'
-    document.getElementById('controls').innerHTML = content;
+const initControls = content => {
+    document.querySelector('#controls').innerHTML = content;
 
     document.querySelector('.reset-view-button').addEventListener('click', () => {
         Scene.resetCamera();
@@ -124,59 +119,52 @@ const initControls = content => { // TODO: make light at 'night'
     });
 
     document.querySelector('.front-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 30, z: 60 });
+        Scene.animateCamera({ x: 0, y: 150, z: 300 });
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
-        // Scene.animateFov(15);
         Scene.resetSelected();
     });
 
     document.querySelector('.top-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 60, z: 1 });
+        Scene.animateCamera({ x: 0, y: 300, z: 1 });
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
-        // Scene.animateFov(15);
         Scene.resetSelected();
     });
 
     document.querySelector('.back-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 30, z: -60 });
+        Scene.animateCamera({ x: 0, y: 150, z: -300 });
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
-        // Scene.animateFov(15);
         Scene.resetSelected();
     });
 
-    const formField = new MDCFormField(document.querySelector('#controls > .mdc-form-field'));
-    const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-checkbox'));
-    const saoCheckbox = new MDCCheckbox(document.querySelector('.sao-checkbox'));
+    const controlsList = new MDCList(document.querySelector('#controls > .mdc-list'));
+    controlsList.singleSelection = true;
+    const liteModeCheckbox = new MDCCheckbox(document.querySelector('.lite-mode-checkbox'));
+    const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-monitor-checkbox'));
 
-    saoCheckbox.checked = false;//!isMobile;
+    liteModeCheckbox.checked = isMobile;
     performanceCheckbox.checked = Scene.isDev;
 
-    Scene.showSAO(saoCheckbox.checked);
+    Scene.showSAO(!liteModeCheckbox.checked);
+    Scene.castShadows(!liteModeCheckbox.checked);
     Scene.showPerformanceMonitor(performanceCheckbox.checked);
-
-    formField.input = performanceCheckbox;
-    formField.input = saoCheckbox;
 
     performanceCheckbox.listen('change', event => {
         Scene.showPerformanceMonitor(event.target.checked);
     });
-    saoCheckbox.listen('change', event => {
-        Scene.showSAO(event.target.checked);
+    liteModeCheckbox.listen('change', event => { // Lite mode
+        Scene.showSAO(!event.target.checked);
+        Scene.castShadows(!event.target.checked);
     });
 };
 
-const list = initList('.mdc-list');
 initCategoryList(items.categoryIcons);
-listListen(list);
+listListen(categoryList);
 Scene.init();
 initCards(Cards);
 initLevels(Levels);
 initControls(Controls);
 
 initRipples('.mdc-button, .mdc-card__primary-action', false);
-// When clicked rapidly, the ripples distort the layout. Disabling for now
-/*initRipples('.mdc-button', false);
-initRipples('.mdc-icon-button', true);*/
 
 const greet = 'Hey there!';
 const beNice = 'Good to see you here, hope you\'re doing great.';

@@ -9,9 +9,6 @@ import TerserPlugin from 'terser-webpack-plugin';
 
 // Name 'webpack.config.babel.js' is for using ES6 in webpack config
 
-// TODO: check lazy loading https://webpack.js.org/guides/code-splitting/
-//  & https://css-tricks.com/the-complete-guide-to-lazy-loading-images/
-
 export default (env, options) => {
     const devMode = options.mode !== 'production';
 
@@ -83,7 +80,7 @@ export default (env, options) => {
             open: true,
             overlay: true,
         },
-        devtool: devMode ? 'eval-source-map' : false, // or use source-map?
+        devtool: devMode ? 'eval-source-map' : false,
         optimization: {
             minimizer: [
                 new TerserPlugin({
@@ -105,13 +102,11 @@ export default (env, options) => {
                 cacheGroups: {
                     vendor: {
                         test: /[\\/]node_modules[\\/](!three)[\\/]/,
-                        // test: /[\\/]node_modules[\\/]/,
                         name: devMode,
                     },
                     three_vendor: {
                         test: /[\\/]node_modules[\\/](three)[\\/]/,
                         name: devMode,
-                        // name: 'npm.three',
                     },
                 }
             },
@@ -127,9 +122,11 @@ export default (env, options) => {
                     removeComments: true,
                     collapseWhitespace: false,
                 },
-                meta: {
-                    'theme-color': '#f15b27',
+                meta: { // HTML meta tags
+                    charset: 'UTF-8',
                     author: process.env.npm_package_author_name,
+                    'theme-color': '#f15b27',
+                    viewport: 'width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'
                 }
             }),
             new MiniCssExtractPlugin({

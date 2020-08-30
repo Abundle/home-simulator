@@ -21,7 +21,7 @@ const controls = [
     'back'
 ];
 
-const categoryIcons = { // TODO: merge with cardContents
+const categoryIcons = {
     Living_Room: 'local_cafe',
     Kitchen: 'kitchen',
     Bedroom: 'hotel',
@@ -29,6 +29,7 @@ const categoryIcons = { // TODO: merge with cardContents
     Miscellaneous: 'category',
 };
 
+// TODO: add custom camera properties (position, blur, etc.) for each object
 const cardContents = { // Needs to be in the same order as categoryIcons
     'Living_Room': [
         {

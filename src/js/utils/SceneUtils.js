@@ -1,12 +1,18 @@
-import {Color, Vector2} from 'three';
+import { Vector2 } from 'three';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
+import { CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer';
+
+/* For debugging */
+const WEBPACK_MODE = process.env.NODE_ENV;
+const isDev = WEBPACK_MODE === 'development';
 
 let SELECTABLE,
     SHOW,
     INTERSECTED,
     SELECTED,
-    isAnimating = false;
+    isAnimating,
+    isFocus = false;
 let SAO, BOKEH = {};
 
 const outlinePassParameters = {
@@ -50,6 +56,9 @@ const removeLoadingScreen = () => {
 const getAnimating = () => { return isAnimating; };
 const setAnimating = bool => { isAnimating = bool; };
 
+const getFocus = () => { return isFocus; };
+const setFocus = bool => { isFocus = bool; };
+
 const getIntersected = () => { return INTERSECTED; };
 const setIntersected = object => { INTERSECTED = object; };
 
@@ -78,7 +87,7 @@ const initGUI = (saoPass, bokehPass) => {
         'Depth'     : SAOPass.OUTPUT.Depth,
         'Normal'    : SAOPass.OUTPUT.Normal
     }).onChange(value => {
-        saoPass.params.output = value;
+        saoPass.params.output = parseInt(value);
     });
     gui.add(bokehParameters, 'focus', 0, 50, 1).onChange(value => {
         bokehPass.uniforms['focus'].value = value;
@@ -112,9 +121,47 @@ const getMouseObject = event => {
     return mouse;
 };
 
-// From https://github.com/dirkk0/threejs_daynight
-const updateSunLight = (scene, directionalLight, ambientLight) => {
-    console.log(scene, directionalLight, ambientLight);
+const createLabel = () => {
+    // HTML
+    const element = document.createElement('div');
+
+    element.className = 'label-card';
+    element.style.opacity = isDev ? '10%' : '0';
+    element.innerHTML = `
+        <div class='mdc-card'>
+            <div id='label-image' class='mdc-card__media mdc-card__media--square'></div>
+                <div class='mdc-card__primary'>
+                    <h2 id='label-title' class='mdc-card__title mdc-typography--headline6'></h2>
+                    <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography--subtitle2'></h3>
+                    <div class='mdc-card__secondary mdc-typography--body2'>Click for more info</div>
+                </div>
+        </div>
+    `;
+    // <div id='label-image' class='mdc-card__media mdc-card__media--square' style='background-image: url(${ require('../assets/img/placeholder.jpg') });'></div>
+    document.body.appendChild(element);
+
+    // CSS Object
+    const object = new CSS3DObject(element);
+    object.position.set(0, 0, 0);
+    object.userData = { set: false };
+    // object.applyMatrix4(new Matrix4().makeTranslation(0, 500, 0));
+    // element.style.height = '700px';
+
+    return {
+        element: element,
+        object: object
+    };
+};
+
+// TODO: enable manually switching day/evening/night as well
+const setNightThemeUI = bool => {
+    if (document.querySelector('#levels > .mdc-form-field')) {
+        if (bool) {
+            document.querySelector('#levels > .mdc-form-field').classList.add('night-theme');
+        } else {
+            document.querySelector('#levels > .mdc-form-field').classList.remove('night-theme');
+        }
+    }
 };
 
 export default {
@@ -124,6 +171,8 @@ export default {
     removeLoadingScreen,
     getAnimating,
     setAnimating,
+    getFocus,
+    setFocus,
     getIntersected,
     setIntersected,
     getSelectable,
@@ -138,5 +187,6 @@ export default {
     setBokehPass,
     initGUI,
     getMouseObject,
-    updateSunLight,
+    createLabel,
+    setNightThemeUI,
 };
