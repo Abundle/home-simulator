@@ -14,13 +14,11 @@ import Controls from './Controls';
 
 // Style import
 import '../scss/main.scss';
-// Normalize library import
-// import 'normalize.css';
 
-/* For testing Babel */
+/* For testing Babel polyfills */
 // import './utils/transpile.test';
 
-// TODO: add close button to drawer?
+// TODO: add close button to drawer
 // TODO: if an item in drawer is selected/focused (highlighted), make other items in drawer darker
 
 const isMobile = window.screen.width <= 900;
@@ -28,7 +26,6 @@ const categoryList = new MDCList(document.querySelector('#drawer-categories'));
 categoryList.singleSelection = true;
 
 const initCategoryList = categoryIcons => {
-    // TODO: remove focus after drawer closes (also for the level radio buttons)
     Object.keys(categoryIcons).map((category, index) => {
         const button = Categories.createCategoryButton(category, categoryIcons[category], index);
         document.querySelector('#drawer-categories').innerHTML += button;
@@ -54,8 +51,8 @@ const listListen = mdcList => {
 
 const initCards = content => {
     document.querySelector('#cards').innerHTML = content;
-
     connectObserver(observer);
+
     document.querySelectorAll('.mdc-card__actions').forEach(element => {
         element.addEventListener('click', event => {
             const object = Scene.getObject(event.target.id);
@@ -76,9 +73,8 @@ const initLevels = content => {
     formField.listen('change', event => { Scene.selectFloor(event.target.value); });
 };
 
-const initRipples = (selectors, isUnbounded) => {
+const initRipples = (selectors, isUnbounded = false) => {
     document.querySelectorAll(selectors).forEach(element => {
-    // [].map.call(document.querySelectorAll(selectors), element => {
         const ripple = new MDCRipple(element);
         ripple.unbounded = isUnbounded;
         return ripple;
@@ -89,23 +85,19 @@ const initRipples = (selectors, isUnbounded) => {
 
 const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
-        // console.log(entry.target.id, 'intersection');
         if (entry.intersectionRatio > 0) { // In the view
             const index = entry.target.id.split('-')[1];
             categoryList.selectedIndex = Number(index);
-        } /*else { // Out of view
-            console.log(entry.target.id, 'out of view');
-        }*/
+        }
     });
 }, {
     root: document.querySelector('aside'),
     rootMargin: '0px 0px -75% 0px',
-    delay: 250,
+    delay: 500,
 });
 
 const connectObserver = obs => {
     document.querySelectorAll('.category-title').forEach(item => {
-    // [...document.querySelectorAll('.category-title')].map(item => {
         obs.observe(item);
     });
 };
@@ -163,8 +155,7 @@ Scene.init();
 initCards(Cards);
 initLevels(Levels);
 initControls(Controls);
-
-initRipples('.mdc-button, .mdc-card__primary-action', false);
+initRipples('.mdc-button, .mdc-card__primary-action');
 
 const greet = 'Hey there!';
 const beNice = 'Good to see you here, hope you\'re doing great.';

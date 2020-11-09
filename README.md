@@ -12,8 +12,8 @@ Including but not limited to:
 - [Webpack](https://github.com/webpack)
 - [Blender](https://www.blender.org/)
 
-## Ideas and Plans for the Future
-- Implement mobile version
+## Ideas for the Future
 - Detail 3D model
 - Add more content
+- Implement mobile version
 - Display real weather conditions

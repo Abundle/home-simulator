@@ -7,8 +7,6 @@
 @use '@material/theme' with (
   $primary: purple,
   $secondary: #f15b27,
-  //$on-primary: rgba(0,0,0,0.87),
-  //$on-secondary: #442b2d,
   $background: #ffffff,
 );
 @use '@material/typography' with (
@@ -25,8 +23,9 @@
 
 @use '@material/typography/mdc-typography';
 @use '@material/button';
+@use '@material/radio/radio';
+@use '@material/radio/radio-theme';
 @use '@material/form-field';
-@use '@material/radio';
 @use '@material/checkbox';
 @use '@material/drawer';
 @use '@material/icon-button';
@@ -63,10 +62,6 @@ a {
     width: 5px;
 }
 
-/*::-webkit-scrollbar-track {
-    background: #ddd;
-}*/
-
 ::-webkit-scrollbar-thumb {
     background: #babac0; // #666
     border-radius: 20px;
@@ -90,7 +85,7 @@ a {
 
 .night-theme {
     color: white;
-    @include radio.unchecked-stroke-color(white);
+    @include radio-theme.unchecked-stroke-color(white);
 }
 
 .loading-container {

@@ -29,7 +29,7 @@ const categoryIcons = {
     Miscellaneous: 'category',
 };
 
-// TODO: add custom camera properties (position, blur, etc.) for each object
+// TODO: add custom camera properties (zoom, blur, etc.) for each object
 const cardContents = { // Needs to be in the same order as categoryIcons
     'Living_Room': [
         {

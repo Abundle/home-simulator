@@ -32,7 +32,7 @@ const Controls = `
             </span>
             <label class="mdc-list-item__text" for="demo-list-checkbox-item-1">
               <span class="mdc-list-item__primary-text">Lite mode</span>
-              <span class="mdc-list-item__secondary-text">Low-impact performance</span>
+              <span class="mdc-list-item__secondary-text">Makes things run smoother</span>
             </label>
         </li>
       <li class="mdc-list-item" role="checkbox" aria-checked="false">

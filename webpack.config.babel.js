@@ -3,7 +3,6 @@ import { CleanWebpackPlugin } from 'clean-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import FaviconsWebpackPlugin from 'favicons-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import autoprefixer from 'autoprefixer';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
 
@@ -17,10 +16,11 @@ export default (env, options) => {
             main: './src/js/index.js'
         },
         output: {
-            filename: devMode ? 'main.js' : 'main.[chunkhash].js',
+            filename: devMode ? '[name].js' : '[name].[chunkhash].js',
             chunkFilename: devMode ? '[name].js' : '[name].[chunkhash].js',
             publicPath: '/',
             path: path.resolve(__dirname, 'build'),
+            // TODO: Check browserlist node support issue https://github.com/webpack/webpack/issues/11660
         },
         module: {
             rules: [
@@ -35,10 +35,16 @@ export default (env, options) => {
                     test: /\.scss$/,
                     use: [
                         devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
-                        { loader: 'css-loader' },
-                        { loader: 'postcss-loader',
+                        {
+                            loader: 'css-loader',
+                            options: { importLoaders: 1 },
+                        },
+                        {
+                            loader: 'postcss-loader',
                             options: {
-                                plugins: () => [autoprefixer()],
+                                postcssOptions: {
+                                    plugins: ['autoprefixer'],
+                                }
                             },
                         },
                         {
@@ -61,7 +67,7 @@ export default (env, options) => {
                     use: {
                         loader: 'file-loader',
                         options: {
-                            name: devMode ? 'assets/img/[name].[ext]' : 'assets/img/[hash].[ext]',
+                            name: devMode ? 'assets/img/[name].[ext]' : 'assets/img/[chunkhash].[ext]',
                         }
                     }
                 },
@@ -70,12 +76,16 @@ export default (env, options) => {
                     use: {
                         loader: 'file-loader',
                         options: {
-                            name: devMode ? 'assets/[name].[ext]' : 'assets/[hash].[ext]',
+                            name: devMode ? 'assets/[name].[ext]' : 'assets/[chunkhash].[ext]',
                         }
                     }
                 },
             ]
         },
+        performance: {
+            hints: 'warning'
+        },
+        stats: devMode ? 'minimal' : 'none',
         devServer: {
             open: true,
             overlay: true,
@@ -89,7 +99,7 @@ export default (env, options) => {
                             comments: false,
                         },
                     },
-                    extractComments: false,
+                    extractComments: !devMode,
                 }),
             ],
             // Inspiration from:
@@ -102,11 +112,11 @@ export default (env, options) => {
                 cacheGroups: {
                     vendor: {
                         test: /[\\/]node_modules[\\/](!three)[\\/]/,
-                        name: devMode,
+                        name: false,
                     },
                     three_vendor: {
                         test: /[\\/]node_modules[\\/](three)[\\/]/,
-                        name: devMode,
+                        name: false,
                     },
                 }
             },
@@ -117,6 +127,7 @@ export default (env, options) => {
         plugins: [
             new CleanWebpackPlugin(),
             new HtmlWebpackPlugin({ // HtmlWebpackPlugin must go before FaviconsWebpackPlugin
+                title: 'Sandbox',
                 template: './src/index.html',
                 minify: {
                     removeComments: true,
@@ -130,18 +141,17 @@ export default (env, options) => {
                 }
             }),
             new MiniCssExtractPlugin({
-                filename: devMode ? '[name].css' : '[name].[hash].css',
-                chunkFilename: devMode ? '[id].css' : '[id].[hash].css',
+                filename: devMode ? '[name].css' : '[name].[chunkhash].css',
+                chunkFilename: devMode ? '[id].css' : '[id].[chunkhash].css',
             }),
             new CopyWebpackPlugin({
                 patterns: [ // Three.js DRACO loader docs: https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco#readme
-                    // { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.js', to:'assets/draco/' },
                     { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.wasm', to:'assets/draco/' },
                     { from: './node_modules/three/examples/js/libs/draco/gltf/draco_wasm_wrapper.js', to:'assets/draco/' },
                     { from: '.htaccess' },
                 ]
             }),
-            new FaviconsWebpackPlugin(),
+            new FaviconsWebpackPlugin()
         ]
     };
 };

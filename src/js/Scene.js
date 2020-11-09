@@ -13,6 +13,8 @@ import {
     Vector3,
     Raycaster,
     sRGBEncoding,
+    PlaneBufferGeometry,
+    MeshStandardMaterial,
 } from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
@@ -40,10 +42,10 @@ import SceneUtils from './utils/SceneUtils';
 import modelName from '../assets/House.glb';
 import items from './utils/items.js';
 
-// TODO: test on large screens
+// TODO: add foliage to scene
 // TODO: for improving light through window check:
-//  Alphatest customDepthMaterial https://threejs.org/examples/webgl_animation_cloth.html
-//  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475 + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
+//  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
+//  + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
 
 // Inspiration:
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
@@ -79,21 +81,23 @@ const aspect        = screenWidth / screenHeight;
 const camera        = new PerspectiveCamera(
     5,
     aspect,
-    1,
+    0.1,
     1000
 );
-const controls      = new OrbitControls(camera, labelRenderer.domElement);
-const composer      = new EffectComposer(renderer);
-const outlinePass   = new OutlinePass(new Vector2(screenWidth, screenHeight), scene, camera);
-const effectFXAA    = new ShaderPass(FXAAShader);
-const label         = SceneUtils.createLabel();
+const controls    = new OrbitControls(camera, labelRenderer.domElement);
+const composer    = new EffectComposer(renderer);
+const outlinePass = new OutlinePass(new Vector2(screenWidth, screenHeight), scene, camera);
+const effectFXAA  = new ShaderPass(FXAAShader);
+const label       = SceneUtils.createLabel();
 
-const panViewDistance    = 200; // TODO: distance should be determined relatively to width of sidebar
-const labelScale         = 200;
-const labelToCameraRatio = 75;
-const nrOfLevels         = 4;
+const panViewDistance         = 200; // mdc-drawer width = 400px
+const labelScale              = 200;
+const labelToCameraRatio      = 75;
+const nrOfLevels              = 4;
+const lookAtAnimationDuration = 1.5;
 
 /* Lights & colors */
+const groundColor             = new Color(0x77f53d);
 const dayLightColor           = new Color(0xbfe3dd);
 const dayLightColorAmbient    = new Color(0x666666);
 const dayLightColorHemiSky    = new Color(0x3284ff);
@@ -124,12 +128,6 @@ const init = () => {
 
     // scene.scale.set(scale, scale, scale);
     scene.background = new Color();
-    // scene.fog = new THREE.Fog(scene.background, 1, 5000);
-
-    /*var geometry = new THREE.PlaneBufferGeometry( 5, 20, 32 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-    var plane = new THREE.Mesh( geometry, material );
-    scene.add( plane );*/
 
     labelScene.add(label.object);
     labelScene.scale.setScalar(1 / labelScale); // Scale down label size scene
@@ -138,7 +136,6 @@ const init = () => {
     renderer.setSize(screenWidth, screenHeight);
     renderer.outputEncoding = sRGBEncoding; // See https://threejs.org/docs/#examples/en/loaders/GLTFLoader
     renderer.shadowMap.enabled = true;
-    // renderer.shadowMap.type = PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
     labelRenderer.setSize(screenWidth, screenHeight);
@@ -162,7 +159,7 @@ const init = () => {
     };
     controls.enableDamping = true; // if enabled, you must call .update () in your animation loop
     controls.dampingFactor = 0.25;
-    controls.maxPolarAngle = isDev ? Math.PI : Math.PI /2;
+    controls.maxPolarAngle = isDev ? Math.PI : Math.PI / 2;
     controls.minDistance   = isDev ? 0 : 10;
     controls.maxDistance   = isDev ? Infinity : 500;
 
@@ -188,6 +185,15 @@ const init = () => {
 
     hemisphereLight.position.set(0, 35, 0);
     scene.add(hemisphereLight);
+
+    // Ground plane
+    const geometry = new PlaneBufferGeometry(100, 100);
+    geometry.rotateX(-Math.PI / 2);
+    geometry.translate(0, -0.1, 0);
+    const material = new MeshStandardMaterial({ color: groundColor, flatShading: true });
+    const plane = new Mesh(geometry, material);
+    plane.receiveShadow = true;
+    scene.add(plane);
 
     const loader = new GLTFLoader();
     // Provide a DRACOLoader instance to decode compressed mesh data
@@ -219,8 +225,7 @@ const init = () => {
         meshGroup.add(model); // Will create a group in a group, but it seems to work as well
         scene.add(meshGroup);
 
-        if (WEBGL.isWebGLAvailable()) { // TODO: check detector.js in other project
-            // Initiate function or other initializations here
+        if (WEBGL.isWebGLAvailable()) {
             start();
         } else {
             const warning = WEBGL.getWebGLErrorMessage();
@@ -298,14 +303,13 @@ const initPostprocessing = () => {
 const start = () => {
     animate();
     resetCamera();
+    setInterval(() => {
+        updateSunLight();
+    }, 60 * 1000);
 };
 
 const animate = () => {
     requestAnimationFrame(animate);
-
-    // TODO: update sun light every hour instead of continuously, see
-    //  https://stackoverflow.com/questions/42518873/best-way-to-call-periodically-twice-a-day-an-api-from-node-js-to-get-data
-    // updateSunLight();
 
     if (label.object.userData.set) {
         label.object.quaternion.set(0, 0, 0, 0);
@@ -393,7 +397,6 @@ const onClick = event => {
                 // INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
                 // INTERSECTED.material.color.setHex(0xff0000);
 
-                // console.log(INTERSECTED);
                 selectObject(SceneUtils.getIntersected());
                 removeLabel(label);
                 document.body.style.cursor = 'default';
@@ -413,7 +416,7 @@ const changeLightColors = (transitionAlpha, colors) => {
     hemisphereLight.groundColor.lerp(colors[3], Math.min(1, transitionAlpha));
 };
 
-// TODO: add moonlight as well?
+// TODO: add moonlight as well
 let time = 12;
 let dayAlpha = 1;
 let twilightAlpha = 1;
@@ -531,13 +534,13 @@ const animateCamera = (targetPosition,
         duration: duration,
         zoom: targetZoom,
         ease: Expo.easeInOut,
-        onUpdate: () => {
+        /*onUpdate: () => {
             camera.updateProjectionMatrix();
-        },
+        },*/
     });
 };
 
-const animateLookAt = (lookAt, duration = 1.5, easing = Expo.easeInOut) => {
+const animateLookAt = (lookAt, duration = lookAtAnimationDuration, easing = Expo.easeInOut) => {
     // Animate lookAt point
     gsap.to(controls.target, {
         duration: duration,
@@ -583,9 +586,9 @@ const selectObject = object => {
 
     animateLookAt(objectPosition);
 
-    setTimeout(() => { // TODO: check if this can be done differently
+    setTimeout(() => {
         Categories.scrollToItem(`${ category }-${ id }`);
-    }, 2000);
+    }, lookAtAnimationDuration + 0.5);
 
     if (level) {
         selectFloor(level);
@@ -593,7 +596,7 @@ const selectObject = object => {
     }
 };
 
-const getObject = name => { // TODO: create name dynamically (e.g. 'name = Kitchen_Block' => 'S_Kitchen_1_-_Kitchen_Block')
+const getObject = name => { // TODO: create name dynamically (e.g. 'name = Kitchen_Block' => 'S_Kitchen_1_-_Kitchen_Block')?
     // const object = meshGroup.getObjectByName(name);
     // const object = meshGroup.getObjectById(id);
     return meshGroup.getObjectByName(name);
@@ -611,10 +614,6 @@ const setLabel = (label, position, radius, category, id) => {
         document.getElementById('label-subtitle').textContent = `From ${ objectInfo.subtitle }`;
         document.getElementById('label-image').style.backgroundImage = `url(${ objectInfo.image })`;
     }
-
-    // Calculate the width of the label after inserting text
-    // const labelHeight = label.element.offsetHeight;
-    // const labelWidth = label.element.offsetWidth / 2;
 
     // For calculating the distance between camera and selected object when scaling the label on camera zoom
     objectPosition.copy(labelPivot.position);
