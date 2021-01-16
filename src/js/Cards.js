@@ -1,9 +1,9 @@
-import items from './utils/items.js';
+import Config from './utils/Config';
 
-const Cards = Object.keys(items.cardContents).map((category, index) => `
+const Cards = Object.keys(Config.contents).map((category, index) => `
     <h1 id=${ category + '-' + index } class='mdc-typography--headline5 category-title'>${ category.replace('_', ' ') }</h1>
     
-    ${ items.cardContents[category].map(item => `
+    ${ Config.contents[category].content.map(item => `
         <div id='${ category }-${ item.id }' class='mdc-card mdc-card--outlined'>
             <a href=${ item.url } target='_blank'>
                 <div class='mdc-card__primary-action'>
@@ -17,7 +17,7 @@ const Cards = Object.keys(items.cardContents).map((category, index) => `
                     </div>
                 </div>
             </a>
-            ${ item.content === '' ? '' : `<div class='mdc-card__secondary mdc-typography mdc-typography--body2'>${ item.content }</div>`}
+            ${ item.text === '' ? '' : `<div class='mdc-card__secondary mdc-typography mdc-typography--body2'>${ item.text }</div>`}
             <div class='mdc-card__actions'>
                 <div class='mdc-card__action-buttons'>
                     <button class='mdc-button mdc-card__action mdc-card__action--button'>

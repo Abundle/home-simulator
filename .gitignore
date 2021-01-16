@@ -15,4 +15,4 @@
 # statistics
 stats.json
 
-npm-debug.log*
+*.log

@@ -1,7 +1,7 @@
-// Import variables before components
-@use 'variables';
-
 @use 'normalize.css/normalize.css';
+// Local import
+@use 'variables';
+@use 'time-toggle';
 
 // Material Design modules import
 @use '@material/theme' with (
@@ -72,12 +72,6 @@ a {
     background: rgba(theme.$primary, 0.25);
 }
 
-.dg .a {
-        float: left;
-        margin-right: 0;
-        margin-left: 80px;
-}
-
 /* Smartphone */
 /*@media only screen and (max-width: 760px) {
     #some-element { display: none; }
@@ -92,6 +86,7 @@ a {
     position: absolute;
     top: 0;
 }
+
 .loading-screen {
     position: absolute;
     width: 100%;
@@ -117,7 +112,7 @@ a {
     left: 0;
     bottom: 0;
     width: 300px;
-    height: 400px;
+    //height: 400px;
     background-color: rgba(255, 255, 255, 0.5);
 
     .project-info {
@@ -130,7 +125,7 @@ a {
 
     .controls-container {
         height: 100%;
-        padding: 0;
+        padding: 15px 0;
         background-color: white;
 
         #controls {
@@ -173,13 +168,16 @@ a {
     width: 100%;
     height: 50px;
     //background-color: rgba(250, 0, 0, 0.5);
+
+    label {
+        cursor: pointer;
+    }
 }
 
 .cards-drawer {
     display: flex;
     height: 100vh;
     border: none;
-
 
     .mdc-list {
         @include list.single-line-shape-radius(50%);

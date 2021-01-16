@@ -7,7 +7,8 @@ import { MDCCheckbox } from '@material/checkbox';
 // Local import
 import Scene from './Scene';
 import Categories from './Categories';
-import items from './utils/items';
+import SceneUtils from './utils/Utils';
+import Config from './utils/Config';
 import Cards from './Cards';
 import Levels from './Levels';
 import Controls from './Controls';
@@ -21,13 +22,12 @@ import '../scss/main.scss';
 // TODO: add close button to drawer
 // TODO: if an item in drawer is selected/focused (highlighted), make other items in drawer darker
 
-const isMobile = window.screen.width <= 900;
 const categoryList = new MDCList(document.querySelector('#drawer-categories'));
 categoryList.singleSelection = true;
 
-const initCategoryList = categoryIcons => {
-    Object.keys(categoryIcons).map((category, index) => {
-        const button = Categories.createCategoryButton(category, categoryIcons[category], index);
+const initCategoryList = contents => {
+    Object.keys(contents).map((category, index) => {
+        const button = Categories.createCategoryButton(category, contents[category].icon, index);
         document.querySelector('#drawer-categories').innerHTML += button;
     });
 };
@@ -68,7 +68,7 @@ const initLevels = content => {
     const formField = new MDCFormField(document.querySelector('#levels > .mdc-form-field'));
     formField.input = radio;
 
-    Scene.selectFloor(Scene.nrOfLevels);
+    Scene.selectFloor(Config.levels.length);
 
     formField.listen('change', event => { Scene.selectFloor(event.target.value); });
 };
@@ -111,6 +111,7 @@ const initControls = content => {
     });
 
     document.querySelector('.front-view-button').addEventListener('click', () => {
+        // TODO: retrieve values from Config
         Scene.animateCamera({ x: 0, y: 150, z: 300 });
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
         Scene.resetSelected();
@@ -133,23 +134,40 @@ const initControls = content => {
     const liteModeCheckbox = new MDCCheckbox(document.querySelector('.lite-mode-checkbox'));
     const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-monitor-checkbox'));
 
-    liteModeCheckbox.checked = isMobile;
-    performanceCheckbox.checked = Scene.isDev;
+    liteModeCheckbox.checked = true; //Config.isMobile;
+    performanceCheckbox.checked = Config.isDev;
 
     Scene.showSAO(!liteModeCheckbox.checked);
     Scene.castShadows(!liteModeCheckbox.checked);
     Scene.showPerformanceMonitor(performanceCheckbox.checked);
 
-    performanceCheckbox.listen('change', event => {
-        Scene.showPerformanceMonitor(event.target.checked);
-    });
-    liteModeCheckbox.listen('change', event => { // Lite mode
+    // Lite mode
+    liteModeCheckbox.listen('change', event => {
         Scene.showSAO(!event.target.checked);
         Scene.castShadows(!event.target.checked);
     });
+    performanceCheckbox.listen('change', event => {
+        Scene.showPerformanceMonitor(event.target.checked);
+    });
+
+    // Set UI, scene and controls to current time
+    const currentTimeStatus = SceneUtils.getCurrentTimeStatus();
+    const timeElement = document.querySelector(`#radio-${ currentTimeStatus.time.toLowerCase() }`);
+
+    timeElement.checked = true;
+    SceneUtils.setTimeStatus(currentTimeStatus);
+    SceneUtils.setDarkThemeUI(Config.times[currentTimeStatus.time].darkTheme);
+
+    document.querySelector('.time-toggle').addEventListener('change', event => {
+        const time = Object.keys(Config.times).find(key => Config.times[key].value === event.target.value);
+        SceneUtils.setTimeStatus({ time, hour: Config.times[time].startHour });
+        SceneUtils.setDarkThemeUI(Config.times[time].darkTheme);
+        Scene.updateSunLight({ time: time, hour: Config.times[time].startHour });
+        console.log('Time manually set:', time)
+    });
 };
 
-initCategoryList(items.categoryIcons);
+initCategoryList(Config.contents);
 listListen(categoryList);
 Scene.init();
 initCards(Cards);
@@ -159,7 +177,7 @@ initRipples('.mdc-button, .mdc-card__primary-action');
 
 const greet = 'Hey there!';
 const beNice = 'Good to see you here, hope you\'re doing great.';
-const persuasion = 'Interested in my work?';
+const persuasion = 'Interested in more of my work?';
 const link = 'Here\'s my portfolio: https://aidanbundel.com';
 const exitConvo = 'Made with 💜';
 

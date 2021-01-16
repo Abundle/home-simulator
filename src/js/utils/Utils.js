@@ -3,48 +3,21 @@ import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
 import { CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer';
 
-/* For debugging */
-const WEBPACK_MODE = process.env.NODE_ENV;
-const isDev = WEBPACK_MODE === 'development';
+/* Local import */
+import Config from './Config';
 
-let SELECTABLE,
-    SHOW,
-    INTERSECTED,
-    SELECTED,
-    isAnimating,
-    isFocus = false;
-let SAO, BOKEH = {};
-
-const outlinePassParameters = {
-    edgeStrength: 3,
-    edgeGlow: 0.0,
-    edgeThickness: 1,
-    pulsePeriod: 0,
-    rotate: false,
-    usePatternTexture: false,
-};
-
-const saoParameters = {
-    output: 0,
-    saoBias: 1,
-    saoIntensity: 0.01,
-    saoScale: 10,
-    saoKernelRadius: 75,
-    saoMinResolution: 0,
-    saoBlur: true,
-    saoBlurRadius: 4,
-    saoBlurStdDev: 7,
-    saoBlurDepthCutoff: 0.0008
-};
-
-const bokehParameters = {
-    focus: 0,
-    aperture: 0,
-    maxblur: 0.01
-};
+let SELECTABLE,         // If an object is clickable
+    SHOW,               // Performance monitor visibility
+    isAnimating,        // Whether camera is animating
+    isFocus = false;    // Whether an object has been clicked
+let INTERSECTED,        // If an object is intersected
+    SELECTED,           // If an object is clicked
+    TIME,               // Current moment
+    SAO,
+    BOKEH = null;
 
 const removeLoadingScreen = () => {
-    const loadingScreen = document.getElementById('loading-screen');
+    const loadingScreen = document.querySelector('#loading-screen');
 
     if (loadingScreen.classList) {
         loadingScreen.classList.add('hidden');
@@ -77,8 +50,15 @@ const setSaoPass = pass => { SAO = pass; };
 const getBokehPass = () => { return BOKEH; };
 const setBokehPass = pass => { BOKEH = pass; };
 
-const initGUI = (saoPass, bokehPass) => {
+const getTimeStatus = () => { return TIME; };
+const setTimeStatus = time => { TIME = time; };
+
+const initThreeGUI = (saoPass, bokehPass) => {
     const gui = new GUI();
+
+    gui.domElement.style.float = 'left';
+    gui.domElement.style.marginRight = '0';
+    gui.domElement.style.marginLeft = '80px';
 
     gui.add(saoPass.params, 'output', {
         'Beauty'    : SAOPass.OUTPUT.Beauty,
@@ -89,17 +69,17 @@ const initGUI = (saoPass, bokehPass) => {
     }).onChange(value => {
         saoPass.params.output = parseInt(value);
     });
-    gui.add(bokehParameters, 'focus', 0, 50, 1).onChange(value => {
+    gui.add(Config.bokehParameters, 'focus', 0, 50, 1).onChange(value => {
         bokehPass.uniforms['focus'].value = value;
     });
-    gui.add(bokehParameters, 'aperture', 0, 10, 0.1).onChange(value => {
+    gui.add(Config.bokehParameters, 'aperture', 0, 10, 0.1).onChange(value => {
         bokehPass.uniforms['aperture'].value = value * 0.001;
     });
-    gui.add(bokehParameters, 'maxblur', 0, 0.01, 0.001).onChange(value => {
+    gui.add(Config.bokehParameters, 'maxblur', 0, 0.01, 0.001).onChange(value => {
         bokehPass.uniforms['maxblur'].value = value;
     });
     gui.close(true);
-    gui.add(saoPass.params, 'saoBias', - 1, 1);
+    gui.add(saoPass.params, 'saoBias', -1, 1);
     gui.add(saoPass.params, 'saoIntensity', 0, 1);
     gui.add(saoPass.params, 'saoScale', 0, 10);
     gui.add(saoPass.params, 'saoKernelRadius', 1, 100);
@@ -113,7 +93,7 @@ const initGUI = (saoPass, bokehPass) => {
 const getMouseObject = event => {
     const mouse = new Vector2();
 
-    // calculate mouse position in normalized device coordinates
+    // Calculate mouse position in normalized device coordinates
     // (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
@@ -126,14 +106,14 @@ const createLabel = () => {
     const element = document.createElement('div');
 
     element.className = 'label-card';
-    element.style.opacity = isDev ? '10%' : '0';
+    element.style.opacity = Config.isDev ? '10%' : '0';
     element.innerHTML = `
         <div class='mdc-card'>
             <div id='label-image' class='mdc-card__media mdc-card__media--square'></div>
                 <div class='mdc-card__primary'>
                     <h2 id='label-title' class='mdc-card__title mdc-typography--headline6'></h2>
                     <h3 id='label-subtitle' class='mdc-card__subtitle mdc-typography--subtitle2'></h3>
-                    <div class='mdc-card__secondary mdc-typography--body2'>Click for more info</div>
+                    <div class='mdc-card__secondary mdc-typography--body2'>Click object for more info</div>
                 </div>
         </div>
     `;
@@ -144,7 +124,6 @@ const createLabel = () => {
     const object = new CSS3DObject(element);
     object.position.set(0, 0, 0);
     object.userData = { set: false };
-    // object.applyMatrix4(new Matrix4().makeTranslation(0, 500, 0));
     // element.style.height = '700px';
 
     return {
@@ -153,8 +132,20 @@ const createLabel = () => {
     };
 };
 
-// TODO: enable manually switching day/evening/night as well
-const setNightThemeUI = bool => {
+const getCurrentTimeStatus = () => {
+    const hour = new Date().getHours();
+
+    if (Config.times.DAY.startHour < hour && hour < Config.times.DAY.endHour ) {
+        return { time: 'DAY', hour };
+    } else if (Config.times.NIGHT.startHour < hour && hour < Config.times.NIGHT.endHour ) {
+        return { time: 'NIGHT', hour };
+    } else {
+        return { time: 'TWILIGHT', hour };
+    }
+}
+
+const setDarkThemeUI = bool => {
+    // TODO: add more UI elements for dark mode
     if (document.querySelector('#levels > .mdc-form-field')) {
         if (bool) {
             document.querySelector('#levels > .mdc-form-field').classList.add('night-theme');
@@ -165,9 +156,6 @@ const setNightThemeUI = bool => {
 };
 
 export default {
-    outlinePassParameters,
-    saoParameters,
-    bokehParameters,
     removeLoadingScreen,
     getAnimating,
     setAnimating,
@@ -185,8 +173,11 @@ export default {
     setSaoPass,
     getBokehPass,
     setBokehPass,
-    initGUI,
+    getTimeStatus,
+    setTimeStatus,
+    initThreeGUI,
     getMouseObject,
     createLabel,
-    setNightThemeUI,
+    getCurrentTimeStatus,
+    setDarkThemeUI,
 };

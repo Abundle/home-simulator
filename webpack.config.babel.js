@@ -5,22 +5,20 @@ import FaviconsWebpackPlugin from 'favicons-webpack-plugin';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
+// import ImageMinimizerPlugin from 'image-minimizer-webpack-plugin';
 
 // Name 'webpack.config.babel.js' is for using ES6 in webpack config
-
 export default (env, options) => {
     const devMode = options.mode !== 'production';
 
     return {
-        entry: {
-            main: './src/js/index.js'
-        },
+        entry: './src/js/index.js',
+        target: 'web', // TODO: Check browserlist node support issue https://github.com/webpack/webpack/issues/11660 and https://github.com/webpack/webpack-dev-server/issues/2758
         output: {
             filename: devMode ? '[name].js' : '[name].[chunkhash].js',
             chunkFilename: devMode ? '[name].js' : '[name].[chunkhash].js',
             publicPath: '/',
             path: path.resolve(__dirname, 'build'),
-            // TODO: Check browserlist node support issue https://github.com/webpack/webpack/issues/11660
         },
         module: {
             rules: [
@@ -33,6 +31,7 @@ export default (env, options) => {
                 },
                 {
                     test: /\.scss$/,
+                    exclude: /node_modules/,
                     use: [
                         devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
                         {
@@ -50,9 +49,8 @@ export default (env, options) => {
                         {
                             loader: 'sass-loader',
                             options: { // Configure sass-loader to understand the @material imports used by MDC Web
-                                // Prefer Dart Sass
+                                // Using Dart Sass
                                 implementation: require('sass'),
-
                                 // See https://github.com/webpack-contrib/sass-loader/issues/804
                                 webpackImporter: false,
                                 sassOptions: {
@@ -62,36 +60,42 @@ export default (env, options) => {
                         }
                     ],
                 },
-                {
+                { // Assets
                     test: /\.(jpe?g|png|gif|svg|ico)$/,
+                    exclude: /node_modules/,
                     use: {
                         loader: 'file-loader',
                         options: {
-                            name: devMode ? 'assets/img/[name].[ext]' : 'assets/img/[chunkhash].[ext]',
+                            name: devMode ? '[name].[ext]' : '[contenthash].[ext]',
+                            outputPath: 'assets/img',
                         }
-                    }
+                    },
                 },
-                {
+                { // Models
                     test: /\.(obj|gltf|glb|drc|bin)$/,
+                    exclude: /node_modules/,
                     use: {
                         loader: 'file-loader',
                         options: {
-                            name: devMode ? 'assets/[name].[ext]' : 'assets/[chunkhash].[ext]',
+                            name: devMode ? '[name].[ext]' : '[contenthash].[ext]',
+                            outputPath: 'assets',
                         }
                     }
-                },
+                }
             ]
         },
         performance: {
-            hints: 'warning'
+            hints: 'warning',
         },
-        stats: devMode ? 'minimal' : 'none',
+        stats: 'minimal',
         devServer: {
             open: true,
             overlay: true,
         },
-        devtool: devMode ? 'eval-source-map' : false,
+        // To work with TerserPlugin: https://github.com/webpack-contrib/terser-webpack-plugin#note-about-source-maps
+        devtool: devMode ? 'eval-source-map' : 'source-map',
         optimization: {
+            minimize: true,
             minimizer: [
                 new TerserPlugin({
                     terserOptions: {
@@ -102,21 +106,19 @@ export default (env, options) => {
                     extractComments: !devMode,
                 }),
             ],
-            // Inspiration from:
-            // - https://medium.com/hackernoon/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
-            // - https://medium.com/@Yoriiis/the-real-power-of-webpack-4-splitchunks-plugin-fad097c45ba0
-            // - https://stackoverflow.com/questions/48985780/webpack-4-create-vendor-chunk
             splitChunks: {
                 chunks: 'all',
                 minSize: 0,
                 cacheGroups: {
-                    vendor: {
-                        test: /[\\/]node_modules[\\/](!three)[\\/]/,
-                        name: false,
+                    vendors: {
+                        test: /[\\/]node_modules[\\/]((?!(three)).*)[\\/]/,
+                        name: 'vendors',
+                        chunks: 'all',
                     },
-                    three_vendor: {
+                    threeVendor: {
                         test: /[\\/]node_modules[\\/](three)[\\/]/,
-                        name: false,
+                        name: 'three_vendor',
+                        chunks: 'all',
                     },
                 }
             },
@@ -126,7 +128,9 @@ export default (env, options) => {
         },
         plugins: [
             new CleanWebpackPlugin(),
-            new HtmlWebpackPlugin({ // HtmlWebpackPlugin must go before FaviconsWebpackPlugin
+            // From https://github.com/jantimon/favicons-webpack-plugin#html-injection
+            // HtmlWebpackPlugin must go before FaviconsWebpackPlugin
+            new HtmlWebpackPlugin({
                 title: 'Sandbox',
                 template: './src/index.html',
                 minify: {
@@ -136,8 +140,14 @@ export default (env, options) => {
                 meta: { // HTML meta tags
                     charset: 'UTF-8',
                     author: process.env.npm_package_author_name,
-                    'theme-color': '#f15b27',
-                    viewport: 'width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0'
+                    viewport: 'width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0',
+                }
+            }),
+            // TODO: building with Favicons plugin does not work yet, see: https://github.com/jantimon/favicons-webpack-plugin/issues/234
+            new FaviconsWebpackPlugin({
+                logo: './logo.png',
+                favicons: { // Add theme color here since this plugin injects this meta-tag already
+                    theme_color: '#f15b27',
                 }
             }),
             new MiniCssExtractPlugin({
@@ -151,7 +161,14 @@ export default (env, options) => {
                     { from: '.htaccess' },
                 ]
             }),
-            new FaviconsWebpackPlugin()
+            // TODO: use for images? https://github.com/webpack-contrib/image-minimizer-webpack-plugin
+            /*new ImageMinimizerPlugin({
+                minimizerOptions: {
+                    plugins: [
+                        ['gifsicle', { interlaced: true, optimizationLevel: 3 }],
+                    ],
+                },
+            }),*/
         ]
     };
 };

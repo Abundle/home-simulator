@@ -4,6 +4,8 @@ space and create your own space? It would be nice to store all these thoughts in
 
 This is my 3D mood board.
 
+[comment]: <> (TODO: add explanation on how to configure/name the blender model items)
+
 ## Tools
 Including but not limited to:
 - [Three.js](https://github.com/mrdoob/three.js/)
