@@ -57,7 +57,7 @@
         "@material/theme": "^8.0.0",
         "@material/typography": "^8.0.0",
         "core-js": "^3.7.0",
-        "gsap": "^3.5.1",
+        "gsap": "^3.6.0",
         "normalize.css": "^8.0.1",
         "three": "^0.122.0"
     },
