@@ -1,4 +1,4 @@
-import { gsap, Power4, ScrollToPlugin } from 'gsap/all';
+import { gsap, ScrollToPlugin } from 'gsap/all';
 import { MDCDrawer } from '@material/drawer';
 
 const drawer = MDCDrawer.attachTo(document.querySelector('.mdc-drawer'));
@@ -36,7 +36,7 @@ const animateContainer = offset => {
     gsap.to(container, {
         duration: 1,
         delay: 0.2,
-        ease: Power4.easeInOut,
+        ease: "power4.inOut",
         scrollTo: offset - 12,
     });
 };

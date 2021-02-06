@@ -50,8 +50,8 @@ const setSaoPass = pass => { SAO = pass; };
 const getBokehPass = () => { return BOKEH; };
 const setBokehPass = pass => { BOKEH = pass; };
 
-const getTimeStatus = () => { return TIME; };
-const setTimeStatus = time => { TIME = time; };
+/*const getTimeStatus = () => { return TIME; };
+const setTimeStatus = time => { TIME = time; };*/
 
 const initThreeGUI = (saoPass, bokehPass) => {
     const gui = new GUI();
@@ -132,7 +132,7 @@ const createLabel = () => {
     };
 };
 
-const getCurrentTimeStatus = () => {
+/*const getCurrentTimeStatus = () => {
     const hour = new Date().getHours();
 
     if (Config.times.DAY.startHour < hour && hour < Config.times.DAY.endHour ) {
@@ -142,7 +142,7 @@ const getCurrentTimeStatus = () => {
     } else {
         return { time: 'TWILIGHT', hour };
     }
-}
+}*/
 
 const setDarkThemeUI = bool => {
     // TODO: add more UI elements for dark mode
@@ -154,6 +154,35 @@ const setDarkThemeUI = bool => {
         }
     }
 };
+
+const shortestAngleDistance = (start, end) => {
+    // From https://stackoverflow.com/questions/2708476/rotation-interpolation
+    // And https://gamedev.stackexchange.com/questions/46552/360-degree-rotation-skips-back-to-0-degrees-when-using-math-atan2y-x
+    const shortestAngle = ((((end - start) % 360) + 540) % 360) - 180;
+    // Cap rotational 'speed'
+    return Math.min(10, shortestAngle);
+}
+const lerpAngle = (start, end, alpha) => start + alpha * shortestAngleDistance(start, end);
+
+const angleToTime = angle => {
+    // Map from angles to time
+    const h = Math.floor((angle % 720) * (1 / 30));
+    const m = (angle % 30) * 2;
+    // Correct negative numbers
+    const hours = h < 0 ? 24 + h : h;
+    const minutes = m < 0 ? 60 + m : m;
+    return { hours, minutes };
+}
+
+const timeToAngle = (hours, minutes) => (hours % 24) * 30 + (minutes * 0.5);
+
+const formatTime = (h, m) => {
+    // Pad zeros to single digits
+    const hours = padSingleDigit(h);
+    const minutes = padSingleDigit(m);
+    return `${ hours }:${ minutes }`;
+};
+const padSingleDigit = n => n < 10 ? n.toString().padStart(2, '0') : n;
 
 export default {
     removeLoadingScreen,
@@ -173,11 +202,16 @@ export default {
     setSaoPass,
     getBokehPass,
     setBokehPass,
-    getTimeStatus,
-    setTimeStatus,
+    // getTimeStatus,
+    // setTimeStatus,
     initThreeGUI,
     getMouseObject,
     createLabel,
-    getCurrentTimeStatus,
+    // getCurrentTimeStatus,
     setDarkThemeUI,
+    lerpAngle,
+    angleToTime,
+    timeToAngle,
+    formatTime,
+    padSingleDigit,
 };

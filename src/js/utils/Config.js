@@ -207,7 +207,7 @@ const contents = {
 };
 
 // TODO: get sunrise and sunset times from an API
-const sunrise = 8;
+/*const sunrise = 8;
 const sunset = 18;
 const times = {
     DAY: {
@@ -228,7 +228,7 @@ const times = {
         startHour: sunset + 1,
         endHour: sunrise - 1,
     }
-};
+};*/
 
 const outlinePassParameters = {
     edgeStrength: 3,
@@ -264,7 +264,7 @@ export default {
     levels,
     controls,
     contents,
-    times,
+    // times,
     outlinePassParameters,
     saoParameters,
     bokehParameters,

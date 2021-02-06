@@ -1,24 +1,10 @@
 import Config from './utils/Config';
 
-// TODO: add circular control + reset button
+// TODO: add reset to current time button
 const TimeToggle = `
-    <div class='time-toggle'>
-        <label for='radio-day' id='label-day'>
-            <i class='material-icons mdc-button__icon' aria-hidden='true'>wb_sunny</i>
-        </label>
-        <input type='radio' value='day' name='radio-time-toggle' id='radio-day'>
-        
-        <label for='radio-twilight' id='label-twilight'>
-            <i class='material-icons mdc-button__icon' aria-hidden='true'>wb_twilight</i>
-        </label>
-        <input type='radio' value='twilight' name='radio-time-toggle' id='radio-twilight'>
-        
-        <label for='radio-night' id='label-night'>
-            <i class='material-icons mdc-button__icon' aria-hidden='true'>nights_stay</i>
-        </label>
-        <input type='radio' value='night' name='radio-time-toggle' id='radio-night'>
-        
-        <div class='toggle'></div>
+    <div class='circle-range'>
+        <div class='info'></div>
+        <div class='slider'></div>
     </div>
 `;
 

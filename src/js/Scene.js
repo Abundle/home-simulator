@@ -34,7 +34,7 @@ import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectio
 
 import { WEBGL } from 'three/examples/jsm/WebGL.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { gsap, Expo } from 'gsap/all';
+import { gsap } from 'gsap/all';
 
 // Local import
 import Categories from './Categories';
@@ -47,6 +47,7 @@ import Config from './utils/Config.js';
 //  + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
 
 // Inspiration:
+// By Bruno Simons: https://threejs-journey.xyz/
 // House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
 // LittlestTokyo https://threejs.org/examples/#webgl_animation_keyframes
 // French website https://voyage-electrique.rte-france.com/
@@ -238,7 +239,7 @@ const init = () => {
     });
 
     /* Set lights */
-    updateSunLight(SceneUtils.getCurrentTimeStatus());
+    // updateSunLight(SceneUtils.getCurrentTimeStatus());
     /* Postprocessing */
     initPostprocessing();
     /* Performance monitor */
@@ -295,16 +296,12 @@ const initPostprocessing = () => {
 const start = () => {
     animate();
     resetCamera();
-    /*setInterval(() => {
-        updateSunLight(SceneUtils.getTimeStatus());
-    }, 60 * 1000);*/
 };
 
 const animate = () => {
     requestAnimationFrame(animate);
 
-    // TODO: add faster moving sunlight setting
-    Config.isDev && updateSunLight(SceneUtils.getTimeStatus());
+    // Config.isDev && updateSunLight(SceneUtils.getTimeStatus());
 
     if (label.object.userData.set) {
         label.object.quaternion.set(0, 0, 0, 0);
@@ -412,8 +409,6 @@ const changeLightColors = (transitionAlpha, colors) => {
     hemisphereLight.groundColor.lerp(colors[3], Math.min(1, transitionAlpha));
 };
 
-// TODO: automatic updating of the sunlight when the tab is open happens when the button is set to the current time
-//  status again. So if it's day, but manually set to night and back to day again it starts to update automatically again?
 // TODO: add moonlight as well
 let hour = 12;
 let dayAlpha = 1;
@@ -433,7 +428,7 @@ const updateSunLight = ({ time, hour }) => {
     }*/
 
     // Initial time (00:00) is a quarter turn counterclockwise
-    const timeToRadians = -Math.PI / 2 + hour * (2 * Math.PI / 24);
+    const timeToRadians = -Math.PI / 2 + hour * ((2 * Math.PI) / 24);
     const radius = 50; // Distance between sun and model
     const nSin = radius * Math.sin(timeToRadians);
     const nCos = radius * Math.cos(timeToRadians);
@@ -540,7 +535,7 @@ const animateCamera = (
     targetPosition,
     targetZoom = 1,
     duration = 1.5,
-    easing= Expo.easeInOut,
+    easing= "expo.inOut",
     _openDrawer = false) => {
     gsap.to(camera.position, {
         duration: duration,
@@ -568,14 +563,14 @@ const animateCamera = (
     gsap.to(camera, {
         duration: duration,
         zoom: targetZoom,
-        ease: Expo.easeInOut,
+        ease: "expo.inOut",
         /*onUpdate: () => {
             camera.updateProjectionMatrix();
         },*/
     });
 };
 
-const animateLookAt = (lookAt, duration = lookAtAnimationDuration, easing = Expo.easeInOut) => {
+const animateLookAt = (lookAt, duration = lookAtAnimationDuration, easing = "expo.inOut") => {
     gsap.to(controls.target, {
         duration: duration,
         x: lookAt.x,
@@ -683,7 +678,7 @@ const resetCamera = () => {
     const pos = { x: -100, y: 150, z: 250 };
 
     // Reset camera to initial state
-    animateCamera(pos, 1, undefined, Expo.easeInOut);
+    animateCamera(pos, 1, undefined, "expo.inOut");
     animateLookAt({ x: 0, y: 0, z: 0 });
 };
 

@@ -4,10 +4,12 @@ import { MDCRadio } from '@material/radio';
 import { MDCList } from '@material/list';
 import { MDCCheckbox } from '@material/checkbox';
 
+import { gsap } from 'gsap/all';
+
 // Local import
 import Scene from './Scene';
 import Categories from './Categories';
-import SceneUtils from './utils/Utils';
+import Utils from './utils/Utils';
 import Config from './utils/Config';
 import Cards from './Cards';
 import Levels from './Levels';
@@ -151,7 +153,73 @@ const initControls = content => {
     });
 
     // Set UI, scene and controls to current time
-    const currentTimeStatus = SceneUtils.getCurrentTimeStatus();
+    const circleRangeElement = document.querySelector('.circle-range');
+    const slider = document.querySelector('.slider');
+    const info = document.querySelector('.info');
+    const box = circleRangeElement.getBoundingClientRect();
+
+    const centerX = (circleRangeElement.offsetWidth / 2) + box.left;
+    const centerY = (circleRangeElement.offsetHeight / 2) + box.top;
+
+    const date = new Date();
+    const currentHour = date.getHours();
+    const currentMinutes = date.getMinutes();
+
+    let isDragging = false;
+    let resultAngle = 0;
+
+    slider.style.transform = `rotate(${ Utils.timeToAngle(currentHour, currentMinutes) }deg)`;
+    slider.style.setProperty('--time-bg-color', '#6691fa');
+    info.textContent = Utils.formatTime(currentHour, currentMinutes);
+
+    window.addEventListener('mouseup',() => {
+        isDragging = false;
+        document.body.style.cursor = 'auto';
+    });
+    slider.addEventListener('mousedown',() => {
+        isDragging = true;
+        document.body.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove',event => {
+        if (isDragging) {
+            const posX = event.pageX;
+            const posY = event.pageY;
+
+            const deltaX = centerX - posX;
+            const deltaY = centerY - posY;
+
+            // Radians to degrees and rotate counterclockwise
+            const endAngleAtan2 = Math.atan2(deltaY, deltaX) * (180 / Math.PI) - 90;
+            // Map from [-180,180] to [0,360]
+            const endAngle = (endAngleAtan2 + 360) % 360;
+            // Start from last angle
+            const startAngle = resultAngle;
+            resultAngle = Utils.lerpAngle(startAngle, endAngle, 1);
+
+            /*let endAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI) - 90;
+            endAngle = (endAngle + 360) % 360; // Map from [-180,180] to [0,360]
+            let startAngle = resultAngle % 360;
+
+            let shortestAngle = ((((endAngle - startAngle) % 360) + 540) % 360) - 180;
+            resultAngle = startAngle + shortestAngle * 0.01;*/
+
+            gsap.to(slider, {
+                rotation: resultAngle.toFixed(2),
+                duration: 2,
+                onUpdate: () => {
+                    const currentRotation = Math.round(gsap.getProperty(slider, 'rotation'));
+                    const { hours, minutes } = Utils.angleToTime(currentRotation);
+                    info.textContent = Utils.formatTime(hours, minutes);
+                    slider.style.setProperty('--time-bg-color', '#f15b27');
+                },
+                onComplete: () => {
+                    slider.style.setProperty('--time-bg-color', '#6691fa');
+                },
+            });
+        }
+    });
+
+    /*const currentTimeStatus = SceneUtils.getCurrentTimeStatus();
     const timeElement = document.querySelector(`#radio-${ currentTimeStatus.time.toLowerCase() }`);
 
     timeElement.checked = true;
@@ -164,7 +232,7 @@ const initControls = content => {
         SceneUtils.setDarkThemeUI(Config.times[time].darkTheme);
         Scene.updateSunLight({ time: time, hour: Config.times[time].startHour });
         console.log('Time manually set:', time)
-    });
+    });*/
 };
 
 initCategoryList(Config.contents);

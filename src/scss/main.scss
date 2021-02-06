@@ -49,6 +49,8 @@ html, body {
     font-size: 16px;
     overflow: hidden;
     background-color: lightblue;
+    user-select: none;
+    //box-sizing: border-box;
 }
 
 a {
