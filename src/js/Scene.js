@@ -38,7 +38,7 @@ import { gsap } from 'gsap/all';
 
 // Local import
 import Categories from './Categories';
-import SceneUtils from './utils/Utils';
+import Utils from './utils/Utils';
 import modelName from '../assets/house.glb';
 import Config from './utils/Config.js';
 
@@ -74,7 +74,7 @@ const stats         = new Stats();
 const screenWidth   = window.innerWidth;
 const screenHeight  = window.innerHeight;
 const aspect        = screenWidth / screenHeight;
-// TODO: put lots of this stuff below into Config.js file
+
 const camera        = new PerspectiveCamera(
     5,
     aspect,
@@ -85,10 +85,10 @@ const controls    = new OrbitControls(camera, labelRenderer.domElement);
 const composer    = new EffectComposer(renderer);
 const outlinePass = new OutlinePass(new Vector2(screenWidth, screenHeight), scene, camera);
 const effectFXAA  = new ShaderPass(FXAAShader);
-const label       = SceneUtils.createLabel();
+const label       = Utils.createLabel();
 const nrOfLevels  = Config.levels.length;
 
-const panViewDistance         = 200; // TODO: make dependent on mdc-drawer width = 400px
+const panViewDistance         = 200; // half of the <aside> element width
 const labelScale              = 200;
 const labelToCameraRatio      = 75;
 const lookAtAnimationDuration = 1.5;
@@ -106,9 +106,9 @@ const nightLightColor         = new Color(0x000112);
 const nightLightColorAmbient  = new Color(0xdefff9);
 const nightLightColorHemiSky  = new Color(0x0d103d);
 
-const directionalLight = new DirectionalLight(0xFFFFFF);
-const ambientLight     = new AmbientLight(0xFFFFFF);
-const hemisphereLight  = new HemisphereLight(0xFFFFFF, 0xFFFFFF, 0.3);
+const directionalLight = new DirectionalLight(0xffffff);
+const ambientLight     = new AmbientLight(0xffffff);
+const hemisphereLight  = new HemisphereLight(0xffffff, 0xffffff, 0.3);
 const pointLights      = {
     'hallway': { object: new PointLight(0xfff1e0, 1, 5), position: new Vector3(-6, 5, 0) },
     'kitchen': { object: new PointLight(0xffffff, 1, 5), position: new Vector3(-3, 5, -0.75) },
@@ -200,7 +200,7 @@ const init = () => {
     loader.setDRACOLoader(dracoLoader);
 
     loader.load(modelName, gltf => {
-        SceneUtils.removeLoadingScreen();
+        Utils.removeLoadingScreen();
 
         const model = gltf.scene;
 
@@ -239,7 +239,7 @@ const init = () => {
     });
 
     /* Set lights */
-    // updateSunLight(SceneUtils.getCurrentTimeStatus());
+    // updateSunLight(Utils.getCurrentTimeStatus());
     /* Postprocessing */
     initPostprocessing();
     /* Performance monitor */
@@ -276,7 +276,7 @@ const initPostprocessing = () => {
 
     const saoPass = new SAOPass(scene, camera, false, true);
     saoPass.params = Config.saoParameters;
-    SceneUtils.setSaoPass(saoPass);
+    Utils.setSaoPass(saoPass);
     composer.addPass(saoPass);
 
     effectFXAA.uniforms['resolution'].value.set(1 / screenWidth, 1 / screenHeight);
@@ -286,10 +286,10 @@ const initPostprocessing = () => {
     composer.addPass(gammaCorrection);
 
     const bokehPass = new BokehPass(scene, camera, Config.bokehParameters);
-    SceneUtils.setBokehPass(bokehPass);
+    Utils.setBokehPass(bokehPass);
     composer.addPass(bokehPass);
 
-    Config.isDev && SceneUtils.initThreeGUI(saoPass, bokehPass);
+    Config.isDev && Utils.initThreeGUI(saoPass, bokehPass);
 };
 
 // Three.js functions setup based on https://github.com/dirkk0/threejs_daynight/blob/master/index.html
@@ -301,7 +301,7 @@ const start = () => {
 const animate = () => {
     requestAnimationFrame(animate);
 
-    // Config.isDev && updateSunLight(SceneUtils.getTimeStatus());
+    // Config.isDev && updateSunLight(Utils.getTimeStatus());
 
     if (label.object.userData.set) {
         label.object.quaternion.set(0, 0, 0, 0);
@@ -317,14 +317,14 @@ const animate = () => {
 
     // Required if controls.enableDamping or controls.autoRotate are set to true
     controls.update();
-    controls.enabled = !SceneUtils.getAnimating(); // temporarily disable controls when camera is animating
+    controls.enabled = !Utils.getAnimating(); // temporarily disable controls when camera is animating
 
-    SceneUtils.getPerformanceMonitor() && stats.begin();
+    Utils.getPerformanceMonitor() && stats.begin();
 
     composer.render();
     labelRenderer.render(labelScene, camera);
 
-    SceneUtils.getPerformanceMonitor() && stats.end();
+    Utils.getPerformanceMonitor() && stats.end();
 };
 
 const resizeCanvas = () => {
@@ -346,7 +346,7 @@ const resizeCanvas = () => {
 
 const getIntersects = (event, raycaster) => {
     // Update the picking ray with the camera and mouse position
-    raycaster.setFromCamera(SceneUtils.getMouseObject(event), camera);
+    raycaster.setFromCamera(Utils.getMouseObject(event), camera);
 
     // Calculate objects intersecting the picking ray
     return raycaster.intersectObjects(scene.children, true);
@@ -357,9 +357,9 @@ const onMouseMove = event => {
 
     if (intersects.length > 0) {
         const hoveredObject = intersects[0].object;
-        SceneUtils.setSelectable(hoveredObject.name.indexOf('S_') !== -1); // TODO: change check to clickedObject.name.charAt(0) === 'S' && clickedObject.name.charAt(1) === '_'
+        Utils.setSelectable(hoveredObject.name.indexOf('S_') !== -1); // TODO: change check to clickedObject.name.charAt(0) === 'S' && clickedObject.name.charAt(1) === '_'
 
-        if (SceneUtils.getSelectable()) {
+        if (Utils.getSelectable()) {
             hoverObject(hoveredObject);
             outlinePass.selectedObjects = [hoveredObject];
             document.body.style.cursor = 'pointer';
@@ -373,24 +373,24 @@ const onMouseMove = event => {
 const onClick = event => {
     const intersects = getIntersects(event, raycaster);
 
-    if (SceneUtils.getFocus()) {
+    if (Utils.getFocus()) {
         // If an object is in focus, and there is a click in the scene, we exit the object's focus
         resetCamera();
         resetSelected();
     } else {
         if (intersects.length > 0) {
             // If an object can be selected, the name of the mesh will begin with an 'S_', so selectable will be true
-            SceneUtils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
+            Utils.setSelectable(intersects[0].object.name.indexOf('S_') !== -1);
 
-            if (SceneUtils.getIntersected() !== intersects[0].object && SceneUtils.getSelectable()) {
+            if (Utils.getIntersected() !== intersects[0].object && Utils.getSelectable()) {
                 /*if (INTERSECTED) {
                     INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
                 }*/
-                SceneUtils.setIntersected(intersects[0].object);
+                Utils.setIntersected(intersects[0].object);
                 // INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
                 // INTERSECTED.material.color.setHex(0xff0000);
 
-                selectObject(SceneUtils.getIntersected());
+                selectObject(Utils.getIntersected());
                 removeLabel(label);
                 document.body.style.cursor = 'default';
             } else { // Non-selectable object was clicked
@@ -402,6 +402,7 @@ const onClick = event => {
     }
 };
 
+// TODO: rewrite function arguments
 const changeLightColors = (transitionAlpha, colors) => {
     scene.background.lerp(colors[0], Math.min(1, transitionAlpha));
     ambientLight.color.lerp(colors[1], Math.min(1, transitionAlpha));
@@ -415,7 +416,7 @@ let dayAlpha = 1;
 let twilightAlpha = 1;
 let nightAlpha = 1;
 const dt = 0.01;
-const updateSunLight = ({ time, hour }) => {
+const updateSunLight = () => {
     /* Simulate day- and nightlight
     Inspired by https://github.com/dirkk0/threejs_daynight */
     /*if (Config.isDev) {
@@ -426,57 +427,21 @@ const updateSunLight = ({ time, hour }) => {
     } else {
         hour = new Date().getHours();
     }*/
+    const { _, rotation } = Utils.getTime();
+    const rotationRadians = -Math.PI / 2 + rotation * (Math.PI / 180) * 0.5;
 
     // Initial time (00:00) is a quarter turn counterclockwise
-    const timeToRadians = -Math.PI / 2 + hour * ((2 * Math.PI) / 24);
+    // const timeToRadians = -Math.PI / 2 + hour * ((2 * Math.PI) / 24);
     const radius = 50; // Distance between sun and model
-    const nSin = radius * Math.sin(timeToRadians);
-    const nCos = radius * Math.cos(timeToRadians);
+    const nSin = radius * Math.sin(rotationRadians);
+    const nCos = radius * Math.cos(rotationRadians);
     const f = Math.max(0, nSin / 50); // Intensity from 0 to 1
 
     directionalLight.position.set(nCos, nSin, nSin);
     directionalLight.intensity = f;
     ambientLight.intensity = f;
 
-    console.log('Scene time:', time, hour)
-
-    switch (time) {
-        case 'TWILIGHT':
-            dayAlpha = 0;
-            twilightAlpha += dt * 0.1; // TODO: start animation
-
-            changeLightColors(
-                twilightAlpha,
-                [twilightColor, twilightColor, twilightColorHemiSky, twilightColorHemiGround]
-            );
-
-            setPointLights(true);
-            break;
-        case 'NIGHT':
-            twilightAlpha = 0;
-            nightAlpha += dt * 0.1;
-
-            changeLightColors(
-                nightAlpha,
-                [nightLightColor, nightLightColorAmbient, nightLightColorHemiSky, nightLightColor]
-            );
-
-            setPointLights(true);
-            break;
-        default: // Day
-            twilightAlpha = 0;
-            nightAlpha = 0;
-            dayAlpha += dt * 0.1; // Color transition speed
-
-            changeLightColors(
-                dayAlpha,
-                [dayLightColor, dayLightColorAmbient, dayLightColorHemiSky, dayLightColorHemiGround]
-            );
-
-            setPointLights(false);
-    }
-
-    /*if (nSin >= 15) { // Day
+    if (15 <= nSin) { // Day
         twilightAlpha = 0;
         nightAlpha = 0;
         dayAlpha += dt * 0.1; // Color transition speed
@@ -487,7 +452,9 @@ const updateSunLight = ({ time, hour }) => {
         );
 
         setPointLights(false);
-    } else if (nSin < 15 && nSin > 0) { // Twilight
+
+        Utils.setNightThemeUI(false);
+    } else if (0 < nSin && nSin < 15) { // Twilight
         dayAlpha = 0;
         twilightAlpha += dt * 0.1;
 
@@ -497,6 +464,8 @@ const updateSunLight = ({ time, hour }) => {
         );
 
         setPointLights(true);
+
+        Utils.setNightThemeUI(false);
     } else { // Night
         twilightAlpha = 0;
         nightAlpha += dt * 0.1;
@@ -507,7 +476,9 @@ const updateSunLight = ({ time, hour }) => {
         );
 
         setPointLights(true);
-    }*/
+
+        Utils.setNightThemeUI(true);
+    }
 };
 
 const setPointLights = bool => {
@@ -544,13 +515,13 @@ const animateCamera = (
         z: targetPosition.z,
         ease: easing,
         onStart: () => {
-            SceneUtils.setAnimating(true);
+            Utils.setAnimating(true);
 
             container.removeEventListener('mousemove', onMouseMove);
             container.removeEventListener('click', onClick);
         },
         onComplete: () => {
-            SceneUtils.setAnimating(false);
+            Utils.setAnimating(false);
 
             container.addEventListener('mousemove', onMouseMove);
             container.addEventListener('click', onClick);
@@ -578,10 +549,10 @@ const animateLookAt = (lookAt, duration = lookAtAnimationDuration, easing = "exp
         z: lookAt.z,
         ease: easing,
         onStart: () => {
-            SceneUtils.setAnimating(true);
+            Utils.setAnimating(true);
         },
         onComplete: () => {
-            SceneUtils.setAnimating(false);
+            Utils.setAnimating(false);
         }
     });
 };
@@ -603,10 +574,10 @@ const selectObject = object => {
     const level          = material.name.charAt(0);
     const objectSize     = geometry.boundingSphere.radius;
     const objectPosition = position;
-    const zoom           = 1; // TODO: retrieve from Config.contents?
+    const zoom           = 1;
     const objectContent  = Config.contents[category].content.find(object => object.id === parseInt(id));
 
-    SceneUtils.setSelectedObject(object);
+    Utils.setSelectedObject(object);
 
     animateCamera({
         x: objectPosition.x + objectSize + objectContent.camera.position_offset.x,
@@ -686,35 +657,35 @@ const resetSelected = () => {
     /*if (INTERSECTED) {
         INTERSECTED.material.color.setHex(INTERSECTED.currentHex);
     }*/
-    SceneUtils.setIntersected(null);
+    Utils.setIntersected(null);
 
     closeDrawer();
     removeLabel(label);
-    SceneUtils.setSelectedObject(null);
+    Utils.setSelectedObject(null);
 };
 
 const openDrawer = () => {
     panView(true);
     Categories.setDrawerState(true);
-    SceneUtils.setFocus(Categories.getDrawerState() && SceneUtils.getSelectedObject() !== null);
+    Utils.setFocus(Categories.getDrawerState() && Utils.getSelectedObject() !== null);
 
     // When drawer is opened, disable label hovering & outline and some of the OrbitControls
     controls.enablePan = false;
     controls.enableZoom = false;
 
-    !SceneUtils.getFocus() && removeLabel(label);
+    !Utils.getFocus() && removeLabel(label);
 
     container.removeEventListener('mousemove', onMouseMove);
 
     // Set blur effect to focus on side panel
-    SceneUtils.getFocus() ? showBlur({ focus: 27, aperture: 0.003 })
+    Utils.getFocus() ? showBlur({ focus: 27, aperture: 0.003 })
         : showBlur({ focus: 0, aperture: 10 });
 };
 
 const closeDrawer = () => {
     panView(false);
     Categories.setDrawerState(false);
-    SceneUtils.setFocus(false);
+    Utils.setFocus(false);
 
     controls.enablePan = true;
     controls.enableZoom = true;
@@ -729,18 +700,18 @@ const toggleDrawer = () => {
 };
 
 const showSAO = bool => {
-    SceneUtils.getSaoPass().params.output = bool ? 0 : 1; // 0 = SAO and 1 = Beauty
+    Utils.getSaoPass().params.output = bool ? 0 : 1; // 0 = SAO and 1 = Beauty
 };
 
 const showBlur = (values = { focus: 0, aperture: 0 }) => {
     Object.entries(values).map(([key, value]) => {
-        SceneUtils.getBokehPass().uniforms[key].value = value;
+        Utils.getBokehPass().uniforms[key].value = value;
     });
 };
 
 const showPerformanceMonitor = bool => {
     stats.dom.style.display = bool ? 'block' : 'none';
-    SceneUtils.setPerformanceMonitor(bool);
+    Utils.setPerformanceMonitor(bool);
 };
 
 const castShadows = bool => {

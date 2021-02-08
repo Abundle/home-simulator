@@ -230,6 +230,12 @@ const times = {
     }
 };*/
 
+const cameraViews = {
+    front: { x: 0, y: 150, z: 300 },
+    top: { x: 0, y: 300, z: 1 },
+    back: { x: 0, y: 150, z: -300 },
+}
+
 const outlinePassParameters = {
     edgeStrength: 3,
     edgeGlow: 0.0,
@@ -258,14 +264,21 @@ const bokehParameters = {
     maxblur: 0.01
 };
 
+const timeHandle = {
+    cssVar: '--time-bg-color',
+    activeColor: '#f15b27',
+    inActiveColor: '#6691fa',
+};
+
 export default {
     isDev,
     isMobile,
     levels,
     controls,
     contents,
-    // times,
+    cameraViews,
     outlinePassParameters,
     saoParameters,
     bokehParameters,
+    timeHandle,
 };

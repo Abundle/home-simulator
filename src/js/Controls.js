@@ -1,9 +1,8 @@
 import Config from './utils/Config';
 
-// TODO: add reset to current time button
 const TimeToggle = `
     <div class='circle-range'>
-        <div class='info'></div>
+        <div class='time'></div>
         <div class='slider'></div>
     </div>
 `;

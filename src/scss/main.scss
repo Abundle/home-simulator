@@ -22,8 +22,8 @@
 );
 
 @use '@material/typography/mdc-typography';
-@use '@material/button';
-@use '@material/radio/radio';
+@use '@material/button/button';
+@use '@material/radio/styles';
 @use '@material/radio/radio-theme';
 @use '@material/form-field';
 @use '@material/checkbox';
@@ -34,7 +34,6 @@
 @use '@material/animation';
 
 @include button.core-styles;
-@include radio.core-styles;
 @include form-field.core-styles;
 @include checkbox.core-styles;
 @include drawer.core-styles;
@@ -79,9 +78,24 @@ a {
     #some-element { display: none; }
 }*/
 
+.day-theme {
+    &-controls {
+        background-color: white;
+    }
+}
 .night-theme {
-    color: white;
-    @include radio-theme.unchecked-stroke-color(white);
+    &-controls {
+        background-color: #1f1f1f;
+    }
+    &-controls-button {
+        @include list.item-primary-text-ink-color(white);
+        @include list.item-secondary-text-ink-color(white);
+        // @include button.ink-color(white);
+    }
+    &-levels {
+        color: white;
+        @include radio-theme.unchecked-stroke-color(white);
+    }
 }
 
 .loading-container {
@@ -128,7 +142,7 @@ a {
     .controls-container {
         height: 100%;
         padding: 15px 0;
-        background-color: white;
+        transition: background-color 200ms ease;
 
         #controls {
             .button-container {
@@ -144,7 +158,8 @@ a {
         }
     }
 
-    .reset-view-button {
+    // TODO: fix button styles MDC issue
+    /*.reset-view-button {
         @include button.outline-color(purple);
     }
 
@@ -158,7 +173,7 @@ a {
 
     .back-view-button {
         @include button.outline-color(chocolate);
-    }
+    }*/
 }
 
 #levels {
@@ -169,7 +184,6 @@ a {
     bottom: 0;
     width: 100%;
     height: 50px;
-    //background-color: rgba(250, 0, 0, 0.5);
 
     label {
         cursor: pointer;

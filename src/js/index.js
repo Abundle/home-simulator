@@ -14,7 +14,6 @@ import Config from './utils/Config';
 import Cards from './Cards';
 import Levels from './Levels';
 import Controls from './Controls';
-
 // Style import
 import '../scss/main.scss';
 
@@ -113,20 +112,19 @@ const initControls = content => {
     });
 
     document.querySelector('.front-view-button').addEventListener('click', () => {
-        // TODO: retrieve values from Config
-        Scene.animateCamera({ x: 0, y: 150, z: 300 });
+        Scene.animateCamera(Config.cameraViews.front);
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
         Scene.resetSelected();
     });
 
     document.querySelector('.top-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 300, z: 1 });
+        Scene.animateCamera(Config.cameraViews.top);
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
         Scene.resetSelected();
     });
 
     document.querySelector('.back-view-button').addEventListener('click', () => {
-        Scene.animateCamera({ x: 0, y: 150, z: -300 });
+        Scene.animateCamera(Config.cameraViews.back);
         Scene.animateLookAt({ x: 0, y: 0, z: 0 });
         Scene.resetSelected();
     });
@@ -136,7 +134,7 @@ const initControls = content => {
     const liteModeCheckbox = new MDCCheckbox(document.querySelector('.lite-mode-checkbox'));
     const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-monitor-checkbox'));
 
-    liteModeCheckbox.checked = true; //Config.isMobile;
+    liteModeCheckbox.checked = true; // Config.isMobile;
     performanceCheckbox.checked = Config.isDev;
 
     Scene.showSAO(!liteModeCheckbox.checked);
@@ -155,33 +153,58 @@ const initControls = content => {
     // Set UI, scene and controls to current time
     const circleRangeElement = document.querySelector('.circle-range');
     const slider = document.querySelector('.slider');
-    const info = document.querySelector('.info');
+    const timeElement = document.querySelector('.time');
     const box = circleRangeElement.getBoundingClientRect();
 
     const centerX = (circleRangeElement.offsetWidth / 2) + box.left;
     const centerY = (circleRangeElement.offsetHeight / 2) + box.top;
 
     const date = new Date();
-    const currentHour = date.getHours();
-    const currentMinutes = date.getMinutes();
+    const currentTime = { hours: date.getHours(), minutes: date.getMinutes() };
+    const currentAngle = Utils.timeToAngle(currentTime);
 
-    let isDragging = false;
-    let resultAngle = 0;
+    const animateTimeSlider = angle => {
+        gsap.to(slider, {
+            rotation: angle.toFixed(2),
+            duration: 2,
+            onUpdate: () => {
+                const currentRotation = Math.round(gsap.getProperty(slider, 'rotation'));
+                const time = Utils.angleToTime(currentRotation);
 
-    slider.style.transform = `rotate(${ Utils.timeToAngle(currentHour, currentMinutes) }deg)`;
-    slider.style.setProperty('--time-bg-color', '#6691fa');
-    info.textContent = Utils.formatTime(currentHour, currentMinutes);
+                Utils.setTime({ time: time, rotation: currentRotation });
+                Scene.updateSunLight();
+
+                timeElement.textContent = Utils.formatTime(time);
+                slider.style.setProperty(Config.timeHandle.cssVar, Config.timeHandle.activeColor);
+            },
+            onComplete: () => {
+                slider.style.setProperty(Config.timeHandle.cssVar, Config.timeHandle.inActiveColor);
+            },
+        });
+    }
+
+    // Setup initial scene time
+    Utils.setTime({ time: currentTime, rotation: currentAngle });
+    Scene.updateSunLight();
+    Utils.setFinalTimeAngle(currentAngle);
+
+    gsap.to(slider, {
+        rotation: Utils.getFinalTimeAngle().toFixed(2),
+    });
+    // slider.style.transform = `rotate(${ currentAngle }deg)`;
+    timeElement.textContent = Utils.formatTime(currentTime);
+    slider.style.setProperty(Config.timeHandle.cssVar, Config.timeHandle.inActiveColor);
 
     window.addEventListener('mouseup',() => {
-        isDragging = false;
+        Utils.setDragging(false);
         document.body.style.cursor = 'auto';
     });
     slider.addEventListener('mousedown',() => {
-        isDragging = true;
+        Utils.setDragging(true);
         document.body.style.cursor = 'grabbing';
     });
     window.addEventListener('mousemove',event => {
-        if (isDragging) {
+        if (Utils.getDragging()) {
             const posX = event.pageX;
             const posY = event.pageY;
 
@@ -192,47 +215,25 @@ const initControls = content => {
             const endAngleAtan2 = Math.atan2(deltaY, deltaX) * (180 / Math.PI) - 90;
             // Map from [-180,180] to [0,360]
             const endAngle = (endAngleAtan2 + 360) % 360;
-            // Start from last angle
-            const startAngle = resultAngle;
-            resultAngle = Utils.lerpAngle(startAngle, endAngle, 1);
+            // Start from last recorded angle
+            const startAngle = Utils.getFinalTimeAngle();
+            // Note that this angle has no upper nor lower limit. So in theory this could end up becoming a really large
+            // number. This could potentially lead to performance issues, but hey, it's a bit of an edge case.
+            const resultAngle = Utils.lerpAngle(startAngle, endAngle, 0.75);
 
-            /*let endAngle = Math.atan2(deltaY, deltaX) * (180 / Math.PI) - 90;
-            endAngle = (endAngle + 360) % 360; // Map from [-180,180] to [0,360]
-            let startAngle = resultAngle % 360;
-
-            let shortestAngle = ((((endAngle - startAngle) % 360) + 540) % 360) - 180;
-            resultAngle = startAngle + shortestAngle * 0.01;*/
-
-            gsap.to(slider, {
-                rotation: resultAngle.toFixed(2),
-                duration: 2,
-                onUpdate: () => {
-                    const currentRotation = Math.round(gsap.getProperty(slider, 'rotation'));
-                    const { hours, minutes } = Utils.angleToTime(currentRotation);
-                    info.textContent = Utils.formatTime(hours, minutes);
-                    slider.style.setProperty('--time-bg-color', '#f15b27');
-                },
-                onComplete: () => {
-                    slider.style.setProperty('--time-bg-color', '#6691fa');
-                },
-            });
+            animateTimeSlider(resultAngle);
+            /*slider.style.transform = `rotate(${ resultAngle }deg)`;
+            timeElement.textContent = Math.round(resultAngle).toString();*/
+            Utils.setFinalTimeAngle(resultAngle);
         }
     });
+    timeElement.addEventListener('click',() => {
+        // Make it so that the angle difference we're rotating to is within 0-720 range
+        const resultAngle = Math.floor(Utils.getFinalTimeAngle() / 720) * 720 + currentAngle;
 
-    /*const currentTimeStatus = SceneUtils.getCurrentTimeStatus();
-    const timeElement = document.querySelector(`#radio-${ currentTimeStatus.time.toLowerCase() }`);
-
-    timeElement.checked = true;
-    SceneUtils.setTimeStatus(currentTimeStatus);
-    SceneUtils.setDarkThemeUI(Config.times[currentTimeStatus.time].darkTheme);
-
-    document.querySelector('.time-toggle').addEventListener('change', event => {
-        const time = Object.keys(Config.times).find(key => Config.times[key].value === event.target.value);
-        SceneUtils.setTimeStatus({ time, hour: Config.times[time].startHour });
-        SceneUtils.setDarkThemeUI(Config.times[time].darkTheme);
-        Scene.updateSunLight({ time: time, hour: Config.times[time].startHour });
-        console.log('Time manually set:', time)
-    });*/
+        animateTimeSlider(resultAngle);
+        Utils.setFinalTimeAngle(resultAngle);
+    });
 };
 
 initCategoryList(Config.contents);

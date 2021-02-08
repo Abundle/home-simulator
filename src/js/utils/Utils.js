@@ -9,10 +9,14 @@ import Config from './Config';
 let SELECTABLE,         // If an object is clickable
     SHOW,               // Performance monitor visibility
     isAnimating,        // Whether camera is animating
+    isDragging,         // Whether time handle is being dragged
     isFocus = false;    // Whether an object has been clicked
 let INTERSECTED,        // If an object is intersected
     SELECTED,           // If an object is clicked
-    TIME,               // Current moment
+    TIME,               // Current time status (controls lights, light direction, background color, etc.), i.e. time and
+                        // rotation.
+    TIME_ANGLE,         // Last recorded time angle. Different from angle in the TIME object, since this is a value that
+                        // is only set when the time handle animation has finished.
     SAO,
     BOKEH = null;
 
@@ -50,8 +54,14 @@ const setSaoPass = pass => { SAO = pass; };
 const getBokehPass = () => { return BOKEH; };
 const setBokehPass = pass => { BOKEH = pass; };
 
-/*const getTimeStatus = () => { return TIME; };
-const setTimeStatus = time => { TIME = time; };*/
+const getTime = () => { return TIME; };
+const setTime = time => { TIME = time; };
+
+const getFinalTimeAngle = () => { return TIME_ANGLE; };
+const setFinalTimeAngle = timeAngle => { TIME_ANGLE = timeAngle; };
+
+const getDragging = () => { return isDragging; };
+const setDragging = bool => { isDragging = bool; };
 
 const initThreeGUI = (saoPass, bokehPass) => {
     const gui = new GUI();
@@ -144,14 +154,28 @@ const createLabel = () => {
     }
 }*/
 
-const setDarkThemeUI = bool => {
-    // TODO: add more UI elements for dark mode
+const setNightThemeUI = bool => {
     if (document.querySelector('#levels > .mdc-form-field')) {
         if (bool) {
-            document.querySelector('#levels > .mdc-form-field').classList.add('night-theme');
+            document.querySelector('#levels > .mdc-form-field').classList.add('night-theme-levels');
         } else {
-            document.querySelector('#levels > .mdc-form-field').classList.remove('night-theme');
+            document.querySelector('#levels > .mdc-form-field').classList.remove('night-theme-levels');
         }
+    }
+
+    if (document.querySelector('#controls > .mdc-list')) {
+        if (bool) {
+            document.querySelector('#controls > .mdc-list').classList.add('night-theme-controls-button');
+        } else {
+            document.querySelector('#controls > .mdc-list').classList.remove('night-theme-controls-button');
+        }
+    }
+
+    if (bool) {
+        document.querySelector('.controls-container').classList.add('night-theme-controls');
+    } else {
+        document.querySelector('.controls-container').classList.remove('night-theme-controls');
+        document.querySelector('.controls-container').classList.add('day-theme-controls');
     }
 };
 
@@ -159,8 +183,8 @@ const shortestAngleDistance = (start, end) => {
     // From https://stackoverflow.com/questions/2708476/rotation-interpolation
     // And https://gamedev.stackexchange.com/questions/46552/360-degree-rotation-skips-back-to-0-degrees-when-using-math-atan2y-x
     const shortestAngle = ((((end - start) % 360) + 540) % 360) - 180;
-    // Cap rotational 'speed'
-    return Math.min(10, shortestAngle);
+    // Cap rotational 'speed' with a max angle difference
+    return Math.min(7, shortestAngle);
 }
 const lerpAngle = (start, end, alpha) => start + alpha * shortestAngleDistance(start, end);
 
@@ -174,13 +198,13 @@ const angleToTime = angle => {
     return { hours, minutes };
 }
 
-const timeToAngle = (hours, minutes) => (hours % 24) * 30 + (minutes * 0.5);
+const timeToAngle = ({ hours, minutes }) => (hours % 24) * 30 + (minutes * 0.5);
 
-const formatTime = (h, m) => {
+const formatTime = ({ hours, minutes }) => {
     // Pad zeros to single digits
-    const hours = padSingleDigit(h);
-    const minutes = padSingleDigit(m);
-    return `${ hours }:${ minutes }`;
+    const h = padSingleDigit(hours);
+    const m = padSingleDigit(minutes);
+    return `${ h }:${ m }`;
 };
 const padSingleDigit = n => n < 10 ? n.toString().padStart(2, '0') : n;
 
@@ -202,13 +226,16 @@ export default {
     setSaoPass,
     getBokehPass,
     setBokehPass,
-    // getTimeStatus,
-    // setTimeStatus,
+    getTime,
+    setTime,
+    getFinalTimeAngle,
+    setFinalTimeAngle,
+    getDragging,
+    setDragging,
     initThreeGUI,
     getMouseObject,
     createLabel,
-    // getCurrentTimeStatus,
-    setDarkThemeUI,
+    setNightThemeUI,
     lerpAngle,
     angleToTime,
     timeToAngle,

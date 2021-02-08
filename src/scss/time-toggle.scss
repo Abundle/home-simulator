@@ -1,5 +1,5 @@
-// TODO: inspiration from https://codepen.io/St1myL/pen/eQrXRe
-$info-width: 4rem;
+// Inspired from https://codepen.io/St1myL/pen/eQrXRe
+$time-width: 4rem;
 
 .circle-range {
     position: relative;
@@ -10,9 +10,8 @@ $info-width: 4rem;
     box-sizing: border-box;
     border: 4px solid #3e3e60;
     border-radius: 50%;
-    //cursor: pointer;
 
-    .info {
+    .time {
         position: absolute;
         top: 50%;
         left: 50%;
@@ -20,13 +19,19 @@ $info-width: 4rem;
         z-index: 1;
         background-color: #9c4dff;
         border-radius: inherit;
-        width: $info-width;
-        height: $info-width;
+        width: $time-width;
+        height: $time-width;
         text-align: center;
         color: white;
         font-size: initial;
         font-weight: bold;
-        line-height: $info-width;
+        line-height: $time-width;
+        transition: background-color 300ms ease;
+
+        &:hover {
+            cursor: pointer;
+            background-color: #f15b27;
+        }
     }
 
     .slider {
@@ -38,11 +43,7 @@ $info-width: 4rem;
         transform: rotate(0deg);
         transform-origin: center bottom;
         background-color: #9191ff;
-        //opacity: 0.5;
 
-        &:hover {
-            cursor: grab;
-        }
         &::before {
             position: absolute;
             content: '';
@@ -51,6 +52,7 @@ $info-width: 4rem;
             height: 2rem;
             transform: translate(-50%, -50%);
             border-radius: 50%;
+            cursor: grab;
         }
     }
 }

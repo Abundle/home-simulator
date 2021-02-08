@@ -51,8 +51,6 @@ export default (env, options) => {
                             options: { // Configure sass-loader to understand the @material imports used by MDC Web
                                 // Using Dart Sass
                                 implementation: require('sass'),
-                                // See https://github.com/webpack-contrib/sass-loader/issues/804
-                                webpackImporter: false,
                                 sassOptions: {
                                     includePaths: ['./node_modules']
                                 },
@@ -128,26 +126,31 @@ export default (env, options) => {
         },
         plugins: [
             new CleanWebpackPlugin(),
-            // From https://github.com/jantimon/favicons-webpack-plugin#html-injection
             // HtmlWebpackPlugin must go before FaviconsWebpackPlugin
+            // From https://github.com/jantimon/favicons-webpack-plugin#html-injection
             new HtmlWebpackPlugin({
                 title: 'Sandbox',
                 template: './src/index.html',
+                githubLink: 'https://github.com/Abundle/dream-house-simulator',
                 minify: {
                     removeComments: true,
                     collapseWhitespace: false,
                 },
                 meta: { // HTML meta tags
-                    charset: 'UTF-8',
                     author: process.env.npm_package_author_name,
                     viewport: 'width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0',
+                    theme_color: '#f15b27',
                 }
             }),
-            // TODO: building with Favicons plugin does not work yet, see: https://github.com/jantimon/favicons-webpack-plugin/issues/234
             new FaviconsWebpackPlugin({
                 logo: './logo.png',
-                favicons: { // Add theme color here since this plugin injects this meta-tag already
-                    theme_color: '#f15b27',
+                favicons: { // this plugin injects meta-tags from package.json unless they are explicitly set to null
+                    appName: null,
+                    appDescription: null,
+                    developerName: null,
+                    developerURL: null,
+                    background: null,
+                    theme_color: null,
                 }
             }),
             new MiniCssExtractPlugin({
