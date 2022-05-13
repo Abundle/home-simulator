@@ -28,7 +28,7 @@
 @use '@material/form-field';
 @use '@material/checkbox';
 @use '@material/drawer';
-@use '@material/icon-button';
+@use '@material/icon-button/icon-button';
 @use '@material/card';
 @use '@material/list';
 @use '@material/animation';
@@ -40,7 +40,8 @@
 @include drawer.dismissible-core-styles;
 @include icon-button.core-styles;
 @include card.core-styles;
-@include list.core-styles;
+@include list.deprecated-core-styles;
+
 
 html, body {
     margin: 0;
@@ -88,8 +89,8 @@ a {
         background-color: #1f1f1f;
     }
     &-controls-button {
-        @include list.item-primary-text-ink-color(white);
-        @include list.item-secondary-text-ink-color(white);
+        //@include list.item-primary-text-ink-color(white);
+        //@include list.item-secondary-text-ink-color(white);
         // @include button.ink-color(white);
     }
     &-levels {
@@ -196,7 +197,7 @@ a {
     border: none;
 
     .mdc-list {
-        @include list.single-line-shape-radius(50%);
+        //@include list.single-line-shape-radius(50%);
     }
 }
 

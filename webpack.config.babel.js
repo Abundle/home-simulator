@@ -13,12 +13,15 @@ export default (env, options) => {
 
     return {
         entry: './src/js/index.js',
-        target: 'web', // TODO: Check browserlist node support issue https://github.com/webpack/webpack/issues/11660 and https://github.com/webpack/webpack-dev-server/issues/2758
+        // TODO: Check browserlist node support issue 
+        // https://github.com/webpack/webpack/issues/11660 and 
+        // https://github.com/webpack/webpack-dev-server/issues/2758
+        target: 'web',
         output: {
             filename: devMode ? '[name].js' : '[name].[chunkhash].js',
             chunkFilename: devMode ? '[name].js' : '[name].[chunkhash].js',
             publicPath: '/',
-            path: path.resolve(__dirname, 'build'),
+            path: path.resolve(__dirname, 'docs'),
         },
         module: {
             rules: [
@@ -48,7 +51,9 @@ export default (env, options) => {
                         },
                         {
                             loader: 'sass-loader',
-                            options: { // Configure sass-loader to understand the @material imports used by MDC Web
+                            // Configure sass-loader to understand the @material 
+                            // imports used by MDC Web
+                            options: {
                                 // Using Dart Sass
                                 implementation: require('sass'),
                                 sassOptions: {
@@ -58,7 +63,8 @@ export default (env, options) => {
                         }
                     ],
                 },
-                { // Assets
+                { 
+                    // Assets
                     test: /\.(jpe?g|png|gif|svg|ico)$/,
                     exclude: /node_modules/,
                     use: {
@@ -88,7 +94,18 @@ export default (env, options) => {
         stats: 'minimal',
         devServer: {
             open: true,
-            overlay: true,
+            client: {
+                overlay: {
+                    errors: true,
+                    warnings: false,
+                },
+                logging: 'error',
+            },
+            headers: { 
+                // For onProgress event lengthComputable to be true
+                // From https://github.com/mrdoob/three.js/issues/15584
+                'Content-Encoding': 'none'
+            }
         },
         // To work with TerserPlugin: https://github.com/webpack-contrib/terser-webpack-plugin#note-about-source-maps
         devtool: devMode ? 'eval-source-map' : 'source-map',
@@ -131,12 +148,12 @@ export default (env, options) => {
             new HtmlWebpackPlugin({
                 title: 'Sandbox',
                 template: './src/index.html',
-                githubLink: 'https://github.com/Abundle/dream-house-simulator',
+                githubLink: 'https://github.com/Abundle/home-simulator',
                 minify: {
                     removeComments: true,
                     collapseWhitespace: false,
                 },
-                meta: { // HTML meta tags
+                meta: {  // HTML meta tags
                     author: process.env.npm_package_author_name,
                     viewport: 'width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0',
                     theme_color: '#f15b27',
@@ -144,7 +161,7 @@ export default (env, options) => {
             }),
             new FaviconsWebpackPlugin({
                 logo: './logo.png',
-                favicons: { // this plugin injects meta-tags from package.json unless they are explicitly set to null
+                favicons: {  // this plugin injects meta-tags from package.json unless they are explicitly set to null
                     appName: null,
                     appDescription: null,
                     developerName: null,
@@ -158,7 +175,8 @@ export default (env, options) => {
                 chunkFilename: devMode ? '[id].css' : '[id].[chunkhash].css',
             }),
             new CopyWebpackPlugin({
-                patterns: [ // Three.js DRACO loader docs: https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco#readme
+                // Three.js DRACO loader docs: https://github.com/mrdoob/three.js/tree/dev/examples/js/libs/draco#readme
+                patterns: [
                     { from: './node_modules/three/examples/js/libs/draco/gltf/draco_decoder.wasm', to:'assets/draco/' },
                     { from: './node_modules/three/examples/js/libs/draco/gltf/draco_wasm_wrapper.js', to:'assets/draco/' },
                     { from: '.htaccess' },

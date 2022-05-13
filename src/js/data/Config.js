@@ -9,7 +9,7 @@ import placeholder from '../../assets/img/placeholder.jpg';
 
 /* For debugging */
 const WEBPACK_MODE = process.env.NODE_ENV;
-const isDev = WEBPACK_MODE === 'development';
+const isDev = WEBPACK_MODE !== 'production';
 const isMobile = window.screen.width <= 900;
 
 const levels = [
@@ -26,6 +26,7 @@ const controls = [
     'back'
 ];
 
+// TODO: set correct camera & blur values
 const contents = {
     Living_Room: {
         icon: 'local_cafe',
@@ -205,30 +206,6 @@ const contents = {
         ]
     },
 };
-
-// TODO: get sunrise and sunset times from an API
-/*const sunrise = 8;
-const sunset = 18;
-const times = {
-    DAY: {
-        value: 'day',
-        darkTheme: false,
-        startHour: sunrise + 1, // create interval around sunset/sunrise time for twilight
-        endHour: sunset - 1,
-    },
-    TWILIGHT: { // Sunrise twilight
-        value: 'twilight',
-        darkTheme: false,
-        startHour: sunrise - 1,
-        endHour: sunrise + 1,
-    },
-    NIGHT: {
-        value: 'night',
-        darkTheme: true,
-        startHour: sunset + 1,
-        endHour: sunrise - 1,
-    }
-};*/
 
 const cameraViews = {
     front: { x: 0, y: 150, z: 300 },

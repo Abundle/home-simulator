@@ -10,7 +10,7 @@ import { gsap } from 'gsap/all';
 import Scene from './Scene';
 import Categories from './Categories';
 import Utils from './utils/Utils';
-import Config from './utils/Config';
+import Config from './data/Config';
 import Cards from './Cards';
 import Levels from './Levels';
 import Controls from './Controls';
@@ -20,17 +20,23 @@ import '../scss/main.scss';
 /* For testing Babel polyfills */
 // import './utils/transpile.test';
 
+// TODO: add warning that it doesn't work yet on mobile/touch screens
+// TODO: edit camera angles for every object
 // TODO: add close button to drawer
 // TODO: if an item in drawer is selected/focused (highlighted), make other items in drawer darker
 
 const categoryList = new MDCList(document.querySelector('#drawer-categories'));
 categoryList.singleSelection = true;
 
-const initCategoryList = contents => {
+const initCategoryList = () => {
+    const contents = Config.contents;
+
     Object.keys(contents).map((category, index) => {
         const button = Categories.createCategoryButton(category, contents[category].icon, index);
         document.querySelector('#drawer-categories').innerHTML += button;
     });
+
+    listListen(categoryList);
 };
 
 const listListen = mdcList => {
@@ -39,20 +45,19 @@ const listListen = mdcList => {
         const category = event.target.children[target];
 
         if (Categories.getDrawerState()) { // Drawer already open
-            Categories.scrollToCategory(category.id);
-
+            Categories.scrollTo(category.id);
         } else {
             // Otherwise toggle the drawer state
             Scene.toggleDrawer();
-
-            Categories.scrollToCategory(category.id);
+            Categories.scrollTo(category.id);
         }
     });
 };
 
-const initCards = content => {
-    document.querySelector('#cards').innerHTML = content;
-    connectObserver(observer);
+const initCards = () => {
+    const categoryContainer = document.querySelector('aside');
+    document.querySelector('#cards').innerHTML = Cards(Config.contents);
+    connectObserver(observer(categoryList, categoryContainer));
 
     document.querySelectorAll('.mdc-card__actions').forEach(element => {
         element.addEventListener('click', event => {
@@ -62,8 +67,8 @@ const initCards = content => {
     });
 };
 
-const initLevels = content => {
-    document.querySelector('#levels').innerHTML = content;
+const initLevels = () => {
+    document.querySelector('#levels').innerHTML = Levels(Config.levels);
 
     const radio = new MDCRadio(document.querySelector('.mdc-radio'));
     const formField = new MDCFormField(document.querySelector('#levels > .mdc-form-field'));
@@ -84,16 +89,16 @@ const initRipples = (selectors, isUnbounded = false) => {
     // list.listElements.map(element => new MDCRipple(element));
 };
 
-const observer = new IntersectionObserver(entries => {
+const observer = (scrollElement, observedElement) => new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.intersectionRatio > 0) { // In the view
             const index = entry.target.id.split('-')[1];
-            categoryList.selectedIndex = Number(index);
+            scrollElement.selectedIndex = Number(index);
         }
     });
 }, {
-    root: document.querySelector('aside'),
-    rootMargin: '0px 0px -75% 0px',
+    root: observedElement,
+    rootMargin: '0px 0px -75% 0px', // TODO: check if rootMargin property is necessary
     delay: 500,
 });
 
@@ -103,8 +108,8 @@ const connectObserver = obs => {
     });
 };
 
-const initControls = content => {
-    document.querySelector('#controls').innerHTML = content;
+const initControls = () => {
+    document.querySelector('#controls').innerHTML = Controls(Config);
 
     document.querySelector('.reset-view-button').addEventListener('click', () => {
         Scene.resetCamera();
@@ -134,17 +139,18 @@ const initControls = content => {
     const liteModeCheckbox = new MDCCheckbox(document.querySelector('.lite-mode-checkbox'));
     const performanceCheckbox = new MDCCheckbox(document.querySelector('.performance-monitor-checkbox'));
 
-    liteModeCheckbox.checked = true; // Config.isMobile;
+    liteModeCheckbox.checked = true; // Config.isMobile; // TODO: add directionallight to 'non-lite' mode?
     performanceCheckbox.checked = Config.isDev;
 
     Scene.showSAO(!liteModeCheckbox.checked);
-    Scene.castShadows(!liteModeCheckbox.checked);
+    Scene.castShadows(true);
+    // Scene.castShadows(!liteModeCheckbox.checked);
     Scene.showPerformanceMonitor(performanceCheckbox.checked);
 
     // Lite mode
     liteModeCheckbox.listen('change', event => {
         Scene.showSAO(!event.target.checked);
-        Scene.castShadows(!event.target.checked);
+        // Scene.castShadows(!event.target.checked);
     });
     performanceCheckbox.listen('change', event => {
         Scene.showPerformanceMonitor(event.target.checked);
@@ -236,12 +242,11 @@ const initControls = content => {
     });
 };
 
-initCategoryList(Config.contents);
-listListen(categoryList);
+initCategoryList();
 Scene.init();
-initCards(Cards);
-initLevels(Levels);
-initControls(Controls);
+initCards();
+initLevels();
+initControls();
 initRipples('.mdc-button, .mdc-card__primary-action');
 
 const greet = 'Hey there!';

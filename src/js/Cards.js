@@ -1,9 +1,7 @@
-import Config from './utils/Config';
-
-const Cards = Object.keys(Config.contents).map((category, index) => `
+const Cards = contents => Object.keys(contents).map((category, index) => `
     <h1 id=${ category + '-' + index } class='mdc-typography--headline5 category-title'>${ category.replace('_', ' ') }</h1>
     
-    ${ Config.contents[category].content.map(item => `
+    ${ contents[category].content.map(item => `
         <div id='${ category }-${ item.id }' class='mdc-card mdc-card--outlined'>
             <a href=${ item.url } target='_blank'>
                 <div class='mdc-card__primary-action'>

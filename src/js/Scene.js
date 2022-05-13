@@ -32,33 +32,15 @@ import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader';
 import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader';
 
-import { WEBGL } from 'three/examples/jsm/WebGL.js';
-import Stats from 'three/examples/jsm/libs/stats.module.js';
+import Stats from 'three/examples/jsm/libs/stats.module';
+import WEBGL from 'three/examples/jsm/capabilities/WebGL';
 import { gsap } from 'gsap/all';
 
 // Local import
 import Categories from './Categories';
 import Utils from './utils/Utils';
 import modelName from '../assets/house.glb';
-import Config from './utils/Config.js';
-
-// TODO: for improving light through window check:
-//  DepthWrite https://stackoverflow.com/questions/15994944/transparent-objects-in-threejs/15995475#15995475
-//  + Check https://threejs.org/examples/webgl_camera_logarithmicdepthbuffer.html
-
-// Inspiration:
-// By Bruno Simons: https://threejs-journey.xyz/
-// House design style https://www.linkedin.com/feed/update/urn:li:activity:6533419696492945408
-// LittlestTokyo https://threejs.org/examples/#webgl_animation_keyframes
-// French website https://voyage-electrique.rte-france.com/
-// Behance https://www.behance.net/gallery/54361197/City
-// Codepen portfolio https://codepen.io/Yakudoo/
-// Blog: https://jolicode.com/blog/making-3d-for-the-web
-// WebGL 2 and WebGPU: https://discourse.threejs.org/t/whats-going-on-with-webgl2-webgpu/13115/56
-// Three.js fundamentals https://threejsfundamentals.org/
-// Smart autocompletion: https://tabnine.com/
-// How to clean up the scene https://threejs.org/docs/#manual/en/introduction/How-to-dispose-of-objects
-// Library for calculating position of the sun https://github.com/mourner/suncalc
+import Config from './data/Config.js';
 
 /* Three.js variables */
 const container     = document.getElementById('container');
@@ -117,7 +99,7 @@ const pointLights      = {
 };
 
 const init = () => {
-    const progress = document.getElementById('progress');
+    const progressElement = document.getElementById('progress');
 
     window.addEventListener('resize', resizeCanvas);
     container.addEventListener('mousemove', onMouseMove);
@@ -186,7 +168,9 @@ const init = () => {
     const geometry = new PlaneBufferGeometry(100, 100);
     geometry.rotateX(-Math.PI / 2);
     geometry.translate(0, -0.1, 0);
-    const material = new MeshStandardMaterial({ color: groundColor, flatShading: true });
+    const material = new MeshStandardMaterial({ 
+        color: groundColor, flatShading: true 
+    });
     const plane = new Mesh(geometry, material);
     plane.receiveShadow = true;
     scene.add(plane);
@@ -194,9 +178,7 @@ const init = () => {
     const loader = new GLTFLoader();
     // Provide a DRACOLoader instance to decode compressed mesh data
     const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath(Config.isDev ?
-        './node_modules/three/examples/js/libs/draco/gltf/' : './assets/draco/'
-    );
+    dracoLoader.setDecoderPath('./assets/draco/');
     loader.setDRACOLoader(dracoLoader);
 
     loader.load(modelName, gltf => {
@@ -221,6 +203,8 @@ const init = () => {
         meshGroup.add(model); // Will create a group in a group, but it seems to work as well
         scene.add(meshGroup);
 
+        // loader.dispose();
+
         if (WEBGL.isWebGLAvailable()) {
             start();
         } else {
@@ -228,9 +212,9 @@ const init = () => {
             container.appendChild(warning);
         }
     },
-    xhr => {
-        const percentage = Math.round(xhr.loaded / xhr.total * 100);
-        progress.textContent = percentage.toString();
+    progress => {
+        const percentage = Math.round(progress.loaded / progress.total * 100);
+        progressElement.textContent = percentage.toString();
 
         console.log('Model ' + percentage + '% loaded');
     },
@@ -410,15 +394,15 @@ const changeLightColors = (transitionAlpha, colors) => {
     hemisphereLight.groundColor.lerp(colors[3], Math.min(1, transitionAlpha));
 };
 
-// TODO: add moonlight as well
-let hour = 12;
+// TODO: add moonlight effect as well
+const dt = 0.01;
+// let hour = 12;
 let dayAlpha = 1;
 let twilightAlpha = 1;
 let nightAlpha = 1;
-const dt = 0.01;
+/* Simulate day- and nightlight
+ Inspired by https://github.com/dirkk0/threejs_daynight */
 const updateSunLight = () => {
-    /* Simulate day- and nightlight
-    Inspired by https://github.com/dirkk0/threejs_daynight */
     /*if (Config.isDev) {
         hour += dt;
         if (hour > 24) {
@@ -426,12 +410,13 @@ const updateSunLight = () => {
         }
     } else {
         hour = new Date().getHours();
-    }*/
+    }
+    const timeToRadians = -Math.PI / 2 + hour * ((2 * Math.PI) / 24);*/
+
     const { _, rotation } = Utils.getTime();
     const rotationRadians = -Math.PI / 2 + rotation * (Math.PI / 180) * 0.5;
 
     // Initial time (00:00) is a quarter turn counterclockwise
-    // const timeToRadians = -Math.PI / 2 + hour * ((2 * Math.PI) / 24);
     const radius = 50; // Distance between sun and model
     const nSin = radius * Math.sin(rotationRadians);
     const nCos = radius * Math.cos(rotationRadians);
@@ -450,9 +435,7 @@ const updateSunLight = () => {
             dayAlpha,
             [dayLightColor, dayLightColorAmbient, dayLightColorHemiSky, dayLightColorHemiGround]
         );
-
         setPointLights(false);
-
         Utils.setNightThemeUI(false);
     } else if (0 < nSin && nSin < 15) { // Twilight
         dayAlpha = 0;
@@ -462,9 +445,7 @@ const updateSunLight = () => {
             twilightAlpha,
             [twilightColor, twilightColor, twilightColorHemiSky, twilightColorHemiGround]
         );
-
         setPointLights(true);
-
         Utils.setNightThemeUI(false);
     } else { // Night
         twilightAlpha = 0;
@@ -474,9 +455,7 @@ const updateSunLight = () => {
             nightAlpha,
             [nightLightColor, nightLightColorAmbient, nightLightColorHemiSky, nightLightColor]
         );
-
         setPointLights(true);
-
         Utils.setNightThemeUI(true);
     }
 };
@@ -506,7 +485,7 @@ const animateCamera = (
     targetPosition,
     targetZoom = 1,
     duration = 1.5,
-    easing= "expo.inOut",
+    easing= 'expo.inOut',
     _openDrawer = false) => {
     gsap.to(camera.position, {
         duration: duration,
@@ -588,7 +567,7 @@ const selectObject = object => {
     animateLookAt(objectPosition);
 
     setTimeout(() => {
-        Categories.scrollToItem(`${ category }-${ id }`);
+        Categories.scrollTo(`${ category }-${ id }`);
     }, lookAtAnimationDuration + 0.5);
 
     if (level) {
@@ -597,7 +576,7 @@ const selectObject = object => {
     }
 };
 
-const getObject = name => { // TODO: create name dynamically (e.g. 'name = Kitchen_Block' => 'S_Kitchen_1_-_Kitchen_Block')?
+const getObject = name => {
     // const object = meshGroup.getObjectById(id);
     return meshGroup.getObjectByName(name);
 };

@@ -1,4 +1,3 @@
-import Config from './utils/Config';
 
 const TimeToggle = `
     <div class='circle-range'>
@@ -7,9 +6,9 @@ const TimeToggle = `
     </div>
 `;
 
-const Controls = `
+const Controls = config => `
     <div class='button-container'>
-    ${ Config.controls.map(view => `
+    ${ config.controls.map(view => `
         <button class='${ view }-view-button mdc-button mdc-button--outlined'>
             <span class='mdc-button__ripple'></span>
             <span class='mdc-button__label'>${ view }</span>
@@ -18,7 +17,7 @@ const Controls = `
     </div>    
     
     <ul class='mdc-list mdc-list--two-line' role='group' aria-label='List with control items'>
-        <li class='mdc-list-item' role='checkbox' aria-checked=${ Config.isMobile } tabindex='0'>
+        <li class='mdc-list-item' role='checkbox' aria-checked=${ config.isMobile } tabindex='0'>
             <span class='mdc-list-item__ripple'></span>
             <span class='mdc-list-item__graphic'>
                 <div class='lite-mode-checkbox mdc-checkbox'>
@@ -41,7 +40,7 @@ const Controls = `
               <span class='mdc-list-item__secondary-text'>Makes things run smoother</span>
             </label>
         </li>
-      <li class='mdc-list-item' role='checkbox' aria-checked=${ Config.isDev }>
+      <li class='mdc-list-item' role='checkbox' aria-checked=${ config.isDev }>
         <span class='mdc-list-item__ripple'></span>
         <span class='mdc-list-item__graphic'>
           <div class='performance-monitor-checkbox mdc-checkbox'>

@@ -1,8 +1,7 @@
-import Config from './utils/Config';
 
-const Levels = `
+const Levels = levels => `
     <div class='mdc-form-field'>
-    ${ Config.levels.map((level, index) => {
+    ${ levels.map((level, index) => {
         const i = index + 1;
         
         return `
@@ -12,7 +11,7 @@ const Levels = `
                        id='radio-${ i }' 
                        name='radio-levels' 
                        value=${ i } 
-                       ${ i === Config.levels.length ? 'checked' : ''}
+                       ${ i === levels.length ? 'checked' : ''}
                        >
                 <div class='mdc-radio__background'>
                     <div class='mdc-radio__outer-circle'></div>

@@ -1,10 +1,10 @@
 import { Vector2 } from 'three';
 import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass';
-import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
+import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import { CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer';
 
 /* Local import */
-import Config from './Config';
+import Config from '../data/Config';
 
 let SELECTABLE,         // If an object is clickable
     SHOW,               // Performance monitor visibility
@@ -13,10 +13,8 @@ let SELECTABLE,         // If an object is clickable
     isFocus = false;    // Whether an object has been clicked
 let INTERSECTED,        // If an object is intersected
     SELECTED,           // If an object is clicked
-    TIME,               // Current time status (controls lights, light direction, background color, etc.), i.e. time and
-                        // rotation.
-    TIME_ANGLE,         // Last recorded time angle. Different from angle in the TIME object, since this is a value that
-                        // is only set when the time handle animation has finished.
+    TIME,               // Current time status (controls lights, light direction, background color, etc.), i.e. time and rotation.
+    TIME_ANGLE,         // Last recorded time angle. Different from angle in the TIME object, since this is a value that is only set when the time handle animation has finished.
     SAO,
     BOKEH = null;
 
