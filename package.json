@@ -1,6 +1,7 @@
 {
     "name": "home-simulator",
     "version": "1.0.0",
+    "homepage": "https://abundle.github.io/home-simulator",
     "description": "3D home simulator.",
     "keywords": [
         "3d",

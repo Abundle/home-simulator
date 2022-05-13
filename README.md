@@ -1,4 +1,4 @@
-# House Simulator
+# Home Simulator
 [comment]: <> (TODO: add explanation on how to configure/name the blender model items)
 
 ## Main tools
