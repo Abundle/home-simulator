@@ -213,7 +213,8 @@ const init = () => {
         }
     },
     progress => {
-        const percentage = Math.round(progress.loaded / progress.total * 100);
+        const percentage = progress.lengthComputable ? 
+            Math.round(progress.loaded / progress.total * 100) : 0;
         progressElement.textContent = percentage.toString();
 
         console.log('Model ' + percentage + '% loaded');

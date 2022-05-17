@@ -10,18 +10,17 @@ import TerserPlugin from 'terser-webpack-plugin';
 // Name 'webpack.config.babel.js' is for using ES6 in webpack config
 export default (env, options) => {
     const devMode = options.mode !== 'production';
+    const publicPath = '/home-simulator/'
 
     return {
         entry: './src/js/index.js',
-        // TODO: Check browserlist node support issue 
-        // https://github.com/webpack/webpack/issues/11660 and 
-        // https://github.com/webpack/webpack-dev-server/issues/2758
-        target: 'web',
         output: {
             filename: devMode ? '[name].js' : '[name].[chunkhash].js',
             chunkFilename: devMode ? '[name].js' : '[name].[chunkhash].js',
-            publicPath: '/',
+            publicPath: publicPath,
+            // publicPath: '/',
             path: path.resolve(__dirname, 'docs'),
+            assetModuleFilename: 'assets/[hash][ext][query]'
         },
         module: {
             rules: [
@@ -64,27 +63,20 @@ export default (env, options) => {
                     ],
                 },
                 { 
-                    // Assets
                     test: /\.(jpe?g|png|gif|svg|ico)$/,
                     exclude: /node_modules/,
-                    use: {
-                        loader: 'file-loader',
-                        options: {
-                            name: devMode ? '[name].[ext]' : '[contenthash].[ext]',
-                            outputPath: 'assets/img',
-                        }
+                    type: 'asset/resource',
+                    generator: {
+                        filename: devMode ? 'assets/img/[name][ext][query]' : 'assets/img/[contenthash][ext][query]',
                     },
                 },
-                { // Models
+                {
                     test: /\.(obj|gltf|glb|drc|bin)$/,
                     exclude: /node_modules/,
-                    use: {
-                        loader: 'file-loader',
-                        options: {
-                            name: devMode ? '[name].[ext]' : '[contenthash].[ext]',
-                            outputPath: 'assets',
-                        }
-                    }
+                    type: 'asset/resource',
+                    generator: {
+                        filename: devMode ? '[name][ext][query]' : '[contenthash][ext][query]',
+                    },
                 }
             ]
         },
@@ -93,7 +85,8 @@ export default (env, options) => {
         },
         stats: 'minimal',
         devServer: {
-            open: true,
+            open: [publicPath],
+            // open: true,
             client: {
                 overlay: {
                     errors: true,
@@ -127,12 +120,12 @@ export default (env, options) => {
                 cacheGroups: {
                     vendors: {
                         test: /[\\/]node_modules[\\/]((?!(three)).*)[\\/]/,
-                        name: 'vendors',
+                        idHint: 'vendors',
                         chunks: 'all',
                     },
                     threeVendor: {
                         test: /[\\/]node_modules[\\/](three)[\\/]/,
-                        name: 'three_vendor',
+                        idHint: 'three_vendor',
                         chunks: 'all',
                     },
                 }
